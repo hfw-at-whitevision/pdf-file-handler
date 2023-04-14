@@ -1,3 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+    @apply transition-all;
+}
+
+body {
+    @apply overflow-y-scroll;
+}
+
+.react-pdf__Page__textContent.textLayer,
+.react-pdf__Page__annotations.annotationLayer {
+    @apply hidden;
+}
+
+.disabled {
+    @apply pointer-events-none opacity-40;
+}
+
+*::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+    @apply bg-purple-200;
+}
+
+*::-webkit-scrollbar-thumb {
+    @apply bg-black border-purple-200;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    @apply bg-purple-200;
+}
