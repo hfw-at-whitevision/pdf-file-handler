@@ -1,15 +1,14 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Drop from "@/components/Drop";
 import { Document, Page, pdfjs } from "react-pdf";
-import { PDFDocument, degrees, rgb } from "pdf-lib";
+import { PDFDocument, degrees } from "pdf-lib";
 import { blobToURL } from "@/utils/Utils";
 import PagingControl from "@/components/PagingControl";
 import { BigButton } from "@/components/BigButton";
 import DraggableText from "@/components/DraggableText";
-import dayjs from "dayjs";
 import ButtonXl from "@/components/ButtonXl";
 import { BsPlusLg, BsTrash } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
@@ -29,7 +28,7 @@ function downloadURI(uri: string, name: string) {
 
 const Home: NextPage = () => {
   const [originalPdf, setOriginalPdf] = useState(null);
-  const [pdf, setPdf] = useState(null);
+  const [pdf, setPdf]: any = useState(null);
   const [position, setPosition] = useState(null);
   const [setSignatureDialogVisible] = useState(false);
   const [textInputVisible, setTextInputVisible] = useState(false);
@@ -44,8 +43,8 @@ const Home: NextPage = () => {
       ignoreEncryption: true,
     });
     const pages = pdfDoc.getPages();
-    const currentPage = pages[pageNum];
-    currentPage.setRotation(degrees(currentRotation + inputDegrees))
+    const currentPage: any = pages[pageNum];
+    if (currentPage) currentPage.setRotation(degrees(currentRotation + inputDegrees))
     setCurrentRotation(currentRotation + inputDegrees);
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([new Uint8Array(pdfBytes)]);
@@ -153,17 +152,14 @@ const Home: NextPage = () => {
             <div>
               <nav className="flex gap-1 mb-2">
                 <BigButton
-                  marginRight={8}
                   title={<><BsPlusLg /> Tekst toevoegen</>}
                   onClick={() => setTextInputVisible(true)}
                 />
                 <BigButton
-                  marginRight={8}
                   title={<><GrRotateRight /> Roteer 90°</>}
                   onClick={async () => handleRotatePage()}
                 />
                 <BigButton
-                  marginRight={8}
                   title={<><BsTrash /> Verwijder pagina</>}
                   onClick={async () => handleRemovePage(pageNum)}
                 />
@@ -175,34 +171,29 @@ const Home: NextPage = () => {
               >
                 {textInputVisible ? (
                   <DraggableText
-                    initialText={
-                      textInputVisible === "date"
-                        ? dayjs().format("M/d/YYYY")
-                        : null
-                    }
                     onCancel={() => setTextInputVisible(false)}
                     onEnd={setPosition}
-                    onSet={async (text) => {
-                      const { originalHeight, originalWidth } = pageDetails;
-                      const scale = originalWidth / documentRef.current.clientWidth;
+                    onSet={async (text: any) => {
+                      const { originalHeight, originalWidth }: any = pageDetails;
+                      const scale = 1; // originalWidth / documentRef?.current?.clientWidth
 
                       const y =
-                        documentRef.current.clientHeight -
-                        (position.y +
+                        documentRef?.current?.clientHeight -
+                        (position?.y +
                           (12 * scale) -
-                          position.offsetY -
-                          documentRef.current.offsetTop);
+                          position?.offsetY -
+                          documentRef?.current?.offsetTop);
                       const x =
-                        position.x -
+                        position?.x -
                         166 -
-                        position.offsetX -
-                        documentRef.current.offsetLeft;
+                        position?.offsetX -
+                        documentRef?.current?.offsetLeft;
 
                       // new XY in relation to actual document size
                       const newY =
-                        (y * originalHeight) / documentRef.current.clientHeight;
+                        (y * originalHeight) / documentRef?.current?.clientHeight;
                       const newX =
-                        (x * originalWidth) / documentRef.current.clientWidth;
+                        (x * originalWidth) / documentRef?.current?.clientWidth;
 
                       const pdfDoc = await PDFDocument.load(pdf, {
                         ignoreEncryption: true,
@@ -211,7 +202,7 @@ const Home: NextPage = () => {
                       const pages = pdfDoc.getPages();
                       const firstPage = pages[pageNum];
 
-                      firstPage.drawText(text, {
+                      firstPage?.drawText(text, {
                         x: newX,
                         y: newY,
                         size: 20 * scale,

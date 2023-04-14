@@ -3,7 +3,7 @@ import { FaCheck, FaTimes } from "react-icons/fa";
 import { cleanBorder, errorColor, goodColor, primary45 } from "../utils/colors";
 import { useState, useEffect, useRef } from "react";
 
-export default function DraggableText({ onEnd, onSet, onCancel, initialText }) {
+export default function DraggableText({ onEnd, onSet, onCancel, initialText = '' }) {
   const [text, setText] = useState("Tekst");
   const inputRef = useRef(null);
 
