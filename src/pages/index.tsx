@@ -1,7 +1,7 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Drop from "@/components/Drop";
 import { Document, Page, pdfjs } from "react-pdf";
 import { PDFDocument, degrees } from "pdf-lib";
@@ -30,13 +30,16 @@ const Home: NextPage = () => {
   const [originalPdf, setOriginalPdf] = useState(null);
   const [pdf, setPdf]: any = useState(null);
   const [position, setPosition] = useState(null);
-  const [setSignatureDialogVisible] = useState(false);
   const [textInputVisible, setTextInputVisible] = useState(false);
   const [pageNum, setPageNum] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [pageDetails, setPageDetails] = useState(null);
   const [currentRotation, setCurrentRotation] = useState(0);
   const documentRef = useRef(null);
+
+  useEffect(() => {
+    setCurrentRotation(0);
+  }, [pageNum])
 
   const handleRotatePage = async (inputDegrees: number = 90) => {
     const pdfDoc = await PDFDocument.load(pdf, {
@@ -120,7 +123,7 @@ const Home: NextPage = () => {
                   <ButtonXl
                     title={"Reset"}
                     icon={<RxReset />}
-                    description="Verwijder PDF en begin opnieuw."
+                    description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
                     onClick={() => {
                       //                setTextInputVisible(false);
                       setPdf(originalPdf);
