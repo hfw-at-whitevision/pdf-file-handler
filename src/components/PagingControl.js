@@ -3,7 +3,7 @@ import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 
 export default function PagingControl({ totalPages, pageNum, setPageNum }) {
   return (
-    <div className="flex items-center justify-between w-full border-t border-white/20 mt-8 pt-8">
+    <div className="flex items-center justify-between w-full border-white/20">
       <BigButton
         title={<BsChevronLeft strokeWidth={2} color="black" />}
         onClick={() => setPageNum(pageNum - 1)}

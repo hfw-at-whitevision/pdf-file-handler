@@ -10,12 +10,12 @@ import PagingControl from "@/components/PagingControl";
 import { BigButton } from "@/components/BigButton";
 import DraggableText from "@/components/DraggableText";
 import ButtonXl from "@/components/ButtonXl";
-import { BsPlusLg, BsTrash } from "react-icons/bs";
+import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
 import { GrRotateRight } from "react-icons/gr";
 import Loading from "@/components/Loading";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
 function downloadURI(uri: string, name: string) {
   var link = document.createElement("a");
@@ -35,13 +35,27 @@ const Home: NextPage = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [pageDetails, setPageDetails] = useState(null);
   const [currentRotation, setCurrentRotation] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
   const documentRef = useRef(null);
 
   useEffect(() => {
     setCurrentRotation(0);
   }, [pageNum])
 
+  const handleReset = async (e) => {
+    e.preventDefault();
+    //                setTextInputVisible(false);
+    setPdf(originalPdf);
+    //                      setTotalPages(0);
+    setPageNum(0);
+    setCurrentRotation(0);
+    //                  setPageDetails(null);
+  }
+
   const handleRotatePage = async (inputDegrees: number = 90) => {
+    setIsRotating(true);
     const pdfDoc = await PDFDocument.load(pdf, {
       ignoreEncryption: true,
     });
@@ -53,18 +67,39 @@ const Home: NextPage = () => {
     const blob = new Blob([new Uint8Array(pdfBytes)]);
     const URL = await blobToURL(blob);
     setPdf(URL);
+    setIsRotating(false);
   }
 
   const handleRemovePage = async (inputPageNum: number = pageNum) => {
+    setIsDeleting(true);
     const pdfDoc = await PDFDocument.load(pdf, {
       ignoreEncryption: true,
     });
     pdfDoc.removePage(inputPageNum);
-    setPageNum(inputPageNum > 0 ? inputPageNum - 1 : 0)
+    let newPageNum = inputPageNum === totalPages - 1 ? inputPageNum - 1 : inputPageNum
+    newPageNum = newPageNum < 0 ? 0 : newPageNum
+    setPageNum(newPageNum)
+    setCurrentRotation(0);
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([new Uint8Array(pdfBytes)]);
     const URL = await blobToURL(blob);
     setPdf(URL);
+    setIsDeleting(false);
+  }
+
+  const handleMovePage = async (newIndex: number = pageNum) => {
+    const pdfDoc = await PDFDocument.load(pdf, {
+      ignoreEncryption: true,
+    });
+    const [currentPage]: any = await pdfDoc.copyPages(pdfDoc, [pageNum]);
+    pdfDoc.insertPage(newIndex, currentPage);
+    await pdfDoc.save();
+    pdfDoc.removePage(pageNum);
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([new Uint8Array(pdfBytes)]);
+    const URL = await blobToURL(blob);
+    setPdf(URL);
+    setPageNum(pageNum + 1);
   }
 
   let thumbnails: any[] = []
@@ -124,13 +159,7 @@ const Home: NextPage = () => {
                     title={"Reset"}
                     icon={<RxReset />}
                     description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                    onClick={() => {
-                      //                setTextInputVisible(false);
-                      setPdf(originalPdf);
-                      //                      setTotalPages(0);
-                      setPageNum(0);
-                      //                  setPageDetails(null);
-                    }}
+                    onClick={handleReset}
                   />
                   <ButtonXl
                     title="Download"
@@ -140,12 +169,6 @@ const Home: NextPage = () => {
                       downloadURI(pdf, "pdffilehandler.pdf");
                     }}
                   />
-
-                  <PagingControl
-                    pageNum={pageNum}
-                    setPageNum={setPageNum}
-                    totalPages={totalPages}
-                  />
                 </>
                 : null}
             </div>
@@ -153,18 +176,25 @@ const Home: NextPage = () => {
 
           {pdf ? (
             <div>
-              <nav className="flex gap-1 mb-2">
+              <nav className={`${isLoading ? 'disabled' : ''} flex gap-1 mb-2`}>
+                <BigButton
+                  title={<><BsArrowDown /> Pagina omlaag</>}
+                  onClick={() => handleMovePage(pageNum + 2)}
+                  disabled={isDeleting}
+                />
                 <BigButton
                   title={<><BsPlusLg /> Tekst toevoegen</>}
                   onClick={() => setTextInputVisible(true)}
                 />
                 <BigButton
                   title={<><GrRotateRight /> Roteer 90°</>}
-                  onClick={async () => handleRotatePage()}
+                  onClick={() => handleRotatePage()}
+                  disabled={isRotating}
                 />
                 <BigButton
                   title={<><BsTrash /> Verwijder pagina</>}
-                  onClick={async () => handleRemovePage(pageNum)}
+                  onClick={() => handleRemovePage(pageNum)}
+                  disabled={isDeleting}
                 />
               </nav>
 
@@ -236,6 +266,12 @@ const Home: NextPage = () => {
                     onLoadSuccess={(data) => {
                       setPageDetails(data);
                     }}
+                  />
+
+                  <PagingControl
+                    pageNum={pageNum}
+                    setPageNum={setPageNum}
+                    totalPages={totalPages}
                   />
                 </Document>
 
