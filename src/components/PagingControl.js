@@ -1,12 +1,12 @@
 import { BigButton } from "./BigButton";
 import { BsChevronLeft, BsChevronRight } from "react-icons/bs";
 
-export default function PagingControl({ totalPages, pageNum, setPageNum }) {
+export default function PagingControl({ totalPages, pageNum, setCurrent }) {
   return (
     <div className="flex items-center justify-between w-full border-white/20">
       <BigButton
         title={<BsChevronLeft strokeWidth={2} color="black" />}
-        onClick={() => setPageNum(pageNum - 1)}
+        onClick={() => setCurrent()}
         disabled={pageNum - 1 === -1}
         className="w-20"
       />
@@ -15,7 +15,7 @@ export default function PagingControl({ totalPages, pageNum, setPageNum }) {
       </div>
       <BigButton
         title={<BsChevronRight strokeWidth={2} color="black" />}
-        onClick={() => setPageNum(pageNum + 1)}
+        onClick={() => setCurrent(pageNum + 1)}
         disabled={pageNum + 1 > totalPages - 1}
         className="w-20"
       />

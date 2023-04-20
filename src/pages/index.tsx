@@ -8,7 +8,6 @@ import { PDFDocument, degrees } from "pdf-lib";
 import { blobToURL } from "@/utils/Utils";
 import PagingControl from "@/components/PagingControl";
 import { BigButton } from "@/components/BigButton";
-import DraggableText from "@/components/DraggableText";
 import ButtonXl from "@/components/ButtonXl";
 import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
@@ -27,10 +26,11 @@ function downloadURI(uri: string, name: string) {
 }
 
 const Home: NextPage = () => {
+  const [docIndex, setDocIndex] = useState(0);
   const [originalPdf, setOriginalPdf] = useState(null);
-  const [pdf, setPdfs]: [Array<string>, any] = useState(null);
-  const [pageNum, setPageNum] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [pdfs, setPdfs]: [Array<string>, any] = useState();
+  const [current, setCurrent] = useState({ docIndex: 0, pageIndex: 0 });
+  const [totalPages, setTotalPages] = useState([]);
   const [pageDetails, setPageDetails] = useState(null);
   const [currentRotation, setCurrentRotation] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,25 +40,25 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     setCurrentRotation(0);
-  }, [pageNum]);
+  }, [current]);
 
   const handleReset = async (e) => {
     e.preventDefault();
     setPdfs([originalPdf]);
     //                      setTotalPages(0);
-    setPageNum(0);
+    setCurrent(0);
     setCurrentRotation(0);
     //                  setPageDetails(null);
   };
 
   const handleRotatePage = async (inputDegrees: number = 90) => {
     setIsRotating(true);
-    const pdfDoc = await PDFDocument.load(pdf, {
+    const pdfDoc = await PDFDocument.load(pdfs, {
       ignoreEncryption: true
     });
     const pages = pdfDoc.getPages();
-    const currentPage: any = pages[pageNum];
-    if (currentPage) currentPage.setRotation(degrees(currentRotation + inputDegrees));
+    const current: any = pages[current.index];
+    if (current) current.setRotation(degrees(currentRotation + inputDegrees));
     setCurrentRotation(currentRotation + inputDegrees);
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([new Uint8Array(pdfBytes)]);
@@ -67,15 +67,15 @@ const Home: NextPage = () => {
     setIsRotating(false);
   };
 
-  const handleRemovePage = async (inputPageNum: number = pageNum) => {
+  const handleRemovePage = async (inputPageNum: number = current.index) => {
     setIsDeleting(true);
-    const pdfDoc = await PDFDocument.load(pdf, {
+    const pdfDoc = await PDFDocument.load(pdfs[i], {
       ignoreEncryption: true
     });
     pdfDoc.removePage(inputPageNum);
     let newPageNum = inputPageNum === totalPages - 1 ? inputPageNum - 1 : inputPageNum;
     newPageNum = newPageNum < 0 ? 0 : newPageNum;
-    setPageNum(newPageNum);
+    setCurrent(newPageNum);
     setCurrentRotation(0);
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([new Uint8Array(pdfBytes)]);
@@ -88,28 +88,61 @@ const Home: NextPage = () => {
     const pdfDoc = await PDFDocument.load(pdf, {
       ignoreEncryption: true
     });
-    const [currentPage]: any = await pdfDoc.copyPages(pdfDoc, [pageNum]);
-    pdfDoc.insertPage(newIndex, currentPage);
+    const [current]: any = await pdfDoc.copyPages(pdfDoc, [pageNum]);
+    pdfDoc.insertPage(newIndex, current);
     await pdfDoc.save();
     pdfDoc.removePage(pageNum);
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([new Uint8Array(pdfBytes)]);
     const URL = await blobToURL(blob);
     setPdfs(URL);
-    setPageNum(pageNum + 1);
+    setCurrent(pageNum + 1);
   };
 
+  // ************************************************************************
+  // thumbnails
+  // ************************************************************************
+  const [thumbnails, setThumbnails] = useState([])
+  useEffect(() => {
+    if(!pdfs?.length) return;
+
+    for (let i = 0; i < pdfs.length; i++) {
+      let newDocThumbnails = [];
+
+      for (let currentDocPageIndex = 0; currentDocPageIndex < totalPages[i]; currentDocPageIndex++) {
+        const theThumbnail = <Page
+          className={`rounded-md overflow-hidden max-h-[200px] cursor-pointer ${currentDocPageIndex === current.pageIndex ? "border-4 border-amber-300" : ""}`}
+          pageNumber={currentDocPageIndex + 1}
+          width={180}
+          onClick={() => setCurrent({
+            docIndex: i,
+            pageIndex: currentDocPageIndex
+          })
+          }
+        />;
+
+        newDocThumbnails = newDocThumbnails.concat(theThumbnail);
+      }
+
+      setThumbnails(oldThumbnails => {
+        const result = oldThumbnails.concat([newDocThumbnails])
+        return result
+      })
+    }
+  }, [pdfs]);
+  /*
   let thumbnails: any[] = [];
   for (let i = 0; i < totalPages; i++) {
     thumbnails = [...thumbnails,
       <Page
-        className={`rounded-md overflow-hidden max-h-[200px] cursor-pointer mr-4 ${i === pageNum ? "border-4 border-amber-300" : ""}`}
+        className={`rounded-md overflow-hidden max-h-[200px] cursor-pointer ${i === current.pageIndex ? "border-4 border-amber-300" : ""}`}
         pageNumber={i + 1}
         width={180}
-        onClick={() => setPageNum(i)}
+        onClick={() => setCurrent(i)}
       />
     ];
   }
+*/
 
   return (
     <>
@@ -124,12 +157,12 @@ const Home: NextPage = () => {
 
         <div className={
           `flex gap-12 px-4 py-16
-          ${pdf ? "flex-row" : "flex-col items-center justify-center"}`
+          ${pdfs ? "flex-row" : "flex-col items-center justify-center"}`
         }>
 
           <header className={
             `flex flex-col
-            ${!pdf ? "items-center" : "max-w-sm"}
+            ${!pdfs ? "items-center" : "max-w-sm"}
             `
           }>
             <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg mb-4" />
@@ -139,21 +172,21 @@ const Home: NextPage = () => {
             <h5 className="text-white font-extrabold uppercase ml-1 text-sm mt-2">product owned by Jasper B.</h5>
             <div className={
               `grid gap-4 mt-6
-              ${!pdf ? "grid-cols-1" : "grid-cols-1"}
+              ${!pdfs ? "grid-cols-1" : "grid-cols-1"}
               `
             }>
               <Drop
                 onLoaded={async (files: any) => {
                   const newPdf = await blobToURL(files[0]);
                   setPdfs((oldPdfs) => {
-                    const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf]
+                    const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
                     return result;
                   });
                   setOriginalPdf(newPdf);
                 }}
-                className={pdf ? "opacity-50" : "!p-16"}
+                className={pdfs ? "opacity-50" : "!p-16"}
               />
-              {pdf
+              {pdfs
                 ? <>
                   <ButtonXl
                     title={"Reset"}
@@ -164,9 +197,9 @@ const Home: NextPage = () => {
                   <ButtonXl
                     title="Download"
                     description="Creëer en download het PDF bestand."
-                    className={pdf ? "" : "opacity-40 pointer-events-none"}
+                    className={pdfs ? "" : "opacity-40 pointer-events-none"}
                     onClick={() => {
-                      downloadURI(pdf, "pdffilehandler.pdf");
+                      downloadURI(pdfs, "pdffilehandler.pdf");
                     }}
                   />
                 </>
@@ -174,7 +207,7 @@ const Home: NextPage = () => {
             </div>
           </header>
 
-          {pdf ? (
+          {pdfs ? (
             <div style={{ color: "white" }}>
               <nav className={`${isLoading ? "disabled" : ""} flex gap-1 mb-2`}>
                 <BigButton
@@ -196,45 +229,44 @@ const Home: NextPage = () => {
 
               <main
                 ref={documentRef}
-                className={`${(window.innerWidth < 1200) ? `w-[${window.innerWidth * 0.75}px]` : "w-[1000px] flex flex-col gap-2"}`}
+                className={`${process.browser && (window.innerWidth < 1200) ? `w-[${window.innerWidth * 0.75}px]` : "w-[1000px] grid grid-cols-4 gap-2"}`}
               >
 
                 {
-                  (pdf?.length) &&
-                  pdf?.map((pdfDoc, i) => <>
+                  (pdfs?.length) &&
+                  pdfs?.map((pdfDoc, i) => <>
 
                     <Document
                       key={`pdfDoc-${i}`}
                       file={pdfDoc}
                       loading={<Loading />}
                       onLoadSuccess={(data) => {
-                        setTotalPages(data.numPages);
+                        setTotalPages(oldTotalPages => [...oldTotalPages, data.numPages]);
                       }}
                       className="w-[800px]"
                     >
+
+                      {/*
+                        totalPages.map((totalPagesInDocument: number) => {
+                        generateThumbnails();
+                          for (let i = 0; i < totalPagesInDocument; i++) {
+                            // doe iets
+                            return;
+                          }
+                        })
+                      */}
+
+                      {thumbnails[i]?.map(thumbnail => thumbnail)}
+
                       <Page
                         className="rounded-lg overflow-hidden"
-                        pageNumber={pageNum + 1}
-                        width={(window.innerWidth < 1200) ? window.innerWidth * 0.75 : 800}
+                        pageNumber={current.pageIndex + 1}
+                        width={200}
                         onLoadSuccess={(data) => {
                           setPageDetails(data);
                         }}
                       />
 
-                      thumbnails = [...thumbnails,
-                      <Page
-                        className={`rounded-md overflow-hidden max-h-[200px] cursor-pointer mr-4 ${i === pageNum ? "border-4 border-amber-300" : ""}`}
-                        pageNumber={i + 1}
-                        width={180}
-                        onClick={() => setPageNum(i)}
-                      />
-                      ];
-
-                      <PagingControl
-                        pageNum={pageNum}
-                        setPageNum={setPageNum}
-                        totalPages={totalPages}
-                      />
                     </Document>
 
                   </>)
