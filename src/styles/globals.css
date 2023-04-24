@@ -35,3 +35,10 @@ body {
 *::-webkit-scrollbar-thumb:hover {
     @apply bg-purple-200;
 }
+
+pre {
+    max-height: 500px;
+    overflow-y: scroll;
+    padding: 20px;
+    font-size: 12px;
+}
