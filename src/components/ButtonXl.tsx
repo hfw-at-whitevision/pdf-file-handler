@@ -13,9 +13,6 @@ export default function ButtonXl({ href = "", title = "Go", description = "", st
             {...props}
         >
             <h3 className="text-2xl font-bold flex items-center gap-2 justify-between"><span>{title}</span> {icon}</h3>
-            <div className="text-sm">
-                {description}
-            </div>
         </Link>
     </>
 }

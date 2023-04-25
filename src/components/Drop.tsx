@@ -24,8 +24,6 @@ export default function Drop({ onLoaded, className }) {
       }
     >
       <h3 className="text-2xl font-bold flex items-center gap-2 justify-between">Upload <BsUpload /></h3>
-
-      Klik of sleep een PDF hier naartoe om een document te uploaden.
       <input {...getInputProps()} />
 
     </div>
