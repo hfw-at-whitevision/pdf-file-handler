@@ -195,24 +195,6 @@ const Home: NextPage = () => {
 
   const [numberOfThumbnails, setNumberOfThumbnails]: any = useState([]);
 
-  // react-dnd  
-  const [items, setItems] = useState();
-
-  const moveCardHandler = (dragIndex, hoverIndex) => {
-    const dragItem = items?.[dragIndex];
-
-    if (dragItem) {
-      setItems((prevState) => {
-        const coppiedStateArray = [...prevState];
-        // remove item by "hoverIndex" and put "dragItem" instead
-        const prevItem = coppiedStateArray.splice(hoverIndex, 1, dragItem);
-        // remove item by "dragIndex" and put "prevItem" instead
-        coppiedStateArray.splice(dragIndex, 1, prevItem[0]);
-        return coppiedStateArray;
-      });
-    }
-  };
-
   return (
     <>
       <Head>
@@ -346,9 +328,7 @@ const Home: NextPage = () => {
                                   key={`thumbnail-${pdfIndex}-${pageIndex}`}
                                   name={`thumbnail-${pdfIndex}-${pageIndex}`}
                                   currentColumnName={item.column}
-                                  setItems={setItems}
                                   index={pageIndex}
-                                  moveCardHandler={moveCardHandler}
                                   handleMovePage={handleMovePage}
                                   pageIndex={pageIndex}
                                   pdfIndex={pdfIndex}
@@ -401,29 +381,9 @@ const Thumbnail = ({
   // DPF
   pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage,
   // react-dnd
-  name, index, currentColumnName, moveCardHandler, setItems
+  name, index, currentColumnName
 }) => {
   const ref = useRef(null);
-  const changeItemColumn = async (currentItem, toPdfIndex) => {
-    if (pdfIndex === toPdfIndex) return;
-
-    console.log(`Moving thumbnail ${pageIndex} from PDF ${pdfIndex} to ${toPdfIndex}`)
-
-    await handleMovePage({
-      fromPdfIndex: pdfIndex,
-      fromPageIndex: pageIndex,
-      toPdfIndex: toPdfIndex,
-    })
-
-    setItems(prevState => {
-      return prevState?.map((e) => {
-        return {
-          ...e,
-          column: e.name === currentItem.name ? columnName : e.column
-        };
-      });
-    });
-  };
   const [, drop] = useDrop({
     accept: "pdfThumbnail",
     hover(item, monitor) {
@@ -447,7 +407,6 @@ const Thumbnail = ({
       if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
         return;
       }
-      moveCardHandler(dragIndex, hoverIndex);
       item.index = hoverIndex;
     }
   });
@@ -458,11 +417,16 @@ const Thumbnail = ({
     end: (item, monitor) => {
       const dropResult = monitor.getDropResult();
       const columnName = dropResult?.name;
-      const pdfIndex = dropResult?.pdfIndex;
+      const toPdfIndex = dropResult?.pdfIndex;
 
       if (dropResult) {
+        if (pdfIndex === toPdfIndex) return;
         // move the page to other PDF
-        changeItemColumn(item, pdfIndex);
+        handleMovePage({
+          fromPdfIndex: pdfIndex,
+          fromPageIndex: pageIndex,
+          toPdfIndex: toPdfIndex,
+        })
       }
     },
     collect: (monitor) => ({
