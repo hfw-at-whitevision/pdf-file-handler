@@ -1,7 +1,7 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Drop from "@/components/Drop";
 import { Document, Page, pdfjs } from "react-pdf";
 import { PDFDocument, ViewerPreferences, degrees } from "pdf-lib";
@@ -13,6 +13,9 @@ import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
 import { GrRotateRight } from "react-icons/gr";
 import Loading from "@/components/Loading";
+import update from "immutability-helper";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
@@ -26,8 +29,6 @@ function downloadURI(uri: string, name: string) {
 }
 
 const Home: NextPage = () => {
-  const [changesCounter, setChangesCounter] = useState(0);
-  const [pdfIndex, setPdfIndex] = useState(0);
   const [pdfFileNames, setPdfFileNames] = useState([]);
   const [originalPdf, setOriginalPdf] = useState(null);
   const [pdfs, setPdfs]: [Array<string>, any] = useState();
@@ -53,7 +54,7 @@ const Home: NextPage = () => {
     setPdfs(oldPdfs => oldPdfs.filter((pdf, index) => index !== inputPdfIndex));
     setTotalPages(oldTotalPages => oldTotalPages.filter((totalPage, index) => index !== inputPdfIndex));
     setPdfFileNames(oldPdfFileNames => oldPdfFileNames.filter((pdfFileName, index) => index !== inputPdfIndex));
-    setChangesCounter(oldChangesCounter => oldChangesCounter + 1);
+    setNumberOfThumbnails(oldNumberOfThumbnails => oldNumberOfThumbnails.filter((_, index) => index !== inputPdfIndex))
 
     setIsLoading(false);
     setIsDeleting(false);
@@ -110,52 +111,107 @@ const Home: NextPage = () => {
     setCurrent({ pdfIndex, pageIndex });
   };
 
-  const handleDeletePage = async ({ pdfIndex, pageIndex }) => {
+  const handleDeletePage = async (props) => {
+    const { pdfIndex, pageIndex } = props;
     setIsDeleting(true);
-    const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
-      ignoreEncryption: true
-    });
-    pdfDoc.removePage(pageIndex);
-    const pdfBytes = await pdfDoc.save();
+
+    // if we are deleting the last page in PDF = delete the PDF
+    if (totalPages[pdfIndex] === 1) {
+      setPdfs(oldPdfs => oldPdfs.filter((pdf, index) => index !== pdfIndex));
+      setTotalPages(oldTotalPages => oldTotalPages.filter((totalPage, index) => index !== pdfIndex));
+      setPdfFileNames(oldPdfFileNames => oldPdfFileNames.filter((pdfFileName, index) => index !== pdfIndex));
+      setNumberOfThumbnails(oldValues => oldValues.filter((value, index) => index !== pdfIndex));
+    }
+    else {
+      const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
+        ignoreEncryption: true
+      });
+      pdfDoc.removePage(pageIndex);
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([new Uint8Array(pdfBytes)]);
+      const URL = await blobToURL(blob);
+      setPdfs(oldPdfs => {
+        let newPdfs = oldPdfs
+        newPdfs[pdfIndex] = URL
+        return newPdfs
+      });
+
+      setTotalPages(oldTotalPages => {
+        let newTotalPages = oldTotalPages
+        newTotalPages[pdfIndex] = oldTotalPages[pdfIndex] - 1
+        return newTotalPages
+      });
+      setNumberOfThumbnails(oldNumberOfThumbnails => {
+        oldNumberOfThumbnails[pdfIndex].pop();
+        return oldNumberOfThumbnails;
+      });
+      setCurrent({ pdfIndex, pageIndex });
+    }
+
+    setIsDeleting(false);
+  };
+
+  const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex }) => {
+    const toPdfDoc = await PDFDocument.create(); // pdfs[toPdfIndex], { ignoreEncryption: true }
+    const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true });
+
+    // copy the moved page from PDF
+    const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromPageIndex]);
+
+    // insert the copied page to target PDF
+    toPdfDoc.addPage(copiedPage);
+
+    // remove the moved page from source PDF
+    fromPdfDoc.removePage(fromPageIndex);
+
+    // save the PDF files
+    const pdfBytes = await fromPdfDoc.save();
     const blob = new Blob([new Uint8Array(pdfBytes)]);
     const URL = await blobToURL(blob);
-    setPdfs(oldPdfs => {
-      let newPdfs = oldPdfs
-      newPdfs[pdfIndex] = URL
-      return newPdfs
+
+    const pdfBytes2 = await toPdfDoc.save();
+    const blob2 = new Blob([new Uint8Array(pdfBytes2)]);
+    const URL2 = await blobToURL(blob2);
+
+    setPdfs(oldValues => {
+      let newValues = oldValues
+      newValues[fromPdfIndex] = URL
+      newValues[toPdfIndex] = URL2
+      return newValues
+    });
+    setNumberOfThumbnails(oldNumberOfThumbnails => {
+      let newNumberOfThumbnails = oldNumberOfThumbnails
+      newNumberOfThumbnails[fromPdfIndex].pop();
+      newNumberOfThumbnails[toPdfIndex].push(1);
+      return newNumberOfThumbnails;
     });
     setTotalPages(oldTotalPages => {
       let newTotalPages = oldTotalPages
-      newTotalPages[pdfIndex] = oldTotalPages[pdfIndex] - 1
+      newTotalPages[fromPdfIndex] = oldTotalPages[fromPdfIndex] - 1
+      newTotalPages[toPdfIndex] = oldTotalPages[toPdfIndex] + 1
       return newTotalPages
     });
-    setNumberOfThumbnails(oldNumberOfThumbnails => {
-      oldNumberOfThumbnails[pdfIndex].pop();
-      return oldNumberOfThumbnails;
-    });
-    setIsDeleting(false);
-    setCurrent({ pdfIndex, pageIndex });
   };
 
-  const handleMovePage = async (newIndex: number = pageNum) => {
-    const pdfDoc = await PDFDocument.load(pdf, {
-      ignoreEncryption: true
-    });
-    const [current]: any = await pdfDoc.copyPages(pdfDoc, [pageNum]);
-    pdfDoc.insertPage(newIndex, current);
-    await pdfDoc.save();
-    pdfDoc.removePage(pageNum);
-    const pdfBytes = await pdfDoc.save();
-    const blob = new Blob([new Uint8Array(pdfBytes)]);
-    const URL = await blobToURL(blob);
-    setPdfs(URL);
-    setCurrent(pageNum + 1);
-  };
-
-  // ************************************************************************
-  // thumbnails
-  // ************************************************************************
   const [numberOfThumbnails, setNumberOfThumbnails]: any = useState([]);
+
+  // react-dnd  
+  const [items, setItems] = useState();
+
+  const moveCardHandler = (dragIndex, hoverIndex) => {
+    const dragItem = items?.[dragIndex];
+
+    if (dragItem) {
+      setItems((prevState) => {
+        const coppiedStateArray = [...prevState];
+        // remove item by "hoverIndex" and put "dragItem" instead
+        const prevItem = coppiedStateArray.splice(hoverIndex, 1, dragItem);
+        // remove item by "dragIndex" and put "prevItem" instead
+        coppiedStateArray.splice(dragIndex, 1, prevItem[0]);
+        return coppiedStateArray;
+      });
+    }
+  };
 
   return (
     <>
@@ -173,8 +229,6 @@ const Home: NextPage = () => {
         totalPages: {JSON.stringify(totalPages)}
         <br />
         current: {JSON.stringify(current, 2, 2)}
-        <br />
-        index: {JSON.stringify(pdfIndex, 2, 2)}
       </pre>
 
       <div className={
@@ -240,87 +294,100 @@ const Home: NextPage = () => {
             </div>
           </header>
 
-          {pdfs ? (
-            <div style={{ color: "white" }}>
-              <main
-                ref={documentRef}
-                className="grid gap-4"
-              >
 
-                {
-                  (!pdfs?.length)
-                    ? null
-                    : pdfs?.map((pdfDoc, pdfIndex) => <>
+          <DndProvider backend={HTML5Backend}>
+            {pdfs ? (
+              <div style={{ color: "white" }}>
+                <main
+                  ref={documentRef}
+                  className="grid gap-4"
+                >
 
-                      {/* pdf Document */}
-                      <Document
-                        key={`pdfDoc-${pdfIndex}`}
-                        file={pdfDoc}
-                        loading={<Loading />}
-                        onLoadSuccess={(data) => {
-                          // setTotalPages(oldTotalPages => [...oldTotalPages, data.numPages]);
-                        }}
-                        className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 bg-white/20 shadow-2xl p-4 rounded-lg w-[660px]"
-                      >
-                        <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
-                          <span>
-                            <h3 className="font-extrabold text-lg mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
-                            ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
-                          </span>
+                  {
+                    (!pdfs?.length)
+                      ? null
+                      : pdfs?.map((pdfDoc, pdfIndex) => <>
+                        {/* pdf Document */}
 
-                          <nav className={`${isLoading ? "disabled" : ""} flex gap-1`}>
-                            <BigButton
-                              title={<><GrRotateRight /></>}
-                              onClick={() => handleRotateDocument(pdfIndex)}
-                              disabled={isRotating}
-                            />
-                            <BigButton
-                              title={<><BsTrash /></>}
-                              onClick={() => handleDeleteDocument(pdfIndex)}
-                              disabled={isRotating}
-                            />
-                          </nav>
-                        </div>
-
-                        {/* thumbnails of current PDF */}
-                        {numberOfThumbnails[pdfIndex]?.map((_, pageIndex) =>
-                          <Thumbnail
-                            pageIndex={pageIndex}
-                            pdfIndex={pdfIndex}
-                            current={current}
-                            onClick={() => {
-                              setCurrent(oldValues => ({
-                                ...oldValues,
-                                pdfIndex: pdfIndex,
-                                pageIndex: pageIndex,
-                              }));
+                        <Column title={`pdf-${pdfIndex}`} pdfIndex={pdfIndex}>
+                          <Document
+                            key={`pdfDoc-${pdfIndex}`}
+                            file={pdfDoc}
+                            loading={<Loading />}
+                            onLoadSuccess={(data) => {
+                              // setTotalPages(oldTotalPages => [...oldTotalPages, data.numPages]);
                             }}
-                            actionButtons={
-                              <>
+                            className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 bg-white/20 shadow-2xl p-4 rounded-lg w-[660px]"
+                          >
+                            <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
+                              <span>
+                                <h3 className="font-extrabold text-lg mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
+                                ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
+                              </span>
+
+                              <nav className={`${isLoading ? "disabled" : ""} flex gap-1`}>
                                 <BigButton
                                   title={<><GrRotateRight /></>}
-                                  onClick={() => handleRotatePage({ pdfIndex: pdfIndex, pageIndex: pageIndex })}
+                                  onClick={() => handleRotateDocument(pdfIndex)}
                                   disabled={isRotating}
-                                  transparent={false}
                                 />
                                 <BigButton
                                   title={<><BsTrash /></>}
-                                  onClick={() => handleDeletePage({ pdfIndex: pdfIndex, pageIndex: pageIndex })}
+                                  onClick={() => handleDeleteDocument(pdfIndex)}
                                   disabled={isRotating}
-                                  transparent={false}
                                 />
-                              </>
+                              </nav>
+                            </div>
+
+                            {/* thumbnails of current PDF */}
+                            {
+                              numberOfThumbnails[pdfIndex]?.map((item, pageIndex) =>
+                                <Thumbnail
+                                  key={`thumbnail-${pdfIndex}-${pageIndex}`}
+                                  name={`thumbnail-${pdfIndex}-${pageIndex}`}
+                                  currentColumnName={item.column}
+                                  setItems={setItems}
+                                  index={pageIndex}
+                                  moveCardHandler={moveCardHandler}
+                                  handleMovePage={handleMovePage}
+                                  pageIndex={pageIndex}
+                                  pdfIndex={pdfIndex}
+                                  current={current}
+                                  onClick={() => {
+                                    setCurrent(oldValues => ({
+                                      ...oldValues,
+                                      pdfIndex: pdfIndex,
+                                      pageIndex: pageIndex,
+                                    }));
+                                  }}
+                                  actionButtons={
+                                    <>
+                                      <BigButton
+                                        title={<><GrRotateRight /></>}
+                                        onClick={() => handleRotatePage({ pdfIndex, pageIndex })}
+                                        disabled={isRotating}
+                                        transparent={false}
+                                      />
+                                      <BigButton
+                                        title={<><BsTrash /></>}
+                                        onClick={() => handleDeletePage({ pdfIndex, pageIndex })}
+                                        disabled={isRotating}
+                                        transparent={false}
+                                      />
+                                    </>
+                                  }
+                                />
+                              )
                             }
-                          />
-                        )}
 
-                      </Document>
-
-                    </>)
-                }
-              </main>
-            </div>
-          ) : null}
+                          </Document>
+                        </Column>
+                      </>)
+                  }
+                </main>
+              </div>
+            ) : null}
+          </DndProvider>
         </div>
 
       </div>
@@ -330,26 +397,139 @@ const Home: NextPage = () => {
 
 export default Home;
 
-const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current }) => (
-  <div className="relative group flex items-center justify-center " {...onClick && { onClick: onClick }}>
-    <Page
-      key={`pdf-${pdfIndex}-page-${pageIndex}`}
-      loading={<Loading />}
-      className={
-        `rounded-md overflow-hidden w-[150px] max-h-[150px] h-fit cursor-pointer relative
+const Thumbnail = ({
+  // DPF
+  pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage,
+  // react-dnd
+  name, index, currentColumnName, moveCardHandler, setItems
+}) => {
+  const ref = useRef(null);
+  const changeItemColumn = async (currentItem, toPdfIndex) => {
+    if (pdfIndex === toPdfIndex) return;
+
+    console.log(`Moving thumbnail ${pageIndex} from PDF ${pdfIndex} to ${toPdfIndex}`)
+
+    await handleMovePage({
+      fromPdfIndex: pdfIndex,
+      fromPageIndex: pageIndex,
+      toPdfIndex: toPdfIndex,
+    })
+
+    setItems(prevState => {
+      return prevState?.map((e) => {
+        return {
+          ...e,
+          column: e.name === currentItem.name ? columnName : e.column
+        };
+      });
+    });
+  };
+  const [, drop] = useDrop({
+    accept: "pdfThumbnail",
+    hover(item, monitor) {
+      if (!ref.current) {
+        return;
+      }
+      const dragIndex = item.index;
+      const hoverIndex = index;
+      if (dragIndex === hoverIndex) {
+        return;
+      }
+      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+      const hoverMiddleY =
+        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return;
+      }
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return;
+      }
+      moveCardHandler(dragIndex, hoverIndex);
+      item.index = hoverIndex;
+    }
+  });
+
+  const [{ isDragging }, drag]: any = useDrag({
+    type: "pdfThumbnail",
+    item: { index, name, pdfIndex, pageIndex, currentColumnName, type: "pdfThumbnail" },
+    end: (item, monitor) => {
+      const dropResult = monitor.getDropResult();
+      const columnName = dropResult?.name;
+      const pdfIndex = dropResult?.pdfIndex;
+
+      if (dropResult) {
+        // move the page to other PDF
+        changeItemColumn(item, pdfIndex);
+      }
+    },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging()
+    })
+  });
+  const opacity = isDragging ? 50 : 100;
+  drag(drop(ref));
+
+  return <>
+    <div
+      ref={ref}
+      className={`relative group flex items-center justify-center opacity-${opacity}`}
+      {...onClick && { onClick: onClick }}
+    >
+      <Page
+        key={name}
+        loading={<Loading />}
+        className={
+          `rounded-md overflow-hidden w-[150px] max-h-[150px] h-fit cursor-pointer relative
                 pdf-${pdfIndex}-${pageIndex}
                 ${(pageIndex === current.pageIndex && pdfIndex === current.pdfIndex)
-          ? "border-4 border-amber-300"
-          : ""
-        }
+            ? "border-4 border-amber-300"
+            : ""
+          }
         `
-      }
-      pageIndex={pageIndex}
-      width={150}
-      {...onClick && { onClick: onClick }}
-    />
-    <div className="absolute inset-0 z-10 flex justify-center items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
-      {actionButtons}
+        }
+        pageIndex={pageIndex}
+        width={150}
+        {...onClick && { onClick: onClick }}
+      />
+      <div className="absolute inset-0 z-10 flex justify-center items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
+        {actionButtons}
+      </div>
     </div>
-  </div>
-)
+  </>
+}
+
+const Column = ({ children, title, pdfIndex }) => {
+  const [{ isOver, canDrop }, drop] = useDrop({
+    accept: "pdfThumbnail",
+    drop: () => ({ name: title, pdfIndex: pdfIndex }),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+      canDrop: monitor.canDrop()
+    }),
+  });
+
+  const getBackgroundColor = () => {
+    if (isOver) {
+      if (canDrop) {
+        return "rgb(188,251,255)";
+      } else if (!canDrop) {
+        return "rgb(255,188,188)";
+      }
+    } else {
+      return "";
+    }
+  };
+
+  return (
+    <div
+      ref={drop}
+      style={{ backgroundColor: getBackgroundColor() }}
+    >
+      <p>{title}</p>
+      {children}
+    </div>
+  );
+};
