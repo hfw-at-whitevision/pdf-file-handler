@@ -9,7 +9,7 @@ import { blobToURL } from "@/utils/Utils";
 import PagingControl from "@/components/PagingControl";
 import { BigButton } from "@/components/BigButton";
 import ButtonXl from "@/components/ButtonXl";
-import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp } from "react-icons/bs";
+import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp, BsPlus } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
 import { GrRotateRight } from "react-icons/gr";
 import Loading from "@/components/Loading";
@@ -37,6 +37,7 @@ const Home: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const documentRef = useRef(null);
 
   const handleReset = async (e) => {
@@ -58,6 +59,7 @@ const Home: NextPage = () => {
   }
 
   const handleRotateDocument = async (inputPdfIndex: number) => {
+    setIsLoading(true);
     console.log(`Rotating document ${inputPdfIndex}`)
     setIsRotating(true);
     const pdfDoc = await PDFDocument.load(pdfs[inputPdfIndex], {
@@ -81,9 +83,11 @@ const Home: NextPage = () => {
       return newPdfs
     });
     setIsRotating(false);
+    setIsLoading(false);
   }
 
   const handleRotatePage = async ({ pdfIndex, pageIndex }) => {
+    setIsLoading(true);
     setIsRotating(true);
     const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
       ignoreEncryption: true
@@ -106,9 +110,11 @@ const Home: NextPage = () => {
     });
     setIsRotating(false);
     setCurrent({ pdfIndex, pageIndex });
+    setIsLoading(false);
   };
 
   const handleDeletePage = async (props) => {
+    setIsLoading(true);
     const { pdfIndex, pageIndex } = props;
     setIsDeleting(true);
 
@@ -146,9 +152,11 @@ const Home: NextPage = () => {
     }
 
     setIsDeleting(false);
+    setIsLoading(false);
   };
 
   const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex }) => {
+    setIsLoading(true);
     console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
 
     const toPdfDoc = await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true });
@@ -172,10 +180,6 @@ const Home: NextPage = () => {
     const blob2 = new Blob([new Uint8Array(pdfBytes2)]);
     const URL2 = await blobToURL(blob2);
 
-    let newPdfs = pdfs
-    newPdfs[fromPdfIndex] = URL
-    newPdfs[toPdfIndex] = URL2
-    setPdfs(newPdfs)
     setTotalPages(oldTotalPages => {
       let newTotalPages = oldTotalPages
       newTotalPages[fromPdfIndex] = oldTotalPages[fromPdfIndex] - 1
@@ -188,11 +192,32 @@ const Home: NextPage = () => {
       newNumberOfThumbnails[toPdfIndex].push(1);
       return newNumberOfThumbnails;
     });
-    setCurrent({ pdfIndex: toPdfIndex, pageIndex: 0 });
-    return newPdfs
+    let newPdfs = pdfs
+    newPdfs[fromPdfIndex] = URL
+    newPdfs[toPdfIndex] = URL2
+    setPdfs(newPdfs)
+    setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPdfDoc.getPages().length - 1 });
+    setIsLoading(false);
   };
 
   const [numberOfThumbnails, setNumberOfThumbnails]: any = useState([]);
+
+  const renderActionButtons = (pdfIndex, pageIndex) => {
+    return <>
+      <BigButton
+        title={<><GrRotateRight /></>}
+        onClick={() => handleRotatePage({ pdfIndex, pageIndex })}
+        disabled={isRotating}
+        transparent={false}
+      />
+      <BigButton
+        title={<><BsTrash /></>}
+        onClick={() => handleDeletePage({ pdfIndex, pageIndex })}
+        disabled={isRotating}
+        transparent={false}
+      />
+    </>
+  }
 
   return (
     <>
@@ -210,16 +235,14 @@ const Home: NextPage = () => {
         totalPages: {JSON.stringify(totalPages)}
         <br />
         current: {JSON.stringify(current, 2, 2)}
-        <br />
-        pdfs: {pdfs?.map((pdf, i) => <p className="block">pdf {i}: {pdf?.length}</p>)}
       </pre>
 
       <div className={
-        `flex min-h-screen items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]`
+        `flex min-h-screen ${!pdfs?.length ? 'items-center' : ''} justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]`
       }>
 
         <div className={
-          `flex gap-12 px-4 py-16
+          `flex gap-8 px-4 py-16
           ${pdfs ? "flex-row" : "flex-col items-center justify-center"}`
         }>
           <header className={
@@ -284,94 +307,108 @@ const Home: NextPage = () => {
                 className="grid gap-4 text-white"
               >
 
-                {pdfs?.map((pdfDoc, pdfIndex) => <>
+                <PlaceholderRow pdfIndex={0} isDragging={isDragging} />
 
+                {pdfs?.map((pdfDoc, pdfIndex) =>
                   <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
-                    <Document
-                      file={pdfDoc}
-                      loading={<Loading />}
-                      className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 bg-white/20 shadow-2xl p-4 rounded-lg w-[660px]"
-                    >
-                      <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
-                        <span>
-                          <h3 className="font-extrabold text-lg mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
-                          ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
-                        </span>
+                    <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
+                      <span>
+                        <h3 className="font-extrabold text-lg mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
+                        ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
+                      </span>
 
-                        <nav className={`${isLoading ? "disabled" : ""} flex gap-1`}>
-                          <BigButton
-                            title={<><GrRotateRight /></>}
-                            onClick={() => handleRotateDocument(pdfIndex)}
-                            disabled={isRotating}
-                          />
-                          <BigButton
-                            title={<><BsTrash /></>}
-                            onClick={() => handleDeleteDocument(pdfIndex)}
-                            disabled={isRotating}
-                          />
-                        </nav>
-                      </div>
+                      <nav className={`${isLoading ? "disabled" : ""} flex gap-1`}>
+                        <BigButton
+                          title={<><GrRotateRight /></>}
+                          onClick={() => handleRotateDocument(pdfIndex)}
+                          disabled={isRotating}
+                        />
+                        <BigButton
+                          title={<><BsTrash /></>}
+                          onClick={() => handleDeleteDocument(pdfIndex)}
+                          disabled={isRotating}
+                        />
+                      </nav>
+                    </div>
 
-                      {/* thumbnails of current PDF */}
-                      {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) =>
-                        <Thumbnail
-                          key={`thumbnail-${pdfIndex}-${pageIndex}`}
-                          index={pageIndex}
-                          handleMovePage={handleMovePage}
-                          pageIndex={pageIndex}
-                          pdfIndex={pdfIndex}
-                          current={current}
-                          onClick={() => {
-                            setCurrent(oldValues => ({
+                    <div className='relative'>
+                      <Document
+                        file={pdfDoc}
+                        loading={<Loading />}
+                        className={
+                          `grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 w-full`
+                        }
+                      >
+                        {/* thumbnails of current PDF */}
+                        {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) =>
+                          <Thumbnail
+                            key={`thumbnail-${pdfIndex}-${pageIndex}`}
+                            index={pageIndex}
+                            handleMovePage={handleMovePage}
+                            pageIndex={pageIndex}
+                            pdfIndex={pdfIndex}
+                            setIsDragging={setIsDragging}
+                            current={current}
+                            onClick={() => setCurrent(oldValues => ({
                               ...oldValues,
                               pdfIndex: pdfIndex,
                               pageIndex: pageIndex,
-                            }));
-                          }}
-                          actionButtons={
-                            <>
-                              <BigButton
-                                title={<><GrRotateRight /></>}
-                                onClick={() => handleRotatePage({ pdfIndex, pageIndex })}
-                                disabled={isRotating}
-                                transparent={false}
-                              />
-                              <BigButton
-                                title={<><BsTrash /></>}
-                                onClick={() => handleDeletePage({ pdfIndex, pageIndex })}
-                                disabled={isRotating}
-                                transparent={false}
-                              />
-                            </>
-                          }
-                        />
-                      )
-                      }
-
-                    </Document>
+                            }))}
+                            actionButtons={renderActionButtons(pdfIndex, pageIndex)}
+                          />
+                        )
+                        }
+                      </Document>
+                    </div>
                   </Row>
-                </>)
+                )
                 }
               </main>
             ) : null}
           </DndProvider>
+
+          {(pdfs?.length)
+            && <Document
+              file={pdfs[current?.pdfIndex]}
+              loading={<Loading />}
+              className='w-[800px]'
+            >
+              {!isLoading &&
+                <Page
+                  pageIndex={current?.pageIndex}
+                  loading={<Loading />}
+                  width={800}
+                  renderAnnotationLayer={false}
+                  renderTextLayer={false}
+                  className={`rounded-lg shadow-lg overflow-hidden`}
+                />
+              }
+            </Document>
+          }
         </div>
 
       </div>
     </>
   );
 };
-
 export default Home;
 
-const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index }) => {
+
+
+
+
+
+
+
+
+
+const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index, setIsDragging }) => {
   const ref = useRef(null);
-  const [, drop] = useDrop({
+  const [collected, drop] = useDrop({
     accept: "pdfThumbnail",
     hover(item, monitor) {
-      if (!ref.current) {
-        return;
-      }
+      if (!ref.current) return;
+
       const dragIndex = item.index;
       const hoverIndex = index;
       if (dragIndex === hoverIndex) {
@@ -402,7 +439,7 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
 
       if (dropResult && pdfIndex !== toPdfIndex) {
         // move the page to other PDF
-        const res = await handleMovePage({
+        await handleMovePage({
           fromPdfIndex: pdfIndex,
           fromPageIndex: pageIndex,
           toPdfIndex: toPdfIndex,
@@ -413,22 +450,27 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
       isDragging: monitor.isDragging()
     })
   });
-  const opacity = isDragging ? 50 : 100;
+
+  useEffect(() => {
+    setIsDragging(isDragging)
+  }, [isDragging])
+
   drag(drop(ref));
 
   return <>
     <div
       key={`thumbnail-${pdfIndex}-${pageIndex}`}
       ref={ref}
-      className={`relative group flex items-center justify-center opacity-${opacity}`}
+      className={`relative group flex items-center justify-center opacity-${isDragging ? '40' : '100'}`}
       {...onClick && { onClick: onClick }}
     >
       <Page
+        scale={1}
         loading={<Loading />}
         className={
           `rounded-md overflow-hidden w-[150px] max-h-[150px] h-fit cursor-pointer relative
-                pdf-${pdfIndex}-${pageIndex}
-                ${(pageIndex === current.pageIndex && pdfIndex === current.pdfIndex)
+            pdf-${pdfIndex}-${pageIndex}
+            ${(pageIndex === current.pageIndex && pdfIndex === current.pdfIndex)
             ? "border-4 border-amber-300"
             : ""
           }
@@ -436,14 +478,23 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
         }
         pageIndex={pageIndex}
         width={150}
-        {...onClick && { onClick: onClick }}
+        {...onClick && { onClick }}
       />
-      <div className="absolute inset-0 z-10 flex justify-center items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">
+      <div className="absolute inset-0 z-10 flex justify-center items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-pointer">
         {actionButtons}
       </div>
     </div>
   </>
 }
+
+
+
+
+
+
+
+
+
 
 const Row = ({ children, pdfIndex }) => {
   const [{ isOver, canDrop }, drop] = useDrop({
@@ -458,11 +509,55 @@ const Row = ({ children, pdfIndex }) => {
   return <div
     ref={drop}
     className={`
-      rounded-lg
-      ${isOver && canDrop ? 'bg-lime-100 shadow-4xl' : ''}
+    bg-white/20 shadow-2xl p-4 rounded-lg w-[660px]
+      ${isOver && canDrop ? 'bg-amber-300 shadow-4xl' : ''}
       ${isOver && !canDrop ? 'bg-red-300' : ''}
       `}
   >
     {children}
+  </div>
+};
+
+
+
+
+
+
+
+
+
+
+const PlaceholderRow = ({ pdfIndex, isDragging }) => {
+  const [{ canDrop, isOver }, drop] = useDrop({
+    accept: "pdfThumbnail",
+    drop: () => {
+      alert('droppeds')
+      return ({ pdfIndex: pdfIndex })
+    },
+    hover: () => setIsHovering(true),
+    collect: (monitor) => ({
+      canDrop: monitor.canDrop(),
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  const [isHovering, setIsHovering] = useState(false)
+  useEffect(() => {
+    if (isOver === isHovering) return;
+    setIsHovering(isOver)
+  }, [isOver])
+
+  return <div
+    ref={drop}
+    className={`
+      shadow-2xl rounded-lg w-[660px] flex items-center justify-center
+      border-dashed border-lime-100 border
+      ${isDragging && canDrop
+        ? 'h-auto p-4 opacity-100'
+        : 'h-0 p-0 opacity-0 border-0'}
+      ${isHovering && canDrop ? 'bg-lime-100 border-transparent' : ''}
+      `}
+  >
+    <BsPlus className='text-xl text-lime-100' />
   </div>
 };
