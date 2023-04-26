@@ -42,9 +42,6 @@ const Home: NextPage = () => {
   const handleReset = async (e) => {
     e.preventDefault();
     setPdfs([originalPdf]);
-    //                      setTotalPages(0);
-    //setCurrent(0);
-    //                  setPageDetails(null);
   };
 
   const handleDeleteDocument = async (inputPdfIndex: number) => {
@@ -152,7 +149,9 @@ const Home: NextPage = () => {
   };
 
   const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex }) => {
-    const toPdfDoc = await PDFDocument.create(); // pdfs[toPdfIndex], { ignoreEncryption: true }
+    console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
+
+    const toPdfDoc = await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true });
     const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true });
 
     // copy the moved page from PDF
@@ -173,11 +172,15 @@ const Home: NextPage = () => {
     const blob2 = new Blob([new Uint8Array(pdfBytes2)]);
     const URL2 = await blobToURL(blob2);
 
-    setPdfs(oldValues => {
-      let newValues = oldValues
-      newValues[fromPdfIndex] = URL
-      newValues[toPdfIndex] = URL2
-      return newValues
+    let newPdfs = pdfs
+    newPdfs[fromPdfIndex] = URL
+    newPdfs[toPdfIndex] = URL2
+    setPdfs(newPdfs)
+    setTotalPages(oldTotalPages => {
+      let newTotalPages = oldTotalPages
+      newTotalPages[fromPdfIndex] = oldTotalPages[fromPdfIndex] - 1
+      newTotalPages[toPdfIndex] = oldTotalPages[toPdfIndex] + 1
+      return newTotalPages
     });
     setNumberOfThumbnails(oldNumberOfThumbnails => {
       let newNumberOfThumbnails = oldNumberOfThumbnails
@@ -185,12 +188,8 @@ const Home: NextPage = () => {
       newNumberOfThumbnails[toPdfIndex].push(1);
       return newNumberOfThumbnails;
     });
-    setTotalPages(oldTotalPages => {
-      let newTotalPages = oldTotalPages
-      newTotalPages[fromPdfIndex] = oldTotalPages[fromPdfIndex] - 1
-      newTotalPages[toPdfIndex] = oldTotalPages[toPdfIndex] + 1
-      return newTotalPages
-    });
+    setCurrent({ pdfIndex: toPdfIndex, pageIndex: 0 });
+    return newPdfs
   };
 
   const [numberOfThumbnails, setNumberOfThumbnails]: any = useState([]);
@@ -211,6 +210,8 @@ const Home: NextPage = () => {
         totalPages: {JSON.stringify(totalPages)}
         <br />
         current: {JSON.stringify(current, 2, 2)}
+        <br />
+        pdfs: {pdfs?.map((pdf, i) => <p className="block">pdf {i}: {pdf?.length}</p>)}
       </pre>
 
       <div className={
@@ -276,96 +277,82 @@ const Home: NextPage = () => {
             </div>
           </header>
 
-
           <DndProvider backend={HTML5Backend}>
             {pdfs ? (
-              <div style={{ color: "white" }}>
-                <main
-                  ref={documentRef}
-                  className="grid gap-4"
-                >
+              <main
+                ref={documentRef}
+                className="grid gap-4 text-white"
+              >
 
-                  {
-                    (!pdfs?.length)
-                      ? null
-                      : pdfs?.map((pdfDoc, pdfIndex) => <>
-                        {/* pdf Document */}
+                {pdfs?.map((pdfDoc, pdfIndex) => <>
 
-                        <Column title={`pdf-${pdfIndex}`} pdfIndex={pdfIndex}>
-                          <Document
-                            key={`pdfDoc-${pdfIndex}`}
-                            file={pdfDoc}
-                            loading={<Loading />}
-                            onLoadSuccess={(data) => {
-                              // setTotalPages(oldTotalPages => [...oldTotalPages, data.numPages]);
-                            }}
-                            className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 bg-white/20 shadow-2xl p-4 rounded-lg w-[660px]"
-                          >
-                            <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
-                              <span>
-                                <h3 className="font-extrabold text-lg mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
-                                ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
-                              </span>
+                  <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
+                    <Document
+                      file={pdfDoc}
+                      loading={<Loading />}
+                      className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 bg-white/20 shadow-2xl p-4 rounded-lg w-[660px]"
+                    >
+                      <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
+                        <span>
+                          <h3 className="font-extrabold text-lg mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
+                          ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
+                        </span>
 
-                              <nav className={`${isLoading ? "disabled" : ""} flex gap-1`}>
-                                <BigButton
-                                  title={<><GrRotateRight /></>}
-                                  onClick={() => handleRotateDocument(pdfIndex)}
-                                  disabled={isRotating}
-                                />
-                                <BigButton
-                                  title={<><BsTrash /></>}
-                                  onClick={() => handleDeleteDocument(pdfIndex)}
-                                  disabled={isRotating}
-                                />
-                              </nav>
-                            </div>
+                        <nav className={`${isLoading ? "disabled" : ""} flex gap-1`}>
+                          <BigButton
+                            title={<><GrRotateRight /></>}
+                            onClick={() => handleRotateDocument(pdfIndex)}
+                            disabled={isRotating}
+                          />
+                          <BigButton
+                            title={<><BsTrash /></>}
+                            onClick={() => handleDeleteDocument(pdfIndex)}
+                            disabled={isRotating}
+                          />
+                        </nav>
+                      </div>
 
-                            {/* thumbnails of current PDF */}
-                            {
-                              numberOfThumbnails[pdfIndex]?.map((item, pageIndex) =>
-                                <Thumbnail
-                                  key={`thumbnail-${pdfIndex}-${pageIndex}`}
-                                  name={`thumbnail-${pdfIndex}-${pageIndex}`}
-                                  currentColumnName={item.column}
-                                  index={pageIndex}
-                                  handleMovePage={handleMovePage}
-                                  pageIndex={pageIndex}
-                                  pdfIndex={pdfIndex}
-                                  current={current}
-                                  onClick={() => {
-                                    setCurrent(oldValues => ({
-                                      ...oldValues,
-                                      pdfIndex: pdfIndex,
-                                      pageIndex: pageIndex,
-                                    }));
-                                  }}
-                                  actionButtons={
-                                    <>
-                                      <BigButton
-                                        title={<><GrRotateRight /></>}
-                                        onClick={() => handleRotatePage({ pdfIndex, pageIndex })}
-                                        disabled={isRotating}
-                                        transparent={false}
-                                      />
-                                      <BigButton
-                                        title={<><BsTrash /></>}
-                                        onClick={() => handleDeletePage({ pdfIndex, pageIndex })}
-                                        disabled={isRotating}
-                                        transparent={false}
-                                      />
-                                    </>
-                                  }
-                                />
-                              )
-                            }
+                      {/* thumbnails of current PDF */}
+                      {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) =>
+                        <Thumbnail
+                          key={`thumbnail-${pdfIndex}-${pageIndex}`}
+                          index={pageIndex}
+                          handleMovePage={handleMovePage}
+                          pageIndex={pageIndex}
+                          pdfIndex={pdfIndex}
+                          current={current}
+                          onClick={() => {
+                            setCurrent(oldValues => ({
+                              ...oldValues,
+                              pdfIndex: pdfIndex,
+                              pageIndex: pageIndex,
+                            }));
+                          }}
+                          actionButtons={
+                            <>
+                              <BigButton
+                                title={<><GrRotateRight /></>}
+                                onClick={() => handleRotatePage({ pdfIndex, pageIndex })}
+                                disabled={isRotating}
+                                transparent={false}
+                              />
+                              <BigButton
+                                title={<><BsTrash /></>}
+                                onClick={() => handleDeletePage({ pdfIndex, pageIndex })}
+                                disabled={isRotating}
+                                transparent={false}
+                              />
+                            </>
+                          }
+                        />
+                      )
+                      }
 
-                          </Document>
-                        </Column>
-                      </>)
-                  }
-                </main>
-              </div>
+                    </Document>
+                  </Row>
+                </>)
+                }
+              </main>
             ) : null}
           </DndProvider>
         </div>
@@ -377,12 +364,7 @@ const Home: NextPage = () => {
 
 export default Home;
 
-const Thumbnail = ({
-  // DPF
-  pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage,
-  // react-dnd
-  name, index, currentColumnName
-}) => {
+const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index }) => {
   const ref = useRef(null);
   const [, drop] = useDrop({
     accept: "pdfThumbnail",
@@ -408,21 +390,19 @@ const Thumbnail = ({
         return;
       }
       item.index = hoverIndex;
-    }
+    },
   });
 
   const [{ isDragging }, drag]: any = useDrag({
     type: "pdfThumbnail",
-    item: { index, name, pdfIndex, pageIndex, currentColumnName, type: "pdfThumbnail" },
-    end: (item, monitor) => {
+    item: { index, name, pdfIndex, pageIndex, type: "pdfThumbnail" },
+    end: async (item, monitor) => {
       const dropResult = monitor.getDropResult();
-      const columnName = dropResult?.name;
       const toPdfIndex = dropResult?.pdfIndex;
 
-      if (dropResult) {
-        if (pdfIndex === toPdfIndex) return;
+      if (dropResult && pdfIndex !== toPdfIndex) {
         // move the page to other PDF
-        handleMovePage({
+        const res = await handleMovePage({
           fromPdfIndex: pdfIndex,
           fromPageIndex: pageIndex,
           toPdfIndex: toPdfIndex,
@@ -438,12 +418,12 @@ const Thumbnail = ({
 
   return <>
     <div
+      key={`thumbnail-${pdfIndex}-${pageIndex}`}
       ref={ref}
       className={`relative group flex items-center justify-center opacity-${opacity}`}
       {...onClick && { onClick: onClick }}
     >
       <Page
-        key={name}
         loading={<Loading />}
         className={
           `rounded-md overflow-hidden w-[150px] max-h-[150px] h-fit cursor-pointer relative
@@ -465,35 +445,24 @@ const Thumbnail = ({
   </>
 }
 
-const Column = ({ children, title, pdfIndex }) => {
+const Row = ({ children, pdfIndex }) => {
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: "pdfThumbnail",
-    drop: () => ({ name: title, pdfIndex: pdfIndex }),
+    drop: () => ({ pdfIndex: pdfIndex }),
     collect: (monitor) => ({
       isOver: monitor.isOver(),
       canDrop: monitor.canDrop()
     }),
   });
 
-  const getBackgroundColor = () => {
-    if (isOver) {
-      if (canDrop) {
-        return "rgb(188,251,255)";
-      } else if (!canDrop) {
-        return "rgb(255,188,188)";
-      }
-    } else {
-      return "";
-    }
-  };
-
-  return (
-    <div
-      ref={drop}
-      style={{ backgroundColor: getBackgroundColor() }}
-    >
-      <p>{title}</p>
-      {children}
-    </div>
-  );
+  return <div
+    ref={drop}
+    className={`
+      rounded-lg
+      ${isOver && canDrop ? 'bg-lime-100 shadow-4xl' : ''}
+      ${isOver && !canDrop ? 'bg-red-300' : ''}
+      `}
+  >
+    {children}
+  </div>
 };
