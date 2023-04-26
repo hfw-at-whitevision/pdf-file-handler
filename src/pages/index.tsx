@@ -37,7 +37,7 @@ const Home: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+  const [userIsDragging, setUserIsDragging] = useState(false);
   const documentRef = useRef(null);
 
   const handleReset = async (e) => {
@@ -155,11 +155,13 @@ const Home: NextPage = () => {
     setIsLoading(false);
   };
 
-  const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex }) => {
+  const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex, toPlaceholderRow = false }) => {
     setIsLoading(true);
     console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
 
-    const toPdfDoc = await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true });
+    const toPdfDoc = toPlaceholderRow
+      ? await PDFDocument.create()
+      : await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true });
     const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true });
 
     // copy the moved page from PDF
@@ -180,21 +182,40 @@ const Home: NextPage = () => {
     const blob2 = new Blob([new Uint8Array(pdfBytes2)]);
     const URL2 = await blobToURL(blob2);
 
-    setTotalPages(oldTotalPages => {
-      let newTotalPages = oldTotalPages
-      newTotalPages[fromPdfIndex] = oldTotalPages[fromPdfIndex] - 1
-      newTotalPages[toPdfIndex] = oldTotalPages[toPdfIndex] + 1
-      return newTotalPages
-    });
-    setNumberOfThumbnails(oldNumberOfThumbnails => {
-      let newNumberOfThumbnails = oldNumberOfThumbnails
-      newNumberOfThumbnails[fromPdfIndex].pop();
-      newNumberOfThumbnails[toPdfIndex].push(1);
-      return newNumberOfThumbnails;
-    });
+    let newTotalPages = totalPages
+    newTotalPages[fromPdfIndex] = totalPages[fromPdfIndex] - 1
+    newTotalPages[toPdfIndex] = toPlaceholderRow
+      ? newTotalPages[toPdfIndex]
+      : totalPages[toPdfIndex] + 1
+
+    let newNumberOfThumbnails = numberOfThumbnails
+    newNumberOfThumbnails[fromPdfIndex].pop();
+    if (!toPlaceholderRow) newNumberOfThumbnails[toPdfIndex].push(1);
+
     let newPdfs = pdfs
     newPdfs[fromPdfIndex] = URL
-    newPdfs[toPdfIndex] = URL2
+    newPdfs[toPdfIndex] = toPlaceholderRow
+      ? newPdfs[toPdfIndex]
+      : URL2
+
+    // if moving to placeholder row, add a new placeholder row
+    if (toPlaceholderRow) {
+      pdfFileNames.splice(toPdfIndex, 0, 'Nieuw document')
+      newTotalPages.splice(toPdfIndex, 0, 1);
+      newNumberOfThumbnails.splice(toPdfIndex, 0, [1]);
+      newPdfs.splice(toPdfIndex, 0, URL2);
+    }
+
+    // if source document is empty, remove it
+    if (fromPdfDoc.getPages().length === 1) {
+      pdfFileNames.splice(fromPdfIndex, 1);
+      newTotalPages.splice(fromPdfIndex, 1);
+      newNumberOfThumbnails.splice(fromPdfIndex, 1);
+      newPdfs.splice(fromPdfIndex, 1);
+    }
+
+    setTotalPages(newTotalPages);
+    setNumberOfThumbnails(newNumberOfThumbnails);
     setPdfs(newPdfs)
     setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPdfDoc.getPages().length - 1 });
     setIsLoading(false);
@@ -258,24 +279,27 @@ const Home: NextPage = () => {
             }>
               <Drop
                 onLoaded={async (files: any) => {
-                  const newPdf = await blobToURL(files[0]);
-                  setPdfs((oldPdfs) => {
-                    const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
-                    return result;
-                  });
-                  setOriginalPdf(newPdf);
-                  const newPdfDoc = await PDFDocument.load(newPdf)
-                  const pages = newPdfDoc.getPages().length
-                  setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
-                  setPdfFileNames(oldFileNames => [...oldFileNames, files[0].name]);
-                  console.log('Updating numberOfThumbnails')
+                  setIsLoading(true)
+                  for (let i = 0; i < files.length; i++) {
+                    const newPdf = await blobToURL(files[i]);
+                    setPdfs((oldPdfs) => {
+                      const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+                      return result;
+                    });
+                    const newPdfDoc = await PDFDocument.load(newPdf)
+                    const pages = newPdfDoc.getPages().length
+                    setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
+                    setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
+                    console.log('Updating numberOfThumbnails')
 
-                  let pagesOfUploadedPdf = []
-                  for (let i = 0; i < pages; i++) {
-                    pagesOfUploadedPdf.push(i)
+                    let pagesOfUploadedPdf = []
+                    for (let x = 0; x < pages; x++) {
+                      pagesOfUploadedPdf.push(x)
+                    }
+
+                    setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
                   }
-
-                  setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
+                  setIsLoading(false)
                 }}
                 className={pdfs ? "opacity-50" : "!p-16"}
               />
@@ -307,9 +331,9 @@ const Home: NextPage = () => {
                 className="grid gap-4 text-white"
               >
 
-                <PlaceholderRow pdfIndex={0} isDragging={isDragging} />
+                <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} />
 
-                {pdfs?.map((pdfDoc, pdfIndex) =>
+                {pdfs?.map((pdfDoc, pdfIndex) => <>
                   <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
                     <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
                       <span>
@@ -347,7 +371,7 @@ const Home: NextPage = () => {
                             handleMovePage={handleMovePage}
                             pageIndex={pageIndex}
                             pdfIndex={pdfIndex}
-                            setIsDragging={setIsDragging}
+                            setUserIsDragging={setUserIsDragging}
                             current={current}
                             onClick={() => setCurrent(oldValues => ({
                               ...oldValues,
@@ -361,6 +385,9 @@ const Home: NextPage = () => {
                       </Document>
                     </div>
                   </Row>
+
+                  <PlaceholderRow pdfIndex={pdfIndex + 1} isDragging={userIsDragging} />
+                </>
                 )
                 }
               </main>
@@ -402,7 +429,7 @@ export default Home;
 
 
 
-const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index, setIsDragging }) => {
+const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging }) => {
   const ref = useRef(null);
   const [collected, drop] = useDrop({
     accept: "pdfThumbnail",
@@ -437,12 +464,16 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
       const dropResult = monitor.getDropResult();
       const toPdfIndex = dropResult?.pdfIndex;
 
-      if (dropResult && pdfIndex !== toPdfIndex) {
+      if (
+        dropResult && pdfIndex !== toPdfIndex
+        || dropResult && pdfIndex === toPdfIndex && dropResult?.['type'] === "placeholderRow"
+      ) {
         // move the page to other PDF
         await handleMovePage({
           fromPdfIndex: pdfIndex,
           fromPageIndex: pageIndex,
           toPdfIndex: toPdfIndex,
+          toPlaceholderRow: dropResult?.['type'] === "placeholderRow" ? true : false,
         })
       }
     },
@@ -452,7 +483,7 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
   });
 
   useEffect(() => {
-    setIsDragging(isDragging)
+    setUserIsDragging(isDragging)
   }, [isDragging])
 
   drag(drop(ref));
@@ -499,7 +530,7 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
 const Row = ({ children, pdfIndex }) => {
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: "pdfThumbnail",
-    drop: () => ({ pdfIndex: pdfIndex }),
+    drop: () => ({ pdfIndex: pdfIndex, type: 'row' }),
     collect: (monitor) => ({
       isOver: monitor.isOver(),
       canDrop: monitor.canDrop()
@@ -509,9 +540,8 @@ const Row = ({ children, pdfIndex }) => {
   return <div
     ref={drop}
     className={`
-    bg-white/20 shadow-2xl p-4 rounded-lg w-[660px]
-      ${isOver && canDrop ? 'bg-amber-300 shadow-4xl' : ''}
-      ${isOver && !canDrop ? 'bg-red-300' : ''}
+    p-4 rounded-lg w-[660px]
+      ${isOver && canDrop ? 'bg-amber-300 shadow-4xl' : 'bg-white/20 shadow-2xl'}
       `}
   >
     {children}
@@ -530,10 +560,7 @@ const Row = ({ children, pdfIndex }) => {
 const PlaceholderRow = ({ pdfIndex, isDragging }) => {
   const [{ canDrop, isOver }, drop] = useDrop({
     accept: "pdfThumbnail",
-    drop: () => {
-      alert('droppeds')
-      return ({ pdfIndex: pdfIndex })
-    },
+    drop: () => ({ pdfIndex: pdfIndex, type: 'placeholderRow' }),
     hover: () => setIsHovering(true),
     collect: (monitor) => ({
       canDrop: monitor.canDrop(),
@@ -551,13 +578,13 @@ const PlaceholderRow = ({ pdfIndex, isDragging }) => {
     ref={drop}
     className={`
       shadow-2xl rounded-lg w-[660px] flex items-center justify-center
-      border-dashed border-lime-100 border
+      border-dashed border-lime-200 border
       ${isDragging && canDrop
-        ? 'h-auto p-4 opacity-100'
+        ? 'h-auto p-2 opacity-100'
         : 'h-0 p-0 opacity-0 border-0'}
-      ${isHovering && canDrop ? 'bg-lime-100 border-transparent' : ''}
+      ${isHovering && canDrop ? 'bg-lime-200 border-transparent' : ''}
       `}
   >
-    <BsPlus className='text-xl text-lime-100' />
+    <BsPlus className={`text-xl text-lime-200 ${!isDragging ? 'hidden' : ''} ${isHovering ? '!text-black' : ''}`} />
   </div>
 };
