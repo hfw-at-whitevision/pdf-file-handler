@@ -197,20 +197,20 @@ const Home: NextPage = () => {
       ? newPdfs[toPdfIndex]
       : URL2
 
-    // if moving to placeholder row, add a new placeholder row
-    if (toPlaceholderRow) {
-      pdfFileNames.splice(toPdfIndex, 0, 'Nieuw document')
-      newTotalPages.splice(toPdfIndex, 0, 1);
-      newNumberOfThumbnails.splice(toPdfIndex, 0, [1]);
-      newPdfs.splice(toPdfIndex, 0, URL2);
-    }
-
     // if source document is empty, remove it
     if (fromPdfDoc.getPages().length === 1) {
       pdfFileNames.splice(fromPdfIndex, 1);
       newTotalPages.splice(fromPdfIndex, 1);
       newNumberOfThumbnails.splice(fromPdfIndex, 1);
       newPdfs.splice(fromPdfIndex, 1);
+    }
+
+    // if moving to placeholder row, add a new placeholder row
+    if (toPlaceholderRow) {
+      pdfFileNames.splice(toPdfIndex, 0, 'Nieuw document')
+      newTotalPages.splice(toPdfIndex, 0, 1);
+      newNumberOfThumbnails.splice(toPdfIndex, 0, [1]);
+      newPdfs.splice(toPdfIndex, 0, URL2);
     }
 
     setTotalPages(newTotalPages);
@@ -327,7 +327,7 @@ const Home: NextPage = () => {
             {pdfs ? (
               <main
                 ref={documentRef}
-                className="grid text-white"
+                className="flex-col text-white items-start"
               >
 
                 <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
@@ -579,10 +579,12 @@ const PlaceholderRow = ({ pdfIndex, isDragging, isLoading, totalPages }) => {
     className={`
       shadow-2xl rounded-lg w-[660px] flex items-center justify-center
       border-dashed border-lime-200 border
-      ${isDragging && canDrop && totalPages[pdfIndex] > 1
+      ${isDragging && canDrop // && totalPages[pdfIndex] > 1
         ? 'h-auto p-1 opacity-100 mb-4'
         : 'h-0 p-0 opacity-0 border-0 mb-0'}
-      ${isHovering && canDrop && totalPages[pdfIndex] > 1 ? 'p-2 bg-lime-200 border-transparent' : ''}
+      ${isHovering && canDrop// && totalPages[pdfIndex] > 1
+        ? 'p-2 bg-lime-200 border-transparent'
+        : ''}
       ${isLoading ? 'hidden' : ''}
       `}
   >
