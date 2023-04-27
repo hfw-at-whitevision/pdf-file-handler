@@ -9,7 +9,7 @@ import { blobToURL } from "@/utils/Utils";
 import PagingControl from "@/components/PagingControl";
 import { BigButton } from "@/components/BigButton";
 import ButtonXl from "@/components/ButtonXl";
-import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp, BsPlus } from "react-icons/bs";
+import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp, BsPlus, BsCheckLg, BsCheck2All, BsArrowsMove } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
 import { GrRotateRight } from "react-icons/gr";
 import Loading from "@/components/Loading";
@@ -270,57 +270,59 @@ const Home: NextPage = () => {
             ${!pdfs ? "items-center" : "max-w-xs"}
             `
           }>
-            <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg " />
-            <div className={
-              `grid gap-4 mt-6
+            <nav className="sticky top-8">
+              <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg " />
+              <div className={
+                `grid gap-4 mt-6
               ${!pdfs ? "grid-cols-1" : "grid-cols-1"}
               `
-            }>
-              <Drop
-                onLoaded={async (files: any) => {
-                  setIsLoading(true)
-                  for (let i = 0; i < files.length; i++) {
-                    const newPdf = await blobToURL(files[i]);
-                    setPdfs((oldPdfs) => {
-                      const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
-                      return result;
-                    });
-                    const newPdfDoc = await PDFDocument.load(newPdf)
-                    const pages = newPdfDoc.getPages().length
-                    setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
-                    setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
-                    console.log('Updating numberOfThumbnails')
+              }>
+                <Drop
+                  onLoaded={async (files: any) => {
+                    setIsLoading(true)
+                    for (let i = 0; i < files.length; i++) {
+                      const newPdf = await blobToURL(files[i]);
+                      setPdfs((oldPdfs) => {
+                        const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+                        return result;
+                      });
+                      const newPdfDoc = await PDFDocument.load(newPdf)
+                      const pages = newPdfDoc.getPages().length
+                      setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
+                      setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
+                      console.log('Updating numberOfThumbnails')
 
-                    let pagesOfUploadedPdf = []
-                    for (let x = 0; x < pages; x++) {
-                      pagesOfUploadedPdf.push(x)
+                      let pagesOfUploadedPdf = []
+                      for (let x = 0; x < pages; x++) {
+                        pagesOfUploadedPdf.push(x)
+                      }
+
+                      setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
                     }
-
-                    setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
-                  }
-                  setIsLoading(false)
-                }}
-                className={pdfs ? "opacity-50" : "!p-16"}
-              />
-              {pdfs
-                ? <>
-                  <ButtonXl
-                    title={"Reset"}
-                    icon={<RxReset />}
-                    description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                    onClick={handleReset}
-                  />
-                  <ButtonXl
-                    title="Download"
-                    description="Creëer en download het PDF bestand."
-                    className={pdfs ? "" : "opacity-40 pointer-events-none"}
-                    onClick={() => {
-                      downloadURI(pdfs, "pdffilehandler.pdf");
-                    }}
-                  />
-                </>
-                : null}
-            </div>
+                    setIsLoading(false)
+                  }}
+                  className={pdfs ? "opacity-50" : "!p-16"}
+                />
+                {pdfs
+                  ? <>
+                    <ButtonXl
+                      title={"Reset"}
+                      icon={<RxReset />}
+                      description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                      onClick={handleReset}
+                    />
+                    <ButtonXl
+                      title="Download"
+                      description="Creëer en download het PDF bestand."
+                      className={pdfs ? "" : "opacity-40 pointer-events-none"}
+                      onClick={() => {
+                        downloadURI(pdfs, "pdffilehandler.pdf");
+                      }}
+                    />
+                  </>
+                  : null}
+              </div>
+            </nav>
           </header>
 
           <DndProvider backend={HTML5Backend}>
@@ -335,12 +337,16 @@ const Home: NextPage = () => {
                 {pdfs?.map((pdfDoc, pdfIndex) => <>
                   <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
                     <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
-                      <span>
-                        <h3 className="font-extrabold text-lg mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
+                      <span className="text-sm">
+                        <h3 className="mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
                         ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
                       </span>
 
-                      <nav className={`${isLoading ? "disabled" : ""} flex gap-1`}>
+                      <nav className={`${isLoading ? "disabled" : ""} flex gap-1 w-[160px] justify-end`}>
+                        <BigButton
+                          title={<><BsCheck2All /></>}
+                          onClick={() => handleRotateDocument(pdfIndex)}
+                        />
                         <BigButton
                           title={<><GrRotateRight /></>}
                           onClick={() => handleRotateDocument(pdfIndex)}
@@ -393,23 +399,26 @@ const Home: NextPage = () => {
             ) : null}
           </DndProvider>
 
+          {/* PDF preview */}
           {(pdfs?.length)
-            && <Document
-              file={pdfs[current?.pdfIndex]}
-              loading={<Loading />}
-              className='w-[800px]'
-            >
-              {!isLoading &&
-                <Page
-                  pageIndex={current?.pageIndex}
-                  loading={<Loading />}
-                  width={800}
-                  renderAnnotationLayer={false}
-                  renderTextLayer={false}
-                  className={`rounded-lg shadow-lg overflow-hidden`}
-                />
-              }
-            </Document>
+            && <div>
+              <Document
+                file={pdfs[current?.pdfIndex]}
+                loading={<Loading />}
+                className='w-[800px] sticky top-8'
+              >
+                {!isLoading &&
+                  <Page
+                    pageIndex={current?.pageIndex}
+                    loading={<Loading />}
+                    width={800}
+                    renderAnnotationLayer={false}
+                    renderTextLayer={false}
+                    className={`rounded-lg shadow-lg overflow-hidden`}
+                  />
+                }
+              </Document>
+            </div>
           }
         </div>
 
@@ -491,27 +500,30 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
     <div
       key={`thumbnail-${pdfIndex}-${pageIndex}`}
       ref={ref}
-      className={`relative group flex items-center justify-center opacity-${isDragging ? '40' : '100'}`}
+      className={
+        `relative group flex items-center justify-center rounded-md overflow-hidden
+        ${(pageIndex === current.pageIndex && pdfIndex === current.pdfIndex)
+          ? "border-4 border-amber-300"
+          : ""}
+        opacity-${isDragging ? '40' : '100'}`
+      }
       {...onClick && { onClick: onClick }}
     >
       <Page
         scale={1}
         loading={<Loading />}
         className={
-          `rounded-md overflow-hidden w-[150px] max-h-[150px] h-fit cursor-pointer relative
-            pdf-${pdfIndex}-${pageIndex}
-            ${(pageIndex === current.pageIndex && pdfIndex === current.pdfIndex)
-            ? "border-4 border-amber-300"
-            : ""
-          }
-        `
+          `w-[150px] max-h-[150px] h-fit cursor-pointer relative
+            pdf-${pdfIndex}-${pageIndex}`
         }
         pageIndex={pageIndex}
         width={150}
         {...onClick && { onClick }}
       />
-      <div className="absolute inset-0 z-10 flex justify-center items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-pointer">
-        {actionButtons}
+      <div className="absolute inset-0 z-10 flex justify-center items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
+        <div className="grid grid-cols-2 gap-1">
+          {actionButtons}
+        </div>
       </div>
     </div>
   </>
@@ -583,7 +595,7 @@ const PlaceholderRow = ({ pdfIndex, isDragging, isLoading, totalPages }) => {
         ? 'h-auto p-1 opacity-100 mb-4'
         : 'h-0 p-0 opacity-0 border-0 mb-0'}
       ${isHovering && canDrop// && totalPages[pdfIndex] > 1
-        ? 'p-2 bg-lime-200 border-transparent'
+        ? 'p-2 bg-lime-100/90 border-transparent'
         : ''}
       ${isLoading ? 'hidden' : ''}
       `}
