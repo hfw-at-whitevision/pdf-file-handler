@@ -42,3 +42,7 @@ pre {
     padding: 20px;
     font-size: 12px;
 }
+
+.react-pdf__message {
+    @apply hidden;
+}

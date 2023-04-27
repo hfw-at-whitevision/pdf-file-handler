@@ -1,10 +1,10 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Drop from "@/components/Drop";
 import { Document, Page, pdfjs } from "react-pdf";
-import { PDFDocument, ViewerPreferences, degrees } from "pdf-lib";
+import { PDFDocument, degrees } from "pdf-lib";
 import { blobToURL } from "@/utils/Utils";
 import PagingControl from "@/components/PagingControl";
 import { BigButton } from "@/components/BigButton";
@@ -13,7 +13,6 @@ import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp, BsPlus } from "react-icons/b
 import { RxReset } from "react-icons/rx";
 import { GrRotateRight } from "react-icons/gr";
 import Loading from "@/components/Loading";
-import update from "immutability-helper";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
@@ -328,10 +327,10 @@ const Home: NextPage = () => {
             {pdfs ? (
               <main
                 ref={documentRef}
-                className="grid gap-4 text-white"
+                className="grid text-white"
               >
 
-                <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} />
+                <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
 
                 {pdfs?.map((pdfDoc, pdfIndex) => <>
                   <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
@@ -386,7 +385,7 @@ const Home: NextPage = () => {
                     </div>
                   </Row>
 
-                  <PlaceholderRow pdfIndex={pdfIndex + 1} isDragging={userIsDragging} />
+                  <PlaceholderRow pdfIndex={pdfIndex + 0.5} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
                 </>
                 )
                 }
@@ -540,7 +539,7 @@ const Row = ({ children, pdfIndex }) => {
   return <div
     ref={drop}
     className={`
-    p-4 rounded-lg w-[660px]
+    p-4 rounded-lg w-[660px] mb-4
       ${isOver && canDrop ? 'bg-amber-300 shadow-4xl' : 'bg-white/20 shadow-2xl'}
       `}
   >
@@ -557,7 +556,8 @@ const Row = ({ children, pdfIndex }) => {
 
 
 
-const PlaceholderRow = ({ pdfIndex, isDragging }) => {
+const PlaceholderRow = ({ pdfIndex, isDragging, isLoading, totalPages }) => {
+  pdfIndex = Math.ceil(pdfIndex)
   const [{ canDrop, isOver }, drop] = useDrop({
     accept: "pdfThumbnail",
     drop: () => ({ pdfIndex: pdfIndex, type: 'placeholderRow' }),
@@ -579,12 +579,13 @@ const PlaceholderRow = ({ pdfIndex, isDragging }) => {
     className={`
       shadow-2xl rounded-lg w-[660px] flex items-center justify-center
       border-dashed border-lime-200 border
-      ${isDragging && canDrop
-        ? 'h-auto p-2 opacity-100'
-        : 'h-0 p-0 opacity-0 border-0'}
-      ${isHovering && canDrop ? 'bg-lime-200 border-transparent' : ''}
+      ${isDragging && canDrop && totalPages[pdfIndex] > 1
+        ? 'h-auto p-1 opacity-100 mb-4'
+        : 'h-0 p-0 opacity-0 border-0 mb-0'}
+      ${isHovering && canDrop && totalPages[pdfIndex] > 1 ? 'p-2 bg-lime-200 border-transparent' : ''}
+      ${isLoading ? 'hidden' : ''}
       `}
   >
-    <BsPlus className={`text-xl text-lime-200 ${!isDragging ? 'hidden' : ''} ${isHovering ? '!text-black' : ''}`} />
+    <BsPlus className={`text-lime-200 ${!isDragging ? 'hidden' : ''} ${isHovering ? '!text-black text-xl' : 'text-xs'}`} />
   </div>
 };
