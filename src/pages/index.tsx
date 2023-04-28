@@ -41,7 +41,17 @@ const Home: NextPage = () => {
 
   const handleReset = async (e) => {
     e.preventDefault();
-    setPdfs([originalPdf]);
+    setPdfs([]);
+    setTotalPages([]);
+    setPdfFileNames([]);
+    setCurrent({ pdfIndex: 0, pageIndex: 0 });
+    setNumberOfThumbnails([]);
+
+    localStorage.removeItem('pdfFileNames');
+    localStorage.removeItem('pdfs');
+    localStorage.removeItem('totalPages');
+    localStorage.removeItem('numberOfThumbnails');
+    localStorage.removeItem('current');
   };
 
   const handleDeleteDocument = async (inputPdfIndex: number) => {
@@ -83,6 +93,7 @@ const Home: NextPage = () => {
     });
     setIsRotating(false);
     setIsLoading(false);
+    setStateChanged(oldValue => oldValue + 1);
   }
 
   const handleRotatePage = async ({ pdfIndex, pageIndex }) => {
@@ -110,6 +121,7 @@ const Home: NextPage = () => {
     setIsRotating(false);
     setCurrent({ pdfIndex, pageIndex });
     setIsLoading(false);
+    setStateChanged(oldValue => oldValue + 1);
   };
 
   const handleDeletePage = async (props) => {
@@ -155,6 +167,7 @@ const Home: NextPage = () => {
 
     setIsDeleting(false);
     setIsLoading(false);
+    setStateChanged(oldValue => oldValue + 1);
   };
 
   const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex, toPageIndex, toPlaceholderRow = false, toPlaceholderThumbnail = false }) => {
@@ -186,6 +199,7 @@ const Home: NextPage = () => {
       });
 
       setIsLoading(false);
+      setStateChanged(oldValue => oldValue + 1);
       return;
     }
 
@@ -255,6 +269,7 @@ const Home: NextPage = () => {
     setPdfs(newPdfs)
     setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPages().length - 1 });
     setIsLoading(false);
+    setStateChanged(oldValue => oldValue + 1);
   };
 
   const handleSplitDocument = async ({ pdfIndex, pageIndex }) => {
@@ -313,6 +328,7 @@ const Home: NextPage = () => {
     setPdfs(newPdfs)
     setCurrent({ pdfIndex: pdfIndex + 1, pageIndex: 0 });
     setIsLoading(false);
+    setStateChanged(oldValue => oldValue + 1);
   }
 
   const [numberOfThumbnails, setNumberOfThumbnails]: any = useState([]);
@@ -412,6 +428,39 @@ const Home: NextPage = () => {
     return () => window.removeEventListener('keydown', eventListener);
   }, [current?.pdfIndex, current?.pageIndex, totalPages]);
 
+  // localStorage
+  const [stateChanged, setStateChanged] = useState(0);
+  // localStorage save
+  useEffect(() => {
+    if (!pdfs?.length) return;
+
+    console.log(`PDF's saved to localStorage.`)
+
+    localStorage.setItem('pdfFileNames', JSON.stringify(pdfFileNames));
+    localStorage.setItem('pdfs', JSON.stringify(pdfs));
+    localStorage.setItem('totalPages', JSON.stringify(totalPages));
+    localStorage.setItem('numberOfThumbnails', JSON.stringify(numberOfThumbnails));
+    localStorage.setItem('current', JSON.stringify(current));
+  }, [stateChanged]);
+  // localStorage fetch
+  useEffect(() => {
+    if (!localStorage.getItem('pdfs')) return;
+
+    console.log(`PDF's fetched from localStorage.`)
+
+    const localPdfs = JSON.parse(localStorage.getItem('pdfs'));
+    const localTotalPages = JSON.parse(localStorage.getItem('totalPages'));
+    const localNumberOfThumbnails = JSON.parse(localStorage.getItem('numberOfThumbnails'));
+    const localPdfFileNames = JSON.parse(localStorage.getItem('pdfFileNames'));
+    const localCurrent = JSON.parse(localStorage.getItem('current'));
+
+    setPdfs(localPdfs);
+    setTotalPages(localTotalPages);
+    setNumberOfThumbnails(localNumberOfThumbnails);
+    setPdfFileNames(localPdfFileNames);
+    setCurrent(localCurrent);
+  }, []);
+
   return (
     <>
       <Head>
@@ -472,6 +521,7 @@ const Home: NextPage = () => {
 
                       setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
                     }
+                    setStateChanged(oldValue => oldValue + 1)
                     setIsLoading(false)
                   }}
                   className={pdfs ? "opacity-50" : "!p-16"}
@@ -699,9 +749,10 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
       ref={ref}
       className={
         `relative group flex items-center justify-center rounded-md overflow-hidden
+        before:absolute before:inset-0 before:bg-black before:opacity-50
         ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
-          ? "border-4 border-amber-300"
-          : ""}
+          ? "border-4 border-amber-300 before:z-10"
+          : "before:z-[-1]"}
         opacity-${isDragging ? '40' : '100'}`
       }
       {...onClick && { onClick: onClick }}
