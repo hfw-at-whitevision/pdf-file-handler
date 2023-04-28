@@ -267,6 +267,42 @@ const Home: NextPage = () => {
     </>
   }
 
+  // keypress listener
+  useEffect(() => {
+    const eventListener = event => {
+      switch (event.key) {
+        case 'ArrowLeft':
+          setCurrent({ ...current, pageIndex: current.pageIndex - 1 });
+          break;
+        case 'ArrowRight':
+          setCurrent(oldValue => ({ pdfIndex: oldValue?.pdfIndex, pageIndex: current.pageIndex + 1 }));
+          break;
+        case 'ArrowUp':
+          if (current.pdfIndex > 0) setCurrent({ ...current, pdfIndex: current.pdfIndex - 1 });
+          break;
+        case 'ArrowDown':
+          if (current.pdfIndex < pdfs.length - 1) setCurrent({ ...current, pdfIndex: current.pdfIndex + 1 });
+          break;
+        case 'Delete':
+          handleDeletePage(current);
+          break;
+        case 'Backspace':
+          handleDeletePage(current);
+          break;
+        case 'r':
+          handleRotatePage(current);
+          break;
+        case 'R':
+          handleRotatePage(current);
+          break;
+        default:
+          break;
+      }
+    }
+
+    window.addEventListener('keydown', eventListener);
+  }, []);
+
   return (
     <>
       <Head>
