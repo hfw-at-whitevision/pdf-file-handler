@@ -329,6 +329,13 @@ const Home: NextPage = () => {
     setCurrent({ pdfIndex: pdfIndex + 1, pageIndex: 0 });
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
+
+    setTimeout(() => {
+      const newThumbnailId = document.getElementById(`thumbnail-${pdfIndex + 1}-${0}`);
+      if (newThumbnailId) {
+        newThumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 500);
   }
 
   const [numberOfThumbnails, setNumberOfThumbnails]: any = useState([]);
@@ -393,13 +400,13 @@ const Home: NextPage = () => {
             pdfIndex: oldValue?.pdfIndex,
             pageIndex: oldValue?.pageIndex + 4,
           }));
-          else if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) setCurrent(oldValue => ({
-            pdfIndex: oldValue?.pdfIndex,
-            pageIndex: totalPages[oldValue?.pdfIndex] - 1,
-          }));
           else if (current?.pdfIndex < pdfs?.length - 1) setCurrent(oldValue => ({
             pdfIndex: oldValue?.pdfIndex + 1,
             pageIndex: 0,
+          }));
+          else if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) setCurrent(oldValue => ({
+            pdfIndex: oldValue?.pdfIndex,
+            pageIndex: totalPages[oldValue?.pdfIndex] - 1,
           }));
           break;
         case ' ':
@@ -433,6 +440,7 @@ const Home: NextPage = () => {
   // localStorage save
   useEffect(() => {
     if (!pdfs?.length) return;
+    return;
 
     console.log(`PDF's saved to localStorage.`)
 
@@ -746,10 +754,11 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
   return <>
     <div
       key={`thumbnail-${pdfIndex}-${pageIndex}`}
+      id={`thumbnail-${pdfIndex}-${pageIndex}`}
       ref={ref}
       className={
         `relative group flex items-center justify-center rounded-md overflow-hidden
-        before:absolute before:inset-0 before:bg-black before:opacity-50
+        before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
         ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
           ? "border-4 border-amber-300 before:z-10"
           : "before:z-[-1]"}
