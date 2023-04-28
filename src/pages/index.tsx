@@ -9,7 +9,7 @@ import { blobToURL } from "@/utils/Utils";
 import PagingControl from "@/components/PagingControl";
 import { BigButton } from "@/components/BigButton";
 import ButtonXl from "@/components/ButtonXl";
-import { BsPlusLg, BsTrash, BsArrowDown, BsArrowUp, BsPlus, BsCheckLg, BsCheck2All, BsArrowsMove } from "react-icons/bs";
+import { BsTrash, BsPlus, BsCheck2Circle } from "react-icons/bs";
 import { RxReset } from "react-icons/rx";
 import { GrRotateRight } from "react-icons/gr";
 import Loading from "@/components/Loading";
@@ -154,8 +154,35 @@ const Home: NextPage = () => {
     setIsLoading(false);
   };
 
-  const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex, toPlaceholderRow = false }) => {
+  const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex, toPageIndex, toPlaceholderRow = false, toPlaceholderThumbnail = false }) => {
     setIsLoading(true);
+
+    if (typeof toPdfIndex === 'undefined' && typeof toPageIndex === 'undefined') return;
+
+    if (toPlaceholderThumbnail && fromPdfIndex === toPdfIndex) {
+      const pdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, });
+      const [currentPage]: any = await pdfDoc.copyPages(pdfDoc, [fromPageIndex]);
+      pdfDoc.insertPage(toPageIndex, currentPage);
+      await pdfDoc.save();
+      // if moving up, we need to account for the fact that the page will be removed from the original PDF
+      pdfDoc.removePage(toPageIndex < fromPageIndex ? fromPageIndex + 1 : fromPageIndex);
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([new Uint8Array(pdfBytes)]);
+      const URL = await blobToURL(blob);
+      setPdfs(oldPdfs => {
+        let newPdfs = oldPdfs
+        newPdfs[fromPdfIndex] = URL
+        return newPdfs
+      });
+      setCurrent({ pdfIndex: fromPdfIndex, pageIndex: toPageIndex < fromPageIndex ? toPageIndex : toPageIndex - 1 });
+
+      setIsLoading(false);
+      return;
+    }
+
+    // if moving down, we need to account for the fact that the page will be removed from the original PDF
+    if (toPlaceholderRow && toPdfIndex > fromPdfIndex) toPdfIndex -= 1;
+
     console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
 
     const toPdfDoc = toPlaceholderRow
@@ -167,7 +194,8 @@ const Home: NextPage = () => {
     const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromPageIndex]);
 
     // insert the copied page to target PDF
-    toPdfDoc.addPage(copiedPage);
+    if (toPageIndex) toPdfDoc.insertPage(toPageIndex, copiedPage);
+    else toPdfDoc.addPage(copiedPage);
 
     // remove the moved page from source PDF
     fromPdfDoc.removePage(fromPageIndex);
@@ -216,7 +244,7 @@ const Home: NextPage = () => {
     setTotalPages(newTotalPages);
     setNumberOfThumbnails(newNumberOfThumbnails);
     setPdfs(newPdfs)
-    setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPdfDoc.getPages().length - 1 });
+    setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPages().length - 1 });
     setIsLoading(false);
   };
 
@@ -326,6 +354,8 @@ const Home: NextPage = () => {
           </header>
 
           <DndProvider backend={HTML5Backend}>
+            <ScrollDropTarget position='top' isDragging={userIsDragging} />
+
             {pdfs ? (
               <main
                 ref={documentRef}
@@ -342,9 +372,9 @@ const Home: NextPage = () => {
                         ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
                       </span>
 
-                      <nav className={`${isLoading ? "disabled" : ""} flex gap-1 w-[160px] justify-end`}>
+                      <nav className={`${isLoading ? "disabled" : ""} flex gap-1 w-[270px] justify-end`}>
                         <BigButton
-                          title={<><BsCheck2All /></>}
+                          title={<><BsCheck2Circle /><span className="text-xs">naar administratie</span></>}
                           onClick={() => handleRotateDocument(pdfIndex)}
                         />
                         <BigButton
@@ -369,22 +399,31 @@ const Home: NextPage = () => {
                         }
                       >
                         {/* thumbnails of current PDF */}
-                        {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) =>
-                          <Thumbnail
-                            key={`thumbnail-${pdfIndex}-${pageIndex}`}
-                            index={pageIndex}
-                            handleMovePage={handleMovePage}
-                            pageIndex={pageIndex}
-                            pdfIndex={pdfIndex}
-                            setUserIsDragging={setUserIsDragging}
-                            current={current}
-                            onClick={() => setCurrent(oldValues => ({
-                              ...oldValues,
-                              pdfIndex: pdfIndex,
-                              pageIndex: pageIndex,
-                            }))}
-                            actionButtons={renderActionButtons(pdfIndex, pageIndex)}
-                          />
+                        {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) => <>
+                          <div className="flex flex-row">
+                            {
+                              pageIndex === 0 &&
+                              /* first placeholder thumbnail */
+                              <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={0} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
+                            }
+                            <Thumbnail
+                              key={`thumbnail-${pdfIndex}-${pageIndex}`}
+                              index={pageIndex}
+                              handleMovePage={handleMovePage}
+                              pageIndex={pageIndex}
+                              pdfIndex={pdfIndex}
+                              setUserIsDragging={setUserIsDragging}
+                              current={current}
+                              onClick={() => setCurrent(oldValues => ({
+                                ...oldValues,
+                                pdfIndex: pdfIndex,
+                                pageIndex: pageIndex,
+                              }))}
+                              actionButtons={renderActionButtons(pdfIndex, pageIndex)}
+                            />
+                            <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={pageIndex + 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`} margin='ml-2' />
+                          </div>
+                        </>
                         )
                         }
                       </Document>
@@ -397,6 +436,8 @@ const Home: NextPage = () => {
                 }
               </main>
             ) : null}
+
+            <ScrollDropTarget position='bottom' isDragging={userIsDragging} />
           </DndProvider>
 
           {/* PDF preview */}
@@ -450,15 +491,15 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
         return;
       }
       const hoverBoundingRect = ref.current?.getBoundingClientRect();
-      const hoverMiddleY =
-        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const hoverMiddleX =
+        (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
       const clientOffset = monitor.getClientOffset();
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      const hoverClientX = clientOffset.x - hoverBoundingRect.left;
 
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+      if (dragIndex < hoverIndex && hoverClientX < hoverMiddleX) {
         return;
       }
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+      if (dragIndex > hoverIndex && hoverClientX > hoverMiddleX) {
         return;
       }
       item.index = hoverIndex;
@@ -467,21 +508,32 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
 
   const [{ isDragging }, drag]: any = useDrag({
     type: "pdfThumbnail",
-    item: { index, name, pdfIndex, pageIndex, type: "pdfThumbnail" },
+    item: { index, pdfIndex, pageIndex, type: "pdfThumbnail" },
     end: async (item, monitor) => {
       const dropResult = monitor.getDropResult();
       const toPdfIndex = dropResult?.pdfIndex;
+      const toPageIndex = dropResult?.pageIndex;
+      const type = dropResult?.type;
 
-      if (
-        dropResult && pdfIndex !== toPdfIndex
-        || dropResult && pdfIndex === toPdfIndex && dropResult?.['type'] === "placeholderRow"
+      if (dropResult && type === "placeholderThumbnail") {
+        await handleMovePage({
+          fromPdfIndex: pdfIndex,
+          fromPageIndex: pageIndex,
+          toPdfIndex: toPdfIndex,
+          toPageIndex: toPageIndex,
+          toPlaceholderThumbnail: true,
+        })
+      }
+      else if (
+        dropResult && pdfIndex !== toPdfIndex && type !== "scrollDropTarget"
+        || dropResult && pdfIndex === toPdfIndex && type === "placeholderRow"
       ) {
         // move the page to other PDF
         await handleMovePage({
           fromPdfIndex: pdfIndex,
           fromPageIndex: pageIndex,
           toPdfIndex: toPdfIndex,
-          toPlaceholderRow: dropResult?.['type'] === "placeholderRow" ? true : false,
+          toPlaceholderRow: type === "placeholderRow" ? true : false,
         })
       }
     },
@@ -513,7 +565,7 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
         scale={1}
         loading={<Loading />}
         className={
-          `w-[150px] max-h-[150px] h-fit cursor-pointer relative
+          `w-[150px] max-h-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
             pdf-${pdfIndex}-${pageIndex}`
         }
         pageIndex={pageIndex}
@@ -539,12 +591,15 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
 
 
 const Row = ({ children, pdfIndex }) => {
-  const [{ isOver, canDrop }, drop] = useDrop({
+  const [{ isOver, isNotOverPlaceholderThumbnail, canDrop }, drop] = useDrop({
     accept: "pdfThumbnail",
-    drop: () => ({ pdfIndex: pdfIndex, type: 'row' }),
+    drop: () => {
+      if (isNotOverPlaceholderThumbnail) return { pdfIndex: pdfIndex, type: 'row' }
+    },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
-      canDrop: monitor.canDrop()
+      isNotOverPlaceholderThumbnail: monitor.isOver({ shallow: true }),
+      canDrop: monitor.canDrop(),
     }),
   });
 
@@ -552,8 +607,8 @@ const Row = ({ children, pdfIndex }) => {
     ref={drop}
     className={`
     p-4 rounded-lg w-[660px] mb-4
-      ${isOver && canDrop ? 'bg-amber-300 shadow-4xl' : 'bg-white/20 shadow-2xl'}
-      `}
+    ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-white/20 shadow-2xl'}
+    `}
   >
     {children}
   </div>
@@ -569,22 +624,14 @@ const Row = ({ children, pdfIndex }) => {
 
 
 const PlaceholderRow = ({ pdfIndex, isDragging, isLoading, totalPages }) => {
-  pdfIndex = Math.ceil(pdfIndex)
   const [{ canDrop, isOver }, drop] = useDrop({
     accept: "pdfThumbnail",
-    drop: () => ({ pdfIndex: pdfIndex, type: 'placeholderRow' }),
-    hover: () => setIsHovering(true),
+    drop: () => ({ pdfIndex: Math.ceil(pdfIndex), type: 'placeholderRow' }),
     collect: (monitor) => ({
       canDrop: monitor.canDrop(),
       isOver: monitor.isOver(),
     }),
   });
-
-  const [isHovering, setIsHovering] = useState(false)
-  useEffect(() => {
-    if (isOver === isHovering) return;
-    setIsHovering(isOver)
-  }, [isOver])
 
   return <div
     ref={drop}
@@ -594,12 +641,110 @@ const PlaceholderRow = ({ pdfIndex, isDragging, isLoading, totalPages }) => {
       ${isDragging && canDrop // && totalPages[pdfIndex] > 1
         ? 'h-auto p-1 opacity-100 mb-4'
         : 'h-0 p-0 opacity-0 border-0 mb-0'}
-      ${isHovering && canDrop// && totalPages[pdfIndex] > 1
-        ? 'p-2 bg-lime-100/90 border-transparent'
+      ${isOver && canDrop// && totalPages[pdfIndex] > 1
+        ? 'p-8 bg-lime-100/90 border-transparent'
         : ''}
       ${isLoading ? 'hidden' : ''}
-      `}
+    `}
   >
-    <BsPlus className={`text-lime-200 ${!isDragging ? 'hidden' : ''} ${isHovering ? '!text-black text-xl' : 'text-xs'}`} />
+    <BsPlus className={`text-lime-200 ${!isDragging ? 'hidden' : ''} ${isOver ? '!text-black text-4xl' : 'text-xs'}`} />
   </div>
 };
+
+
+
+
+
+
+
+
+
+
+function PlaceholderThumbnail({ pdfIndex, pageIndex, isDragging, isLoading, totalPages, margin }) {
+  // hide placeholders if only 1 page in PDF
+  if (totalPages[pdfIndex] === 1) return null;
+
+  const [{ canDrop, isOver }, drop] = useDrop({
+    accept: "pdfThumbnail",
+    drop: () => {
+      console.log(`toPageIndex: ${pageIndex}. toPdfIndex: ${pdfIndex}`)
+      return { pdfIndex, pageIndex: Math.ceil(pageIndex), type: 'placeholderThumbnail' }
+    },
+    collect: (monitor) => ({
+      canDrop: monitor.canDrop(),
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  return <>
+    <div
+      ref={drop}
+      className={
+        `h-auto relative rounded-md bg-amber-300 group
+        w-[0]
+        before:content-[''] before:absolute before:w-[40px] before:h-full before:z-10 before:bg-red-30000000 before:translate-x-[-40px]
+        ${isOver ? '!w-[100px]' : ''}
+        after:content-[''] after:absolute after:w-[40px] after:h-full after:z-10 after:bg-red-3000000 after:translate-x-[40px]
+        ${isOver ? margin : null}
+      `}
+    />
+  </>
+}
+
+/*
+${isDragging ? 'bg-lime-300 w-[2px]' : 'w-10'}
+        ${isOver ? '!w-[75px]' : ''}
+        ${isDragging ? margin : 'm-0'}
+        */
+
+
+
+
+
+
+
+
+function ScrollDropTarget({ isDragging, position }) {
+  const scrollBy =
+    position === 'top'
+      ? -20
+      : 20;
+
+  const scrollUp = () => {
+    window.scrollBy(0, scrollBy);
+  };
+
+  const scrollTopDropRef = useRef(null);
+  const [{ isOver }, drop] = useDrop({
+    accept: "pdfThumbnail",
+    drop: () => ({ type: 'scrollDropTarget' }),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  drop(scrollTopDropRef);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (isOver) {
+        scrollUp();
+      } else {
+        clearInterval(intervalId);
+      }
+    }, 10);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [isOver]);
+
+  return <div
+    ref={scrollTopDropRef}
+    className={
+      `fixed left-0 right-0 h-[80px] z-50
+      ${position === 'top' ? 'top-0' : 'bottom-0'}
+      ${isDragging ? 'pointer-events-auto' : 'pointer-events-none'}`
+    }
+  />;
+}
