@@ -147,7 +147,10 @@ const Home: NextPage = () => {
         oldNumberOfThumbnails[pdfIndex].pop();
         return oldNumberOfThumbnails;
       });
-      setCurrent({ pdfIndex, pageIndex });
+      setCurrent({
+        pdfIndex,
+        pageIndex: pageIndex === totalPages[pdfIndex] ? pageIndex - 1 : pageIndex
+      });
     }
 
     setIsDeleting(false);
@@ -174,7 +177,13 @@ const Home: NextPage = () => {
         newPdfs[fromPdfIndex] = URL
         return newPdfs
       });
-      setCurrent({ pdfIndex: fromPdfIndex, pageIndex: toPageIndex < fromPageIndex ? toPageIndex : toPageIndex - 1 });
+      setCurrent({
+        pdfIndex: fromPdfIndex,
+        pageIndex:
+          (toPageIndex < fromPageIndex)
+            ? toPageIndex
+            : toPageIndex - 1
+      });
 
       setIsLoading(false);
       return;
@@ -248,6 +257,64 @@ const Home: NextPage = () => {
     setIsLoading(false);
   };
 
+  const handleSplitDocument = async ({ pdfIndex, pageIndex }) => {
+    if (pageIndex === 0) return;
+
+    setIsLoading(true);
+
+    const toPdfDoc = await PDFDocument.create()
+    const fromPdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true });
+
+    const pagesToMove = fromPdfDoc.getPageIndices().slice(pageIndex)
+
+    // copy the moved page from PDF
+    const copiedPages = await toPdfDoc.copyPages(fromPdfDoc, pagesToMove);
+    pagesToMove.forEach((_, index) => toPdfDoc.addPage(copiedPages[index]));
+
+    // remove the moved pages from source PDF
+    for (let i = 0; i < pagesToMove.length; i++) {
+      fromPdfDoc.removePage(totalPages[pdfIndex] - i - 1);
+    }
+
+    // save the PDF files
+    const pdfBytes = await fromPdfDoc.save();
+    const blob = new Blob([new Uint8Array(pdfBytes)]);
+    const URL = await blobToURL(blob);
+
+    const pdfBytes2 = await toPdfDoc.save();
+    const blob2 = new Blob([new Uint8Array(pdfBytes2)]);
+    const URL2 = await blobToURL(blob2);
+
+    let newTotalPages = totalPages
+    newTotalPages[pdfIndex] = totalPages[pdfIndex] - pagesToMove.length
+
+    let newNumberOfThumbnails = numberOfThumbnails
+    newNumberOfThumbnails[pdfIndex] = numberOfThumbnails[pdfIndex].slice(0, pageIndex);
+
+    let newPdfs = pdfs
+    newPdfs[pdfIndex] = URL
+
+    // if source document is empty, remove it
+    if (fromPdfDoc.getPages().length === 1) {
+      pdfFileNames.splice(pdfIndex, 1);
+      newTotalPages.splice(pdfIndex, 1);
+      newNumberOfThumbnails.splice(pdfIndex, 1);
+      newPdfs.splice(pdfIndex, 1);
+    }
+
+    // add a new document right below the current document
+    pdfFileNames.splice(pdfIndex + 1, 0, 'Nieuw document')
+    newTotalPages.splice(pdfIndex + 1, 0, pagesToMove.length);
+    newNumberOfThumbnails.splice(pdfIndex + 1, 0, new Array(pagesToMove.length).fill(1));
+    newPdfs.splice(pdfIndex + 1, 0, URL2);
+
+    setTotalPages(newTotalPages);
+    setNumberOfThumbnails(newNumberOfThumbnails);
+    setPdfs(newPdfs)
+    setCurrent({ pdfIndex: pdfIndex + 1, pageIndex: 0 });
+    setIsLoading(false);
+  }
+
   const [numberOfThumbnails, setNumberOfThumbnails]: any = useState([]);
 
   const renderActionButtons = (pdfIndex, pageIndex) => {
@@ -272,28 +339,68 @@ const Home: NextPage = () => {
     const eventListener = event => {
       switch (event.key) {
         case 'ArrowLeft':
-          setCurrent({ ...current, pageIndex: current.pageIndex - 1 });
+          if (current?.pageIndex > 0) setCurrent(oldValue => ({
+            pdfIndex: oldValue?.pdfIndex,
+            pageIndex: oldValue?.pageIndex - 1,
+          }));
+          else if (current?.pdfIndex > 0) setCurrent(oldValue => ({
+            pdfIndex: oldValue?.pdfIndex - 1,
+            pageIndex: totalPages[oldValue?.pdfIndex - 1] - 1,
+          }));
           break;
         case 'ArrowRight':
-          setCurrent(oldValue => ({ pdfIndex: oldValue?.pdfIndex, pageIndex: current.pageIndex + 1 }));
+          if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) {
+            setCurrent(oldValue => ({
+              pdfIndex: oldValue?.pdfIndex,
+              pageIndex: oldValue?.pageIndex + 1,
+            }));
+          }
+          else if (current?.pdfIndex < pdfs?.length - 1) {
+            setCurrent(oldValue => ({
+              pdfIndex: oldValue?.pdfIndex + 1,
+              pageIndex: 0,
+            }));
+          }
           break;
         case 'ArrowUp':
-          if (current.pdfIndex > 0) setCurrent({ ...current, pdfIndex: current.pdfIndex - 1 });
+          if (current?.pageIndex > 3) setCurrent(oldValue => ({
+            pdfIndex: oldValue?.pdfIndex,
+            pageIndex: oldValue?.pageIndex - 4,
+          }));
+          else if (current?.pdfIndex > 0) setCurrent(oldValue => ({
+            pdfIndex: oldValue?.pdfIndex - 1,
+            pageIndex: totalPages[oldValue?.pdfIndex - 1] - 1,
+          }));
           break;
         case 'ArrowDown':
-          if (current.pdfIndex < pdfs.length - 1) setCurrent({ ...current, pdfIndex: current.pdfIndex + 1 });
+          if (current?.pageIndex < totalPages[current?.pdfIndex] - 4) setCurrent(oldValue => ({
+            pdfIndex: oldValue?.pdfIndex,
+            pageIndex: oldValue?.pageIndex + 4,
+          }));
+          else if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) setCurrent(oldValue => ({
+            pdfIndex: oldValue?.pdfIndex,
+            pageIndex: totalPages[oldValue?.pdfIndex] - 1,
+          }));
+          else if (current?.pdfIndex < pdfs?.length - 1) setCurrent(oldValue => ({
+            pdfIndex: oldValue?.pdfIndex + 1,
+            pageIndex: 0,
+          }));
+          break;
+        case ' ':
+          event.preventDefault();
+          handleSplitDocument(current);
           break;
         case 'Delete':
           handleDeletePage(current);
           break;
         case 'Backspace':
-          handleDeletePage(current);
+          handleDeleteDocument(current?.pdfIndex);
           break;
         case 'r':
           handleRotatePage(current);
           break;
         case 'R':
-          handleRotatePage(current);
+          handleRotateDocument(current?.pdfIndex);
           break;
         default:
           break;
@@ -301,7 +408,9 @@ const Home: NextPage = () => {
     }
 
     window.addEventListener('keydown', eventListener);
-  }, []);
+
+    return () => window.removeEventListener('keydown', eventListener);
+  }, [current?.pdfIndex, current?.pageIndex, totalPages]);
 
   return (
     <>
@@ -590,7 +699,7 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
       ref={ref}
       className={
         `relative group flex items-center justify-center rounded-md overflow-hidden
-        ${(pageIndex === current.pageIndex && pdfIndex === current.pdfIndex)
+        ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
           ? "border-4 border-amber-300"
           : ""}
         opacity-${isDragging ? '40' : '100'}`
@@ -722,16 +831,13 @@ function PlaceholderThumbnail({ pdfIndex, pageIndex, isDragging, isLoading, tota
         ${isOver ? '!w-[100px]' : ''}
         after:content-[''] after:absolute after:w-[40px] after:h-full after:z-10 after:bg-red-3000000 after:translate-x-[40px]
         ${isOver ? margin : null}
+        ${isDragging ? 'pointer-events-auto' : 'pointer-events-none'}
       `}
     />
   </>
 }
 
-/*
-${isDragging ? 'bg-lime-300 w-[2px]' : 'w-10'}
-        ${isOver ? '!w-[75px]' : ''}
-        ${isDragging ? margin : 'm-0'}
-        */
+
 
 
 
