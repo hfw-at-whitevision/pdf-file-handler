@@ -335,7 +335,7 @@ const Home: NextPage = () => {
       if (newThumbnailId) {
         newThumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 500);
+    }, 700);
   }
 
   const [numberOfThumbnails, setNumberOfThumbnails]: any = useState([]);
@@ -357,57 +357,59 @@ const Home: NextPage = () => {
     </>
   }
 
+  const returnCurrentAndScroll = (newPdfIndex, newPageIndex) => {
+    const newThumbnailId = document.getElementById(`thumbnail-${newPdfIndex}-${newPageIndex}`);
+    if (newThumbnailId) newThumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    return ({ pdfIndex: newPdfIndex, pageIndex: newPageIndex });
+  }
+
   // keypress listener
   useEffect(() => {
     const eventListener = event => {
       switch (event.key) {
         case 'ArrowLeft':
-          if (current?.pageIndex > 0) setCurrent(oldValue => ({
-            pdfIndex: oldValue?.pdfIndex,
-            pageIndex: oldValue?.pageIndex - 1,
-          }));
-          else if (current?.pdfIndex > 0) setCurrent(oldValue => ({
-            pdfIndex: oldValue?.pdfIndex - 1,
-            pageIndex: totalPages[oldValue?.pdfIndex - 1] - 1,
-          }));
+          if (current?.pageIndex > 0) setCurrent(oldValue => returnCurrentAndScroll(oldValue?.pdfIndex, oldValue?.pageIndex - 1));
+          else if (current?.pdfIndex > 0) setCurrent(oldValue => returnCurrentAndScroll(oldValue?.pdfIndex - 1, totalPages[oldValue?.pdfIndex - 1] - 1));
           break;
         case 'ArrowRight':
           if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) {
-            setCurrent(oldValue => ({
-              pdfIndex: oldValue?.pdfIndex,
-              pageIndex: oldValue?.pageIndex + 1,
-            }));
+            setCurrent(oldValue => returnCurrentAndScroll(oldValue?.pdfIndex, oldValue?.pageIndex + 1));
           }
           else if (current?.pdfIndex < pdfs?.length - 1) {
-            setCurrent(oldValue => ({
-              pdfIndex: oldValue?.pdfIndex + 1,
-              pageIndex: 0,
-            }));
+            setCurrent(oldValue => returnCurrentAndScroll(oldValue?.pdfIndex + 1, 0));
           }
           break;
         case 'ArrowUp':
-          if (current?.pageIndex > 3) setCurrent(oldValue => ({
-            pdfIndex: oldValue?.pdfIndex,
-            pageIndex: oldValue?.pageIndex - 4,
-          }));
-          else if (current?.pdfIndex > 0) setCurrent(oldValue => ({
-            pdfIndex: oldValue?.pdfIndex - 1,
-            pageIndex: totalPages[oldValue?.pdfIndex - 1] - 1,
-          }));
+          event.preventDefault();
+          if (current?.pageIndex > 3) setCurrent(oldValue => {
+            const newPdfIndex = oldValue?.pdfIndex;
+            const newPageIndex = oldValue?.pageIndex - 4;
+            return returnCurrentAndScroll(newPdfIndex, newPageIndex);
+          });
+          else if (current?.pdfIndex > 0) setCurrent(oldValue => {
+            const newPdfIndex = oldValue?.pdfIndex - 1;
+            const newPageIndex = totalPages[oldValue?.pdfIndex - 1] - 1;
+            return returnCurrentAndScroll(newPdfIndex, newPageIndex);
+          });
           break;
         case 'ArrowDown':
-          if (current?.pageIndex < totalPages[current?.pdfIndex] - 4) setCurrent(oldValue => ({
-            pdfIndex: oldValue?.pdfIndex,
-            pageIndex: oldValue?.pageIndex + 4,
-          }));
-          else if (current?.pdfIndex < pdfs?.length - 1) setCurrent(oldValue => ({
-            pdfIndex: oldValue?.pdfIndex + 1,
-            pageIndex: 0,
-          }));
-          else if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) setCurrent(oldValue => ({
-            pdfIndex: oldValue?.pdfIndex,
-            pageIndex: totalPages[oldValue?.pdfIndex] - 1,
-          }));
+          event.preventDefault();
+          if (current?.pageIndex < totalPages[current?.pdfIndex] - 4) setCurrent(oldValue => {
+            const newPdfIndex = oldValue?.pdfIndex;
+            const newPageIndex = oldValue?.pageIndex + 4;
+            return returnCurrentAndScroll(newPdfIndex, newPageIndex);
+          });
+          else if (current?.pdfIndex < pdfs?.length - 1) setCurrent(oldValue => {
+            const newPdfIndex = oldValue?.pdfIndex + 1;
+            const newPageIndex = 0;
+            return returnCurrentAndScroll(newPdfIndex, newPageIndex);
+          });
+          else if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) setCurrent(oldValue => {
+            const newPdfIndex = oldValue?.pdfIndex;
+            const newPageIndex = totalPages[oldValue?.pdfIndex] - 1;
+            return returnCurrentAndScroll(newPdfIndex, newPageIndex);
+          });
           break;
         case ' ':
           event.preventDefault();
