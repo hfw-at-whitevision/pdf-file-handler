@@ -7,7 +7,6 @@ import Drop from "@/components/Drop";
 import { Document, Page, pdfjs } from "react-pdf";
 import { PDFDocument, degrees } from "pdf-lib";
 import { blobToURL } from "@/utils/Utils";
-import PagingControl from "@/components/PagingControl";
 import { BigButton } from "@/components/BigButton";
 import ButtonXl from "@/components/ButtonXl";
 import { BsTrash, BsPlus, BsCheck2Circle } from "react-icons/bs";
@@ -21,7 +20,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
 const Home: NextPage = () => {
   const [pdfFileNames, setPdfFileNames] = useState([]);
-  const [originalPdf, setOriginalPdf] = useState(null);
   const [pdfs, setPdfs]: [Array<string>, any] = useState();
   const [current, setCurrent] = useState({ pdfIndex: 0, pageIndex: 0 });
   const [totalPages, setTotalPages] = useState([]);
@@ -38,15 +36,15 @@ const Home: NextPage = () => {
     setCurrent({ pdfIndex: 0, pageIndex: 0 });
     setNumberOfThumbnails([]);
 
-    set('numberOfThumbnails', numberOfThumbnails);
-    set('totalPages', totalPages);
-    set('pdfFileNames', pdfFileNames);
-    set('pdfs', pdfs);
+    await set('numberOfThumbnails', numberOfThumbnails);
+    await set('totalPages', totalPages);
+    await set('pdfFileNames', pdfFileNames);
+    await set('pdfs', pdfs);
 
     setStateChanged(oldValue => oldValue + 1);
   };
 
-  const handleDeleteDocument = async (inputPdfIndex: number) => {
+  const handleDeleteDocument = (inputPdfIndex: number) => {
     setIsLoading(true);
     setIsDeleting(true);
 
@@ -70,7 +68,7 @@ const Home: NextPage = () => {
 
     // if we are deleting the last page in PDF = delete the PDF
     if (totalPages[pdfIndex] === 1) {
-      await handleDeleteDocument(pdfIndex);
+      handleDeleteDocument(pdfIndex);
       return;
     }
 
@@ -86,7 +84,6 @@ const Home: NextPage = () => {
       newPdfs[pdfIndex] = URL
       return newPdfs
     });
-
     setTotalPages(oldTotalPages => {
       let newTotalPages = oldTotalPages
       newTotalPages[pdfIndex] = oldTotalPages[pdfIndex] - 1
@@ -98,7 +95,9 @@ const Home: NextPage = () => {
     });
     setCurrent({
       pdfIndex,
-      pageIndex: pageIndex === totalPages[pdfIndex] ? pageIndex - 1 : pageIndex
+      pageIndex: (pageIndex === totalPages[pdfIndex] - 1)
+        ? pageIndex - 1
+        : pageIndex
     });
 
     setIsDeleting(false);
@@ -193,7 +192,6 @@ const Home: NextPage = () => {
 
       setIsLoading(false);
       setStateChanged(oldValue => oldValue + 1);
-      return;
     }
 
     // if moving down, we need to account for the fact that the page will be removed from the original PDF
@@ -366,13 +364,13 @@ const Home: NextPage = () => {
     return <>
       <BigButton
         title={<><GrRotateRight /></>}
-        onClick={() => handleRotatePage({ pdfIndex, pageIndex })}
+        onClick={async () => handleRotatePage({ pdfIndex, pageIndex })}
         disabled={isRotating}
         transparent={false}
       />
       <BigButton
         title={<><BsTrash /></>}
-        onClick={() => handleDeletePage({ pdfIndex, pageIndex })}
+        onClick={async () => handleDeletePage({ pdfIndex, pageIndex })}
         disabled={isRotating}
         transparent={false}
       />
@@ -387,7 +385,7 @@ const Home: NextPage = () => {
 
   // keypress listener
   useEffect(() => {
-    const eventListener = event => {
+    const eventListener = async (event) => {
       switch (event.key) {
         case 'ArrowLeft':
           if (current?.pageIndex > 0) setCurrent(oldValue => returnCurrentAndScroll(oldValue?.pdfIndex, oldValue?.pageIndex - 1));
@@ -434,19 +432,19 @@ const Home: NextPage = () => {
           break;
         case ' ':
           event.preventDefault();
-          handleSplitDocument(current);
+          await handleSplitDocument(current);
           break;
         case 'Delete':
-          handleDeletePage(current);
+          await handleDeletePage(current);
           break;
         case 'Backspace':
-          handleDeleteDocument(current?.pdfIndex);
+          await handleDeleteDocument(current?.pdfIndex);
           break;
         case 'r':
-          handleRotatePage(current);
+          await handleRotatePage(current);
           break;
         case 'R':
-          handleRotateDocument(current?.pdfIndex);
+          await handleRotateDocument(current?.pdfIndex);
           break;
         default:
           break;
@@ -460,18 +458,19 @@ const Home: NextPage = () => {
 
   // state save
   const [stateChanged, setStateChanged] = useState(0);
+  const saveState = async () => {
+    await set('numberOfThumbnails', numberOfThumbnails);
+    await set('totalPages', totalPages);
+    await set('pdfFileNames', pdfFileNames);
+    await set('pdfs', pdfs);
+    console.log(`PDF's saved.`)
+  }
   useEffect(() => {
     if (!pdfs?.length) return;
-
-    set('numberOfThumbnails', numberOfThumbnails);
-    set('totalPages', totalPages);
-    set('pdfFileNames', pdfFileNames);
-    set('pdfs', pdfs);
-
-    console.log(`PDF's saved.`)
+    saveState();
   }, [stateChanged]);
-  // fetch
-  useEffect(() => {
+  // state fetch
+  const fetchState = async () => {
     get('pdfs').then((pdfs) => {
       if (!pdfs) return;
       get('pdfFileNames').then((pdfFileNames) => {
@@ -486,7 +485,9 @@ const Home: NextPage = () => {
         });
       });
     });
-    return;
+  }
+  useEffect(() => {
+    fetchState();
   }, []);
 
   const pdfsSize = pdfs?.length
@@ -564,7 +565,7 @@ const Home: NextPage = () => {
                       title={"Reset"}
                       icon={<RxReset />}
                       description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                      onClick={() => handleReset()}
+                      onClick={async () => await handleReset()}
                     />
                   </>
                   : null}
@@ -601,12 +602,12 @@ const Home: NextPage = () => {
                         />
                         <BigButton
                           title={<><GrRotateRight /></>}
-                          onClick={() => handleRotateDocument(pdfIndex)}
+                          onClick={async () => await handleRotateDocument(pdfIndex)}
                           disabled={isRotating}
                         />
                         <BigButton
                           title={<><BsTrash /></>}
-                          onClick={() => handleDeleteDocument(pdfIndex)}
+                          onClick={async () => await handleDeleteDocument(pdfIndex)}
                           disabled={isRotating}
                         />
                       </nav>
@@ -783,7 +784,7 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
           : "before:z-[-1]"}
         opacity-${isDragging ? '10' : '100'}`
       }
-      {...onClick && { onClick: onClick }}
+      {...onClick && { onClick }}
     >
       <Page
         scale={1}
@@ -794,7 +795,6 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
         }
         pageIndex={pageIndex}
         width={150}
-        {...onClick && { onClick }}
       />
       <div className="absolute inset-0 z-10 flex justify-center items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
         <div className="grid grid-cols-2 gap-1">
