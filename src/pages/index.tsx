@@ -31,8 +31,7 @@ const Home: NextPage = () => {
   const [userIsDragging, setUserIsDragging] = useState(false);
   const documentRef = useRef(null);
 
-  const handleReset = async (e) => {
-    e.preventDefault();
+  const handleReset = async () => {
     setPdfs([]);
     setTotalPages([]);
     setPdfFileNames([]);
@@ -43,6 +42,8 @@ const Home: NextPage = () => {
     set('totalPages', totalPages);
     set('pdfFileNames', pdfFileNames);
     set('pdfs', pdfs);
+
+    setStateChanged(oldValue => oldValue + 1);
   };
 
   const handleDeleteDocument = async (inputPdfIndex: number) => {
@@ -499,9 +500,9 @@ const Home: NextPage = () => {
       </Head>
 
       <pre>
-        numberOfThumbnails: {JSON.stringify(numberOfThumbnails)}
-        <br />
         pdfs.length: {JSON.stringify(pdfs?.length)}
+        <br />
+        numberOfThumbnails: {JSON.stringify(numberOfThumbnails.map(pdf => pdf?.length))}
         <br />
         totalPages: {JSON.stringify(totalPages)}
         <br />
@@ -563,7 +564,7 @@ const Home: NextPage = () => {
                       title={"Reset"}
                       icon={<RxReset />}
                       description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                      onClick={handleReset}
+                      onClick={() => handleReset()}
                     />
                   </>
                   : null}
