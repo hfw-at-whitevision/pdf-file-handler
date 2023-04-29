@@ -39,26 +39,71 @@ const Home: NextPage = () => {
     setCurrent({ pdfIndex: 0, pageIndex: 0 });
     setNumberOfThumbnails([]);
 
-    localStorage.removeItem('pdfFileNames');
-    localStorage.removeItem('pdfs');
-    localStorage.removeItem('totalPages');
-    localStorage.removeItem('numberOfThumbnails');
-    localStorage.removeItem('current');
+    set('numberOfThumbnails', numberOfThumbnails);
+    set('totalPages', totalPages);
+    set('pdfFileNames', pdfFileNames);
+    set('pdfs', pdfs);
   };
 
   const handleDeleteDocument = async (inputPdfIndex: number) => {
     setIsLoading(true);
     setIsDeleting(true);
 
-    setPdfs(oldPdfs => oldPdfs.filter((pdf, index) => index !== inputPdfIndex));
-    setTotalPages(oldTotalPages => oldTotalPages.filter((totalPage, index) => index !== inputPdfIndex));
-    setPdfFileNames(oldPdfFileNames => oldPdfFileNames.filter((pdfFileName, index) => index !== inputPdfIndex));
+    if (current.pdfIndex === inputPdfIndex && current.pdfIndex === pdfs.length - 1 && current.pdfIndex > 0) {
+      setCurrent({ pdfIndex: current.pdfIndex - 1, pageIndex: 0 });
+    }
+
+    setPdfs(oldPdfs => oldPdfs.filter((_, index) => index !== inputPdfIndex));
+    setTotalPages(oldTotalPages => oldTotalPages.filter((_, index) => index !== inputPdfIndex));
+    setPdfFileNames(oldPdfFileNames => oldPdfFileNames.filter((_, index) => index !== inputPdfIndex));
     setNumberOfThumbnails(oldNumberOfThumbnails => oldNumberOfThumbnails.filter((_, index) => index !== inputPdfIndex))
 
     setIsLoading(false);
     setIsDeleting(false);
     setStateChanged(oldValue => oldValue + 1);
   }
+
+  const handleDeletePage = async ({ pdfIndex, pageIndex }) => {
+    setIsLoading(true);
+    setIsDeleting(true);
+
+    // if we are deleting the last page in PDF = delete the PDF
+    if (totalPages[pdfIndex] === 1) {
+      await handleDeleteDocument(pdfIndex);
+      return;
+    }
+
+    const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
+      ignoreEncryption: true
+    });
+    pdfDoc.removePage(pageIndex);
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([new Uint8Array(pdfBytes)]);
+    const URL = await blobToURL(blob);
+    setPdfs(oldPdfs => {
+      let newPdfs = oldPdfs
+      newPdfs[pdfIndex] = URL
+      return newPdfs
+    });
+
+    setTotalPages(oldTotalPages => {
+      let newTotalPages = oldTotalPages
+      newTotalPages[pdfIndex] = oldTotalPages[pdfIndex] - 1
+      return newTotalPages
+    });
+    setNumberOfThumbnails(oldNumberOfThumbnails => {
+      oldNumberOfThumbnails[pdfIndex].pop();
+      return oldNumberOfThumbnails;
+    });
+    setCurrent({
+      pdfIndex,
+      pageIndex: pageIndex === totalPages[pdfIndex] ? pageIndex - 1 : pageIndex
+    });
+
+    setIsDeleting(false);
+    setIsLoading(false);
+    setStateChanged(oldValue => oldValue + 1);
+  };
 
   const handleRotateDocument = async (inputPdfIndex: number) => {
     setIsLoading(true);
@@ -113,52 +158,6 @@ const Home: NextPage = () => {
     });
     setIsRotating(false);
     setCurrent({ pdfIndex, pageIndex });
-    setIsLoading(false);
-    setStateChanged(oldValue => oldValue + 1);
-  };
-
-  const handleDeletePage = async (props) => {
-    setIsLoading(true);
-    const { pdfIndex, pageIndex } = props;
-    setIsDeleting(true);
-
-    // if we are deleting the last page in PDF = delete the PDF
-    if (totalPages[pdfIndex] === 1) {
-      setPdfs(oldPdfs => oldPdfs.filter((pdf, index) => index !== pdfIndex));
-      setTotalPages(oldTotalPages => oldTotalPages.filter((totalPage, index) => index !== pdfIndex));
-      setPdfFileNames(oldPdfFileNames => oldPdfFileNames.filter((pdfFileName, index) => index !== pdfIndex));
-      setNumberOfThumbnails(oldValues => oldValues.filter((value, index) => index !== pdfIndex));
-    }
-    else {
-      const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
-        ignoreEncryption: true
-      });
-      pdfDoc.removePage(pageIndex);
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([new Uint8Array(pdfBytes)]);
-      const URL = await blobToURL(blob);
-      setPdfs(oldPdfs => {
-        let newPdfs = oldPdfs
-        newPdfs[pdfIndex] = URL
-        return newPdfs
-      });
-
-      setTotalPages(oldTotalPages => {
-        let newTotalPages = oldTotalPages
-        newTotalPages[pdfIndex] = oldTotalPages[pdfIndex] - 1
-        return newTotalPages
-      });
-      setNumberOfThumbnails(oldNumberOfThumbnails => {
-        oldNumberOfThumbnails[pdfIndex].pop();
-        return oldNumberOfThumbnails;
-      });
-      setCurrent({
-        pdfIndex,
-        pageIndex: pageIndex === totalPages[pdfIndex] ? pageIndex - 1 : pageIndex
-      });
-    }
-
-    setIsDeleting(false);
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
   };
@@ -322,19 +321,40 @@ const Home: NextPage = () => {
     setCurrent({ pdfIndex: pdfIndex + 1, pageIndex: 0 });
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
-
-    setTimeout(() => {
-      const newThumbnailId = document.getElementById(`thumbnail-${pdfIndex + 1}-${0}`);
-      if (newThumbnailId) {
-        newThumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 700);
   }
+
+  // scroll thumbnail into view
+  useEffect(() => {
+    if (!pdfs?.length) return;
+
+    let timer = null;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      const thumbnailId = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
+      if (thumbnailId) thumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [current]);
+
 
   const handleSaveDocument = async (pdfIndex) => {
     setIsLoading(true);
     const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true });
     const base64 = await pdfDoc.saveAsBase64({ dataUri: true });
+
+    // save as PDF
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([new Uint8Array(pdfBytes)]);
+    const URL = await blobToURL(blob);
+    const name = pdfFileNames[pdfIndex];
+    var link: any = document.createElement("a");
+    link.download = name;
+    link.href = URL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     setIsLoading(false);
     return base64
   }
@@ -359,9 +379,8 @@ const Home: NextPage = () => {
   }
 
   const returnCurrentAndScroll = (newPdfIndex, newPageIndex) => {
-    const newThumbnailId = document.getElementById(`thumbnail-${newPdfIndex}-${newPageIndex}`);
-    if (newThumbnailId) newThumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
+    //const newThumbnailId = document.getElementById(`thumbnail-${newPdfIndex}-${newPageIndex}`);
+    //if (newThumbnailId) newThumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return ({ pdfIndex: newPdfIndex, pageIndex: newPageIndex });
   }
 
@@ -604,9 +623,9 @@ const Home: NextPage = () => {
                         {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) => <>
                           <div className="flex flex-row">
                             {
-                              pageIndex === 0 &&
-                              /* first placeholder thumbnail */
-                              <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={0} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
+                              /* first placeholder thumbnail in row */
+                              pageIndex % 4 === 0 &&
+                              <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={pageIndex - 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
                             }
                             <Thumbnail
                               key={`thumbnail-${pdfIndex}-${pageIndex}`}
@@ -643,7 +662,7 @@ const Home: NextPage = () => {
           </DndProvider>
 
           {/* PDF preview */}
-          {(pdfs?.length)
+          {(pdfs?.length && current?.pdfIndex !== undefined && current?.pageIndex !== undefined && pdfs[current?.pdfIndex])
             && <div>
               <Document
                 file={pdfs[current?.pdfIndex]}
@@ -761,7 +780,7 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
         ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
           ? "border-4 border-amber-300 before:z-10"
           : "before:z-[-1]"}
-        opacity-${isDragging ? '40' : '100'}`
+        opacity-${isDragging ? '10' : '100'}`
       }
       {...onClick && { onClick: onClick }}
     >
@@ -866,7 +885,7 @@ const PlaceholderRow = ({ pdfIndex, isDragging, isLoading, totalPages }) => {
 
 function PlaceholderThumbnail({ pdfIndex, pageIndex, isDragging, isLoading, totalPages, margin }) {
   // hide placeholders if only 1 page in PDF
-  if (totalPages[pdfIndex] === 1) return null;
+  //if (totalPages[pdfIndex] === 1) return null;
 
   const [{ canDrop, isOver }, drop] = useDrop({
     accept: "pdfThumbnail",
@@ -884,11 +903,10 @@ function PlaceholderThumbnail({ pdfIndex, pageIndex, isDragging, isLoading, tota
     <div
       ref={drop}
       className={
-        `h-auto relative rounded-md bg-amber-300 group
-        w-[0]
-        before:content-[''] before:absolute before:w-[40px] before:h-full before:z-10 before:bg-red-30000000 before:translate-x-[-40px]
-        ${isOver ? '!w-[100px]' : ''}
-        after:content-[''] after:absolute after:w-[40px] after:h-full after:z-10 after:bg-red-3000000 after:translate-x-[40px]
+        `h-auto relative rounded-lg bg-gradient-to-b from-lime-50/0 via-lime-200 to lime-50/0 group
+        before:content-[''] before:absolute before:w-[60px] before:h-full before:z-20 before:bg-blue-3000 before:translate-x-[-100%]
+        ${isOver ? 'w-[10px]' : 'w-[0]'}
+        after:content-[''] after:absolute after:left-[100%] after:w-[60px] after:h-full after:z-20 after:bg-red-3000 after:translate-x-[0]
         ${isOver ? margin : null}
         ${isDragging ? 'pointer-events-auto' : 'pointer-events-none'}
       `}
