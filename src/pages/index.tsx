@@ -76,9 +76,7 @@ const Home: NextPage = () => {
       ignoreEncryption: true
     });
     pdfDoc.removePage(pageIndex);
-    const pdfBytes = await pdfDoc.save();
-    const blob = new Blob([new Uint8Array(pdfBytes)]);
-    const URL = await blobToURL(blob);
+    const URL = await pdfDoc.saveAsBase64({ dataUri: true });
     setPdfs(oldPdfs => {
       let newPdfs = oldPdfs
       newPdfs[pdfIndex] = URL
@@ -120,9 +118,7 @@ const Home: NextPage = () => {
       page.setRotation(degrees(newDegrees));
     });
 
-    const pdfBytes = await pdfDoc.save();
-    const blob = new Blob([new Uint8Array(pdfBytes)]);
-    const URL = await blobToURL(blob);
+    const URL = await pdfDoc.saveAsBase64({ dataUri: true });
 
     setPdfs(oldPdfs => {
       let newPdfs = oldPdfs
@@ -147,9 +143,7 @@ const Home: NextPage = () => {
 
     if (currentPage) currentPage.setRotation(degrees(newDegrees));
 
-    const pdfBytes = await pdfDoc.save();
-    const blob = new Blob([new Uint8Array(pdfBytes)]);
-    const URL = await blobToURL(blob);
+    const URL = await pdfDoc.saveAsBase64({ dataUri: true });
 
     setPdfs(oldPdfs => {
       let newPdfs = oldPdfs
@@ -174,9 +168,7 @@ const Home: NextPage = () => {
       await pdfDoc.save();
       // if moving up, we need to account for the fact that the page will be removed from the original PDF
       pdfDoc.removePage(toPageIndex < fromPageIndex ? fromPageIndex + 1 : fromPageIndex);
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([new Uint8Array(pdfBytes)]);
-      const URL = await blobToURL(blob);
+      const URL = await pdfDoc.saveAsBase64({ dataUri: true });
       setPdfs(oldPdfs => {
         let newPdfs = oldPdfs
         newPdfs[fromPdfIndex] = URL
@@ -192,12 +184,14 @@ const Home: NextPage = () => {
 
       setIsLoading(false);
       setStateChanged(oldValue => oldValue + 1);
+
+      return;
     }
 
-    // if moving down, we need to account for the fact that the page will be removed from the original PDF
-    if (toPlaceholderRow && toPdfIndex > fromPdfIndex) toPdfIndex -= 1;
 
     console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
+    // if moving down, we need to account for the fact that the page will be removed from the original PDF
+    if (toPlaceholderRow && toPdfIndex > fromPdfIndex) toPdfIndex -= 1;
 
     const toPdfDoc = toPlaceholderRow
       ? await PDFDocument.create()
@@ -215,13 +209,9 @@ const Home: NextPage = () => {
     fromPdfDoc.removePage(fromPageIndex);
 
     // save the PDF files
-    const pdfBytes = await fromPdfDoc.save();
-    const blob = new Blob([new Uint8Array(pdfBytes)]);
-    const URL = await blobToURL(blob);
+    const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
 
-    const pdfBytes2 = await toPdfDoc.save();
-    const blob2 = new Blob([new Uint8Array(pdfBytes2)]);
-    const URL2 = await blobToURL(blob2);
+    const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
 
     let newTotalPages = totalPages
     newTotalPages[fromPdfIndex] = totalPages[fromPdfIndex] - 1
@@ -283,13 +273,9 @@ const Home: NextPage = () => {
     }
 
     // save the PDF files
-    const pdfBytes = await fromPdfDoc.save();
-    const blob = new Blob([new Uint8Array(pdfBytes)]);
-    const URL = await blobToURL(blob);
+    const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
 
-    const pdfBytes2 = await toPdfDoc.save();
-    const blob2 = new Blob([new Uint8Array(pdfBytes2)]);
-    const URL2 = await blobToURL(blob2);
+    const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
 
     let newTotalPages = totalPages
     newTotalPages[pdfIndex] = totalPages[pdfIndex] - pagesToMove.length
@@ -343,9 +329,7 @@ const Home: NextPage = () => {
     const base64 = await pdfDoc.saveAsBase64({ dataUri: true });
 
     // save as PDF
-    const pdfBytes = await pdfDoc.save();
-    const blob = new Blob([new Uint8Array(pdfBytes)]);
-    const URL = await blobToURL(blob);
+    const URL = await pdfDoc.saveAsBase64({ dataUri: true });
     const name = pdfFileNames[pdfIndex];
     var link: any = document.createElement("a");
     link.download = name;
@@ -535,8 +519,32 @@ const Home: NextPage = () => {
                 <Drop
                   onLoaded={async (files: any) => {
                     setIsLoading(true)
+
                     for (let i = 0; i < files.length; i++) {
-                      const newPdf = await blobToURL(files[i]);
+                      // skip the file if its not an image or pdf
+                      if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
+                        alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
+                        continue;
+                      }
+
+                      // if its an image, convert it to pdf
+                      let newPdf: any = await blobToURL(files[i]);
+                      if (files[i]['type'] === 'image/jpeg' || files[i]['type'] === 'image/png') {
+                        const pdfDoc = await PDFDocument.create()
+                        const image = (files[i]['type'] === 'image/jpeg')
+                          ? await pdfDoc.embedJpg(newPdf)
+                          : await pdfDoc.embedPng(newPdf)
+                        const page = pdfDoc.addPage([image.width, image.height])
+                        const dims = image.scale(1)
+                        page.drawImage(image, {
+                          x: page.getWidth() / 2 - dims.width / 2,
+                          y: page.getHeight() / 2 - dims.height / 2,
+                          width: dims.width,
+                          height: dims.height,
+                        });
+                        newPdf = await pdfDoc.saveAsBase64({ dataUri: true })
+                      }
+
                       setPdfs((oldPdfs) => {
                         const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
                         return result;
@@ -551,9 +559,9 @@ const Home: NextPage = () => {
                       for (let x = 0; x < pages; x++) {
                         pagesOfUploadedPdf.push(x)
                       }
-
                       setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
                     }
+
                     setStateChanged(oldValue => oldValue + 1)
                     setIsLoading(false)
                   }}
