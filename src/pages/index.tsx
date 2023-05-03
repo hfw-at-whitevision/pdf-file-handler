@@ -19,9 +19,8 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
 const Home: NextPage = () => {
-  const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImhvZmVuZyIsImVtYWlsIjoiaG8tZmVuZy53b25nQHdoaXRldmlzaW9uLm5sIiwidXNlciI6IntcIlRlbmFudElkXCI6XCI5OTk5M1wiLFwiVGVuYW50TmFtZVwiOlwiV2hpdGVWaXNpb24gQi5WLiAtIFRlc3RvbWdldmluZ1wiLFwiVXNlcklkXCI6XCJob2ZlbmdcIixcIlVzZXJmdWxsbmFtZVwiOlwiSG8tRmVuZyBXb25nXCIsXCJFbWFpbFwiOlwiaG8tZmVuZy53b25nQHdoaXRldmlzaW9uLm5sXCIsXCJVc2VyR3JvdXBzXCI6W1wiX2dyb2VwX2JvZWtjb250clwiLFwiX2dyb2VwX2Jvbm5lblwiLFwiX2dyb2VwX2NvZGVyZW5cIixcIl9ncm9lcF9tYXRjaGVuXCIsXCJfZ3JvZXBfbmlldGFra29vcmRcIixcIl9ncm9lcF9vcmRlcmJldmVzdGlnaW5nZW5cIixcIl9ncm9lcF9yZWRlbmNvZGVcIixcIl9ncm9lcF9yZWdpc3RyZXJlblwiLFwiX2dyb2VwX3NlcnZpY2VtZWxkaW5nZW5cIixcIl9ncm9lcF91aXR2YWxcIixcIl9sZWRlbl9hZHZpZXNcIixcIl9sZWRlbl9nb2Vka2V1cmRlcnNcIixcImdycC13ZWJ1c2Vyc1wiXSxcIkdyb3VwRmV0Y2hNYW51YWxcIjp0cnVlLFwiQWxsb3dEZWxldGVcIjp0cnVlLFwiQWxsb3dSZXBvcnRzXCI6dHJ1ZSxcIkFsbG93U3VwZXJ2aXNvclwiOnRydWUsXCJBbGxvd0xpbmtEb2N1bWVudHNcIjp0cnVlLFwiQWxsb3dTZXRSZXBsYWNlbWVudFwiOnRydWUsXCJMYW5ndWFnZVwiOlwiTkxcIixcIkZpbHRlclJlcG9ydHNcIjpcIlwiLFwiRmlsdGVyU3VwZXJ2aXNvclwiOlwiXCIsXCJGaWx0ZXJDb3B5Q29kaW5nXCI6XCJcIixcIlN0YW5kYWFyZExvY2F0aWVcIjpcIlwiLFwiVXNlclR5cGVcIjoyLFwiUmVwbGFjZW1lbnRGb3JcIjpbXSxcIlVzZXJGaXJzdE5hbWVcIjpcIkhvLUZlbmdcIixcIkFsbG93VHJhaW5pbmdcIjp0cnVlLFwiQWxsb3dGaWxlaGFuZGxlclwiOnRydWUsXCJFcnBcIjpcIkFGQVMgUHJvZml0XCIsXCJBbGxvd0FwcHJvdmVWaWFMaXN0XCI6dHJ1ZSxcIkFsbG93U2VuZE1haWxcIjp0cnVlfSIsImVucmljaHVybCI6Imh0dHBzOi8vOTk5OTMud29ya2Zsb3dpbmRlY2xvdWQubmwvYXBpLyIsImNsaWVudHZlcnNpb24iOiIiLCJ1c2VybGFuZ3VhZ2UiOiJOTCIsIm5iZiI6MTY4MzEwOTY0MCwiZXhwIjoxNjgzMTEwODQwLCJpYXQiOjE2ODMxMDk2NDB9.e4fwgmmDid9lFh0bKeOKIU8TA-2nAdO2TLNHIICdo-A'
   const [pdfFileNames, setPdfFileNames] = useState([]);
-  const [pdfs, setPdfs]: [Array<string>, any] = useState();
+  const [pdfs, setPdfs]: [Array<string>, any] = useState(null);
   const [current, setCurrent] = useState({ pdfIndex: 0, pageIndex: 0 });
   const [totalPages, setTotalPages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,6 +56,13 @@ const Home: NextPage = () => {
     setTotalPages(oldTotalPages => oldTotalPages.filter((_, index) => index !== inputPdfIndex));
     setPdfFileNames(oldPdfFileNames => oldPdfFileNames.filter((_, index) => index !== inputPdfIndex));
     setNumberOfThumbnails(oldNumberOfThumbnails => oldNumberOfThumbnails.filter((_, index) => index !== inputPdfIndex))
+
+    setCurrent({
+      pdfIndex: (inputPdfIndex === pdfs.length - 1 && inputPdfIndex > 0)
+        ? inputPdfIndex - 1
+        : inputPdfIndex,
+      pageIndex: 0
+    })
 
     setIsLoading(false);
     setIsDeleting(false);
@@ -345,7 +351,6 @@ const Home: NextPage = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token
       },
       body: JSON.stringify({
         administrationCode: "1",
@@ -470,7 +475,7 @@ const Home: NextPage = () => {
     console.log(`PDF's saved.`)
   }
   useEffect(() => {
-    if (!pdfs?.length) return;
+    if (!pdfs) return;
     saveState();
   }, [stateChanged]);
   // state fetch
@@ -507,6 +512,8 @@ const Home: NextPage = () => {
       <Loading inset={true} loading={isLoading} />
 
       <pre>
+        build: 0.1.0
+        <br />
         pdfs.length: {JSON.stringify(pdfs?.length)}
         <br />
         numberOfThumbnails: {JSON.stringify(numberOfThumbnails.map(pdf => pdf?.length))}
@@ -543,43 +550,64 @@ const Home: NextPage = () => {
                     setIsLoading(true)
 
                     for (let i = 0; i < files.length; i++) {
+                      const fileSize = files[i]['size'] / 1024 / 1024;
+                      if (fileSize > 25) {
+                        alert('Het bestand is groter dan 25MB. Gelieve het bestand te verkleinen.')
+                        continue;
+                      }
+
                       // MSG / EML files: send to Serge API
                       if (
                         files[i]['type'] === 'application/vnd.ms-outlook'
                         || files[i]['type'] === 'message/rfc822'
                         || files[i]['type'] === 'image/tiff'
                       ) {
-                        alert('stuur naar serge')
+                        console.log(`MSG / EML file detected. Sending to Serge API.`)
                         let file = await files[i].arrayBuffer();
-                        const base64Msg = Buffer.from(file).toString('base64');
-                        const base64Msg2 = await blobToURL(files[i]);
-
-                        console.log(base64Msg2)
+                        let base64Msg = Buffer.from(file).toString('base64');
+                        //let base64Msg2 = await blobToURL(files[i]);
+                        const convertedBase64Msg = base64Msg.replace(`data:application/octet-stream;base64,`, '')
 
                         const res = await fetch('https://devweb.docbaseweb.nl/api/files/converttopdf', {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': token
                           },
                           body: JSON.stringify({
-                            msgFileBase64: base64Msg,
-                            filename: files[i]['name']
+                            msgFileBase64: convertedBase64Msg,
+                            fileName: files[i]['name']
                           })
-                        });
+                        })
+                          .then(res => res.json())
+                          .catch(err => console.log(err));
 
-                        console.log(JSON.stringify(res))
+                        const returnedPdfs = res?.pdfFiles
+
+                        console.log(returnedPdfs)
+
+                        for (let i = 0; i < returnedPdfs?.length; i++) {
+                          const newPdf = 'data:application/pdf;base64,' + returnedPdfs[i].pdfFileBase64;
+                          const filename = returnedPdfs[i].fileName;
+                          setPdfs((oldPdfs) => {
+                            const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+                            return result;
+                          });
+                          const newPdfDoc = await PDFDocument.load(newPdf)
+                          const pages = newPdfDoc.getPages().length
+                          setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
+                          setPdfFileNames(oldFileNames => [...oldFileNames, filename]);
+                          console.log('Updating numberOfThumbnails')
+
+                          let pagesOfUploadedPdf = []
+                          for (let x = 0; x < pages; x++) {
+                            pagesOfUploadedPdf.push(x)
+                          }
+                          setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
+                        }
+
+                        continue;
                       }
 
-                      console.log(files[i]['type'] + ' ' + files[i]['name']);
-                      // convert TIFF files to png
-                      /*                      if (files[i]['type'] === 'image/tiff') {
-                                              const tiff = await files[i].arrayBuffer();
-                                              const base64Tiff = Buffer.from(tiff).toString('base64');
-                      
-                                              console.log(base64Tiff);
-                                          }
-                      */
                       // skip the file if its not an image or pdf
                       if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
                         alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
@@ -857,14 +885,14 @@ const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handl
         scale={1}
         loading={<Loading />}
         className={
-          `w-[150px] max-h-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
-            pdf-${pdfIndex}-${pageIndex}`
+          `w-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
+            pdf-${pdfIndex}-${pageIndex} object-contain`
         }
         pageIndex={pageIndex}
         width={150}
       />
-      <div className="absolute inset-0 z-10 flex justify-center items-center gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
-        <div className="grid grid-cols-2 gap-1">
+      <div className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
+        <div className="grid grid-cols-2 gap-1 pb-4">
           {actionButtons}
         </div>
       </div>
