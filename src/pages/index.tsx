@@ -19,6 +19,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
 const Home: NextPage = () => {
+  const token = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImhvZmVuZyIsImVtYWlsIjoiaG8tZmVuZy53b25nQHdoaXRldmlzaW9uLm5sIiwidXNlciI6IntcIlRlbmFudElkXCI6XCI5OTk5M1wiLFwiVGVuYW50TmFtZVwiOlwiV2hpdGVWaXNpb24gQi5WLiAtIFRlc3RvbWdldmluZ1wiLFwiVXNlcklkXCI6XCJob2ZlbmdcIixcIlVzZXJmdWxsbmFtZVwiOlwiSG8tRmVuZyBXb25nXCIsXCJFbWFpbFwiOlwiaG8tZmVuZy53b25nQHdoaXRldmlzaW9uLm5sXCIsXCJVc2VyR3JvdXBzXCI6W1wiX2dyb2VwX2JvZWtjb250clwiLFwiX2dyb2VwX2Jvbm5lblwiLFwiX2dyb2VwX2NvZGVyZW5cIixcIl9ncm9lcF9tYXRjaGVuXCIsXCJfZ3JvZXBfbmlldGFra29vcmRcIixcIl9ncm9lcF9vcmRlcmJldmVzdGlnaW5nZW5cIixcIl9ncm9lcF9yZWRlbmNvZGVcIixcIl9ncm9lcF9yZWdpc3RyZXJlblwiLFwiX2dyb2VwX3NlcnZpY2VtZWxkaW5nZW5cIixcIl9ncm9lcF91aXR2YWxcIixcIl9sZWRlbl9hZHZpZXNcIixcIl9sZWRlbl9nb2Vka2V1cmRlcnNcIixcImdycC13ZWJ1c2Vyc1wiXSxcIkdyb3VwRmV0Y2hNYW51YWxcIjp0cnVlLFwiQWxsb3dEZWxldGVcIjp0cnVlLFwiQWxsb3dSZXBvcnRzXCI6dHJ1ZSxcIkFsbG93U3VwZXJ2aXNvclwiOnRydWUsXCJBbGxvd0xpbmtEb2N1bWVudHNcIjp0cnVlLFwiQWxsb3dTZXRSZXBsYWNlbWVudFwiOnRydWUsXCJMYW5ndWFnZVwiOlwiTkxcIixcIkZpbHRlclJlcG9ydHNcIjpcIlwiLFwiRmlsdGVyU3VwZXJ2aXNvclwiOlwiXCIsXCJGaWx0ZXJDb3B5Q29kaW5nXCI6XCJcIixcIlN0YW5kYWFyZExvY2F0aWVcIjpcIlwiLFwiVXNlclR5cGVcIjoyLFwiUmVwbGFjZW1lbnRGb3JcIjpbXSxcIlVzZXJGaXJzdE5hbWVcIjpcIkhvLUZlbmdcIixcIkFsbG93VHJhaW5pbmdcIjp0cnVlLFwiQWxsb3dGaWxlaGFuZGxlclwiOnRydWUsXCJFcnBcIjpcIkFGQVMgUHJvZml0XCIsXCJBbGxvd0FwcHJvdmVWaWFMaXN0XCI6dHJ1ZSxcIkFsbG93U2VuZE1haWxcIjp0cnVlfSIsImVucmljaHVybCI6Imh0dHBzOi8vOTk5OTMud29ya2Zsb3dpbmRlY2xvdWQubmwvYXBpLyIsImNsaWVudHZlcnNpb24iOiIiLCJ1c2VybGFuZ3VhZ2UiOiJOTCIsIm5iZiI6MTY4MzEwNzg5OCwiZXhwIjoxNjgzMTA5MDk4LCJpYXQiOjE2ODMxMDc4OTh9.Imi1X7TUhHakuOL2fBjvb8K8HeZwgfTnLgxZc39M6bQ'
   const [pdfFileNames, setPdfFileNames] = useState([]);
   const [pdfs, setPdfs]: [Array<string>, any] = useState();
   const [current, setCurrent] = useState({ pdfIndex: 0, pageIndex: 0 });
@@ -128,6 +129,7 @@ const Home: NextPage = () => {
     setIsRotating(false);
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
+    console.log('finished')
   }
 
   const handleRotatePage = async ({ pdfIndex, pageIndex }) => {
@@ -326,17 +328,35 @@ const Home: NextPage = () => {
   const handleSaveDocument = async (pdfIndex) => {
     setIsLoading(true);
     const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true });
-    const base64 = await pdfDoc.saveAsBase64({ dataUri: true });
+    const base64 = await pdfDoc.saveAsBase64({ dataUri: false });
 
     // save as PDF
-    const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-    const name = pdfFileNames[pdfIndex];
-    var link: any = document.createElement("a");
-    link.download = name;
-    link.href = URL;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    /*    const URL = await pdfDoc.saveAsBase64({ dataUri: true });
+        const name = pdfFileNames[pdfIndex];
+        var link: any = document.createElement("a");
+        link.download = name;
+        link.href = URL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    */
+
+    const res = await fetch("https://devweb.docbaseweb.nl/api/files/uploadtodocbase", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token
+      },
+      body: JSON.stringify({
+        administrationCode: "1",
+        pdfBase64: base64,
+        fileName: pdfFileNames[pdfIndex],
+        creationDate: new Date().toISOString(),
+        pageCount: totalPages[pdfIndex],
+      })
+    });
+
+    alert(JSON.stringify(res))
 
     setIsLoading(false);
     return base64
@@ -484,6 +504,8 @@ const Home: NextPage = () => {
         <title>PDF File Handler</title>
       </Head>
 
+      <Loading inset={true} loading={isLoading} />
+
       <pre>
         pdfs.length: {JSON.stringify(pdfs?.length)}
         <br />
@@ -521,6 +543,44 @@ const Home: NextPage = () => {
                     setIsLoading(true)
 
                     for (let i = 0; i < files.length; i++) {
+                      // MSG / EML files: send to Serge API
+                      if (
+                        files[i]['type'] === 'application/vnd.ms-outlook'
+                        || files[i]['type'] === 'message/rfc822'
+                        || files[i]['type'] === 'image/tiff'
+                      ) {
+                        alert('stuur naar serge')
+                        let file = await files[i].arrayBuffer();
+                        const base64Msg = Buffer.from(file).toString('base64');
+
+                        const base64Msg2 = await blobToURL(files[i]);
+
+                        console.log(base64Msg2)
+
+                        const res = await fetch('https://devweb.docbaseweb.nl/api/files/converttopdf', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token
+                          },
+                          body: JSON.stringify({
+                            msgFileBase64: base64Msg2,
+                            filename: files[i]['name']
+                          })
+                        });
+
+                        console.log(JSON.stringify(res))
+                      }
+
+                      console.log(files[i]['type'] + ' ' + files[i]['name']);
+                      // convert TIFF files to png
+                      /*                      if (files[i]['type'] === 'image/tiff') {
+                                              const tiff = await files[i].arrayBuffer();
+                                              const base64Tiff = Buffer.from(tiff).toString('base64');
+                      
+                                              console.log(base64Tiff);
+                                          }
+                      */
                       // skip the file if its not an image or pdf
                       if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
                         alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)

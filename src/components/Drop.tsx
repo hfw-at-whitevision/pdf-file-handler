@@ -10,7 +10,7 @@ export default function Drop({ onLoaded, className }) {
   }, []);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: ["application/pdf"],
+    accept: ["application/pdf", "image/jpeg", "image/png"],
   });
 
   return (
@@ -18,14 +18,12 @@ export default function Drop({ onLoaded, className }) {
       {...getRootProps()}
       className={
         `flex w-full flex-col gap-4 rounded-xl text-white text-sm cursor-pointer
-        border-2 border-dashed border-white/20 hover:border-white/40
-        p-4
+        border-2 border-dashed border-white/20 hover:border-white/40 p-4
         ${className}`
       }
     >
       <h3 className="text-2xl font-bold flex items-center gap-2 justify-between">Upload <BsUpload /></h3>
       <input {...getInputProps()} />
-
     </div>
   );
 }
