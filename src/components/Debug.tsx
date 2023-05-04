@@ -9,7 +9,7 @@ export default function Debug({
         : 0
 
     return <pre>
-        build: 0.1.2
+        build: {process.env.NEXT_PUBLIC_BUILD_VERSION}
         <br />
         pdfs.length: {JSON.stringify(pdfs?.length)}
         <br />

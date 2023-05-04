@@ -528,7 +528,7 @@ const Home: NextPage = () => {
         || files[i]['type'] === 'image/tiff'
       ) {
         console.log(`MSG / EML file detected. Sending to Serge API.`)
-        const convertedBase64Msg = newPdf.replace(`data:application/octet-stream;base64,`, '')
+        const convertedBase64Msg = newPdf.replace(`data:application/octet-stream;base64,`, '').replace(`data:image/tiff;base64,`, '')
 
         const res = await fetch('/api/converttopdf', {
           method: 'POST',
@@ -593,6 +593,11 @@ const Home: NextPage = () => {
         return result;
       });
       const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
+        .catch(err => {
+          alert(`Fout bij het laden van ${files[i]['name']}. Het document wordt overgeslagen.`);
+          console.log(err);
+          return;
+        })
       const pages = newPdfDoc?.getPageCount()
       setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
       setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
