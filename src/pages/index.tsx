@@ -30,6 +30,7 @@ const Home: NextPage = () => {
   const [current, setCurrent] = useState({ pdfIndex: 0, pageIndex: 0 });
   const [totalPages, setTotalPages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
   const [userIsDragging, setUserIsDragging] = useState(false);
@@ -86,7 +87,7 @@ const Home: NextPage = () => {
     }
 
     const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
-      ignoreEncryption: true
+      ignoreEncryption: true, parseSpeed: 1500
     });
     pdfDoc.removePage(pageIndex);
     const URL = await pdfDoc.saveAsBase64({ dataUri: true });
@@ -121,7 +122,7 @@ const Home: NextPage = () => {
     console.log(`Rotating document ${inputPdfIndex}`)
     setIsRotating(true);
     const pdfDoc = await PDFDocument.load(pdfs[inputPdfIndex], {
-      ignoreEncryption: true
+      ignoreEncryption: true, parseSpeed: 1500
     });
     const pages = pdfDoc.getPages();
 
@@ -148,7 +149,7 @@ const Home: NextPage = () => {
     setIsLoading(true);
     setIsRotating(true);
     const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
-      ignoreEncryption: true
+      ignoreEncryption: true, parseSpeed: 1500
     });
     const pages = pdfDoc.getPages();
     const currentPage = pages[pageIndex];
@@ -176,7 +177,7 @@ const Home: NextPage = () => {
     if (typeof toPdfIndex === 'undefined' && typeof toPageIndex === 'undefined') return;
 
     if (toPlaceholderThumbnail && fromPdfIndex === toPdfIndex) {
-      const pdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, });
+      const pdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500, });
       const [currentPage]: any = await pdfDoc.copyPages(pdfDoc, [fromPageIndex]);
       pdfDoc.insertPage(toPageIndex, currentPage);
       await pdfDoc.save();
@@ -209,8 +210,8 @@ const Home: NextPage = () => {
 
     const toPdfDoc = toPlaceholderRow
       ? await PDFDocument.create()
-      : await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true });
-    const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true });
+      : await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
+    const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
 
     // copy the moved page from PDF
     const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromPageIndex]);
@@ -273,7 +274,7 @@ const Home: NextPage = () => {
     setIsLoading(true);
 
     const toPdfDoc = await PDFDocument.create()
-    const fromPdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true });
+    const fromPdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
 
     const pagesToMove = fromPdfDoc.getPageIndices().slice(pageIndex)
 
@@ -339,7 +340,7 @@ const Home: NextPage = () => {
 
   const handleSaveDocument = async (pdfIndex) => {
     setIsLoading(true);
-    const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true });
+    const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
     const base64 = await pdfDoc.saveAsBase64({ dataUri: false });
 
     // save as PDF
@@ -509,12 +510,14 @@ const Home: NextPage = () => {
     setIsLoading(true)
 
     for (let i = 0; i < files.length; i++) {
-      let newPdf: any = await blobToURL(files[i]);
+      let newPdf: string = await blobToURL(files[i]);
+
+      setLoadingMessage(`PDF ${i + 1} van ${files.length} wordt geladen...`)
 
       // check file size
       const fileSize = files[i]['size'] / 1024 / 1024;
       if (fileSize > 25) {
-        alert('Het bestand is groter dan 25MB. Gelieve het bestand te verkleinen.')
+        alert(`${files[i]['name']} is groter dan 25MB. Gelieve het bestand te verkleinen.`)
         continue;
       }
 
@@ -525,10 +528,7 @@ const Home: NextPage = () => {
         || files[i]['type'] === 'image/tiff'
       ) {
         console.log(`MSG / EML file detected. Sending to Serge API.`)
-        let file = await files[i].arrayBuffer();
-        let base64Msg = Buffer.from(file).toString('base64');
-        //let base64Msg2 = await blobToURL(files[i]);
-        const convertedBase64Msg = base64Msg.replace(`data:application/octet-stream;base64,`, '')
+        const convertedBase64Msg = newPdf.replace(`data:application/octet-stream;base64,`, '')
 
         const res = await fetch('https://devweb.docbaseweb.nl/api/files/converttopdf', {
           method: 'POST',
@@ -552,7 +552,7 @@ const Home: NextPage = () => {
             const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
             return result;
           });
-          const newPdfDoc = await PDFDocument.load(newPdf)
+          const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
           const pages = newPdfDoc.getPages().length
           setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
           setPdfFileNames(oldFileNames => [...oldFileNames, filename]);
@@ -566,7 +566,7 @@ const Home: NextPage = () => {
         }
         continue;
       }
-      // if its a JPG / PNG, convert it to pdf
+      // JPG / PNG: process it
       else if (files[i]['type'] === 'image/jpeg' || files[i]['type'] === 'image/png') {
         const pdfDoc = await PDFDocument.create()
         const image = (files[i]['type'] === 'image/jpeg')
@@ -592,8 +592,8 @@ const Home: NextPage = () => {
         const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
         return result;
       });
-      const newPdfDoc = await PDFDocument.load(newPdf)
-      const pages = newPdfDoc.getPages().length
+      const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
+      const pages = newPdfDoc?.getPageCount()
       setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
       setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
       console.log('Updating numberOfThumbnails')
@@ -606,6 +606,7 @@ const Home: NextPage = () => {
     }
 
     setStateChanged(oldValue => oldValue + 1)
+    setLoadingMessage('')
     setIsLoading(false)
   }
 
@@ -615,7 +616,7 @@ const Home: NextPage = () => {
         <title>PDF File Handler</title>
       </Head>
 
-      <Loading inset={true} loading={isLoading} />
+      <Loading inset={true} loading={isLoading} message={loadingMessage} />
 
       <Debug
         pdfs={pdfs}

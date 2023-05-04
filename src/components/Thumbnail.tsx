@@ -80,10 +80,11 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
             ref={ref}
             className={
                 `relative group flex items-center justify-center rounded-md overflow-hidden
+                box-border border-4
           before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
           ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
-                    ? "border-4 border-amber-300 before:z-10"
-                    : "before:z-[-1]"}
+                    ? "border-amber-300 before:z-10"
+                    : "before:z-[-1] border-transparent"}
           opacity-${isDragging ? '10' : '100'}`
             }
             {...onClick && { onClick }}

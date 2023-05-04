@@ -1,12 +1,14 @@
 export default function Loading({
     inset = false,
     loading = true,
+    message = null,
 }) {
     if (inset) {
         if (!loading) return null;
         return <>
-            <div className="fixed z-50 inset-0 flex justify-center items-center bg-white/50">
+            <div className="fixed z-50 inset-0 flex flex-col justify-center items-center bg-white/50">
                 <img src="./loadingspinner.svg" width={150} className="flex justify-center gap-2 text-lg mb-4 w-12" />
+                {message}
             </div>
         </>
     }
