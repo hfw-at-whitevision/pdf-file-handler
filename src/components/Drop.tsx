@@ -1,16 +1,15 @@
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
-import ButtonXl from "./ButtonXl";
 
-export default function Drop({ onLoaded, className }) {
-  const onDrop = useCallback((acceptedFiles) => {
+export default function Drop({ onLoaded = (acceptedFiles: any) => { }, className = null }) {
+  const onDrop = useCallback((acceptedFiles: any) => {
     onLoaded(acceptedFiles);
-    // Do something with the files
   }, []);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: ["application/pdf", "image/jpeg", "image/png"],
+    accept: ["application/pdf", "image/jpeg", "image/png", "image/tiff", "message/rfc822",
+      "application/vnd.ms-outlook"] as any,
   });
 
   return (

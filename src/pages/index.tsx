@@ -26,7 +26,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
 const Home: NextPage = () => {
   const [pdfFileNames, setPdfFileNames] = useState([]);
-  const [pdfs, setPdfs]: [Array<string>, any] = useState(null);
+  const [pdfs, setPdfs]: [any, any] = useState();
   const [current, setCurrent] = useState({ pdfIndex: 0, pageIndex: 0 });
   const [totalPages, setTotalPages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,17 +55,17 @@ const Home: NextPage = () => {
     setIsLoading(true);
     setIsDeleting(true);
 
-    if (current.pdfIndex === inputPdfIndex && current.pdfIndex === pdfs.length - 1 && current.pdfIndex > 0) {
+    if (current.pdfIndex === inputPdfIndex && current.pdfIndex === pdfs?.length - 1 && current.pdfIndex > 0) {
       setCurrent({ pdfIndex: current.pdfIndex - 1, pageIndex: 0 });
     }
 
-    setPdfs(oldPdfs => oldPdfs.filter((_, index) => index !== inputPdfIndex));
+    setPdfs((oldPdfs: any) => oldPdfs.filter((_, index) => index !== inputPdfIndex));
     setTotalPages(oldTotalPages => oldTotalPages.filter((_, index) => index !== inputPdfIndex));
     setPdfFileNames(oldPdfFileNames => oldPdfFileNames.filter((_, index) => index !== inputPdfIndex));
-    setNumberOfThumbnails(oldNumberOfThumbnails => oldNumberOfThumbnails.filter((_, index) => index !== inputPdfIndex))
+    setNumberOfThumbnails((oldNumberOfThumbnails: any) => oldNumberOfThumbnails.filter((_, index) => index !== inputPdfIndex))
 
     setCurrent({
-      pdfIndex: (inputPdfIndex === pdfs.length - 1 && inputPdfIndex > 0)
+      pdfIndex: (inputPdfIndex === pdfs?.length - 1 && inputPdfIndex > 0)
         ? inputPdfIndex - 1
         : inputPdfIndex,
       pageIndex: 0
@@ -76,7 +76,7 @@ const Home: NextPage = () => {
     setStateChanged(oldValue => oldValue + 1);
   }
 
-  const handleDeletePage = async ({ pdfIndex, pageIndex }) => {
+  const handleDeletePage = async ({ pdfIndex, pageIndex }: { pdfIndex: number, pageIndex: number }) => {
     setIsLoading(true);
     setIsDeleting(true);
 
@@ -530,7 +530,7 @@ const Home: NextPage = () => {
         console.log(`MSG / EML file detected. Sending to Serge API.`)
         const convertedBase64Msg = newPdf.replace(`data:application/octet-stream;base64,`, '')
 
-        const res = await fetch('https://devweb.docbaseweb.nl/api/files/converttopdf', {
+        const res = await fetch('/api/converttopdf', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

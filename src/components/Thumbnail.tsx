@@ -7,7 +7,7 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
     const ref = useRef(null);
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
-        hover(item, monitor) {
+        hover(item: any, monitor) {
             if (!ref.current) return;
 
             const dragIndex = item.index;
