@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import Drop from "@/components/Drop";
 import { Document, Page, pdfjs } from "react-pdf";
 import { PDFDocument, degrees } from "pdf-lib";
-import { blobToURL } from "@/utils/Utils";
+import { blobToURL } from "@/utils";
 import { BigButton } from "@/components/BigButton";
 import ButtonXl from "@/components/ButtonXl";
 import { BsTrash, BsPlus, BsCheck2Circle } from "react-icons/bs";
@@ -15,6 +15,12 @@ import { GrRotateRight } from "react-icons/gr";
 import Loading from "@/components/Loading";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import Debug from "@/components/Debug";
+import PlaceholderRow from "@/components/PlaceholderRow";
+import PlaceholderThumbnail from "@/components/PlaceholderThumbnail";
+import Row from "@/components/Row";
+import ScrollDropTarget from "@/components/ScrollDropTarget";
+import Thumbnail from "@/components/Thumbnail";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
@@ -499,9 +505,109 @@ const Home: NextPage = () => {
     fetchState();
   }, []);
 
-  const pdfsSize = pdfs?.length
-    ? Buffer.from(JSON.stringify(pdfs)).length / 1000
-    : 0
+  const handleDropzoneLoaded = async (files) => {
+    setIsLoading(true)
+
+    for (let i = 0; i < files.length; i++) {
+      // check file size
+      const fileSize = files[i]['size'] / 1024 / 1024;
+      if (fileSize > 25) {
+        alert('Het bestand is groter dan 25MB. Gelieve het bestand te verkleinen.')
+        continue;
+      }
+
+      // MSG / EML / TIFF files: send to Serge API
+      if (
+        files[i]['type'] === 'application/vnd.ms-outlook'
+        || files[i]['type'] === 'message/rfc822'
+        || files[i]['type'] === 'image/tiff'
+      ) {
+        console.log(`MSG / EML file detected. Sending to Serge API.`)
+        let file = await files[i].arrayBuffer();
+        let base64Msg = Buffer.from(file).toString('base64');
+        //let base64Msg2 = await blobToURL(files[i]);
+        const convertedBase64Msg = base64Msg.replace(`data:application/octet-stream;base64,`, '')
+
+        const res = await fetch('https://devweb.docbaseweb.nl/api/files/converttopdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            msgFileBase64: convertedBase64Msg,
+            fileName: files[i]['name']
+          })
+        })
+          .then(res => res.json())
+          .catch(err => console.log(err));
+
+        const returnedPdfs = res?.pdfFiles
+
+        for (let i = 0; i < returnedPdfs?.length; i++) {
+          const newPdf = 'data:application/pdf;base64,' + returnedPdfs[i].pdfFileBase64;
+          const filename = returnedPdfs[i].fileName;
+          setPdfs((oldPdfs) => {
+            const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+            return result;
+          });
+          const newPdfDoc = await PDFDocument.load(newPdf)
+          const pages = newPdfDoc.getPages().length
+          setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
+          setPdfFileNames(oldFileNames => [...oldFileNames, filename]);
+          console.log('Updating numberOfThumbnails')
+
+          let pagesOfUploadedPdf = []
+          for (let x = 0; x < pages; x++) {
+            pagesOfUploadedPdf.push(x)
+          }
+          setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
+        }
+        continue;
+      }
+      // if its a JPG / PNG, convert it to pdf
+      else if (files[i]['type'] === 'image/jpeg' || files[i]['type'] === 'image/png') {
+        let newPdf: any = await blobToURL(files[i]);
+        const pdfDoc = await PDFDocument.create()
+        const image = (files[i]['type'] === 'image/jpeg')
+          ? await pdfDoc.embedJpg(newPdf)
+          : await pdfDoc.embedPng(newPdf)
+        const page = pdfDoc.addPage([image.width, image.height])
+        const dims = image.scale(1)
+        page.drawImage(image, {
+          x: page.getWidth() / 2 - dims.width / 2,
+          y: page.getHeight() / 2 - dims.height / 2,
+          width: dims.width,
+          height: dims.height,
+        });
+        newPdf = await pdfDoc.saveAsBase64({ dataUri: true })
+
+        setPdfs((oldPdfs) => {
+          const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+          return result;
+        });
+        const newPdfDoc = await PDFDocument.load(newPdf)
+        const pages = newPdfDoc.getPages().length
+        setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
+        setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
+        console.log('Updating numberOfThumbnails')
+
+        let pagesOfUploadedPdf = []
+        for (let x = 0; x < pages; x++) {
+          pagesOfUploadedPdf.push(x)
+        }
+        setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
+      }
+
+      // skip the file if its not an image or pdf
+      else {
+        alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
+        continue;
+      }
+    }
+
+    setStateChanged(oldValue => oldValue + 1)
+    setIsLoading(false)
+  }
 
   return (
     <>
@@ -511,19 +617,12 @@ const Home: NextPage = () => {
 
       <Loading inset={true} loading={isLoading} />
 
-      <pre>
-        build: 0.1.0
-        <br />
-        pdfs.length: {JSON.stringify(pdfs?.length)}
-        <br />
-        numberOfThumbnails: {JSON.stringify(numberOfThumbnails.map(pdf => pdf?.length))}
-        <br />
-        totalPages: {JSON.stringify(totalPages)}
-        <br />
-        current: {JSON.stringify(current, 2, 2)}
-        <br />
-        size: {pdfsSize} KB
-      </pre>
+      <Debug
+        pdfs={pdfs}
+        totalPages={totalPages}
+        numberOfThumbnails={numberOfThumbnails}
+        current={current}
+      />
 
       <div className={
         `flex min-h-screen ${!pdfs?.length ? 'items-center' : ''} justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]`
@@ -546,124 +645,21 @@ const Home: NextPage = () => {
               `
               }>
                 <Drop
-                  onLoaded={async (files: any) => {
-                    setIsLoading(true)
-
-                    for (let i = 0; i < files.length; i++) {
-                      const fileSize = files[i]['size'] / 1024 / 1024;
-                      if (fileSize > 25) {
-                        alert('Het bestand is groter dan 25MB. Gelieve het bestand te verkleinen.')
-                        continue;
-                      }
-
-                      // MSG / EML files: send to Serge API
-                      if (
-                        files[i]['type'] === 'application/vnd.ms-outlook'
-                        || files[i]['type'] === 'message/rfc822'
-                        || files[i]['type'] === 'image/tiff'
-                      ) {
-                        console.log(`MSG / EML file detected. Sending to Serge API.`)
-                        let file = await files[i].arrayBuffer();
-                        let base64Msg = Buffer.from(file).toString('base64');
-                        //let base64Msg2 = await blobToURL(files[i]);
-                        const convertedBase64Msg = base64Msg.replace(`data:application/octet-stream;base64,`, '')
-
-                        const res = await fetch('https://devweb.docbaseweb.nl/api/files/converttopdf', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            msgFileBase64: convertedBase64Msg,
-                            fileName: files[i]['name']
-                          })
-                        })
-                          .then(res => res.json())
-                          .catch(err => console.log(err));
-
-                        const returnedPdfs = res?.pdfFiles
-
-                        console.log(returnedPdfs)
-
-                        for (let i = 0; i < returnedPdfs?.length; i++) {
-                          const newPdf = 'data:application/pdf;base64,' + returnedPdfs[i].pdfFileBase64;
-                          const filename = returnedPdfs[i].fileName;
-                          setPdfs((oldPdfs) => {
-                            const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
-                            return result;
-                          });
-                          const newPdfDoc = await PDFDocument.load(newPdf)
-                          const pages = newPdfDoc.getPages().length
-                          setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
-                          setPdfFileNames(oldFileNames => [...oldFileNames, filename]);
-                          console.log('Updating numberOfThumbnails')
-
-                          let pagesOfUploadedPdf = []
-                          for (let x = 0; x < pages; x++) {
-                            pagesOfUploadedPdf.push(x)
-                          }
-                          setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
-                        }
-
-                        continue;
-                      }
-
-                      // skip the file if its not an image or pdf
-                      if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
-                        alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
-                        continue;
-                      }
-
-                      // if its an image, convert it to pdf
-                      let newPdf: any = await blobToURL(files[i]);
-                      if (files[i]['type'] === 'image/jpeg' || files[i]['type'] === 'image/png') {
-                        const pdfDoc = await PDFDocument.create()
-                        const image = (files[i]['type'] === 'image/jpeg')
-                          ? await pdfDoc.embedJpg(newPdf)
-                          : await pdfDoc.embedPng(newPdf)
-                        const page = pdfDoc.addPage([image.width, image.height])
-                        const dims = image.scale(1)
-                        page.drawImage(image, {
-                          x: page.getWidth() / 2 - dims.width / 2,
-                          y: page.getHeight() / 2 - dims.height / 2,
-                          width: dims.width,
-                          height: dims.height,
-                        });
-                        newPdf = await pdfDoc.saveAsBase64({ dataUri: true })
-                      }
-
-                      setPdfs((oldPdfs) => {
-                        const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
-                        return result;
-                      });
-                      const newPdfDoc = await PDFDocument.load(newPdf)
-                      const pages = newPdfDoc.getPages().length
-                      setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
-                      setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
-                      console.log('Updating numberOfThumbnails')
-
-                      let pagesOfUploadedPdf = []
-                      for (let x = 0; x < pages; x++) {
-                        pagesOfUploadedPdf.push(x)
-                      }
-                      setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
-                    }
-
-                    setStateChanged(oldValue => oldValue + 1)
-                    setIsLoading(false)
-                  }}
+                  onLoaded={handleDropzoneLoaded}
                   className={pdfs?.length ? "opacity-50" : "!p-16"}
                 />
-                {pdfs?.length
-                  ? <>
-                    <ButtonXl
-                      title={"Reset"}
-                      icon={<RxReset />}
-                      description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                      onClick={async () => await handleReset()}
-                    />
-                  </>
-                  : null}
+                {
+                  pdfs?.length
+                    ? <>
+                      <ButtonXl
+                        title={"Reset"}
+                        icon={<RxReset />}
+                        description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                        onClick={async () => await handleReset()}
+                      />
+                    </>
+                    : null
+                }
               </div>
             </nav>
           </header>
@@ -786,280 +782,3 @@ const Home: NextPage = () => {
   );
 };
 export default Home;
-
-
-
-
-
-
-
-
-
-
-const Thumbnail = ({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging }) => {
-  const ref = useRef(null);
-  const [collected, drop] = useDrop({
-    accept: "pdfThumbnail",
-    hover(item, monitor) {
-      if (!ref.current) return;
-
-      const dragIndex = item.index;
-      const hoverIndex = index;
-      if (dragIndex === hoverIndex) {
-        return;
-      }
-      const hoverBoundingRect = ref.current?.getBoundingClientRect();
-      const hoverMiddleX =
-        (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
-      const clientOffset = monitor.getClientOffset();
-      const hoverClientX = clientOffset.x - hoverBoundingRect.left;
-
-      if (dragIndex < hoverIndex && hoverClientX < hoverMiddleX) {
-        return;
-      }
-      if (dragIndex > hoverIndex && hoverClientX > hoverMiddleX) {
-        return;
-      }
-      item.index = hoverIndex;
-    },
-  });
-
-  const [{ isDragging }, drag]: any = useDrag({
-    type: "pdfThumbnail",
-    item: { index, pdfIndex, pageIndex, type: "pdfThumbnail" },
-    end: async (item, monitor) => {
-      const dropResult = monitor.getDropResult();
-      const toPdfIndex = dropResult?.pdfIndex;
-      const toPageIndex = dropResult?.pageIndex;
-      const type = dropResult?.type;
-
-      if (dropResult && type === "placeholderThumbnail") {
-        await handleMovePage({
-          fromPdfIndex: pdfIndex,
-          fromPageIndex: pageIndex,
-          toPdfIndex: toPdfIndex,
-          toPageIndex: toPageIndex,
-          toPlaceholderThumbnail: true,
-        })
-      }
-      else if (
-        dropResult && pdfIndex !== toPdfIndex && type !== "scrollDropTarget"
-        || dropResult && pdfIndex === toPdfIndex && type === "placeholderRow"
-      ) {
-        // move the page to other PDF
-        await handleMovePage({
-          fromPdfIndex: pdfIndex,
-          fromPageIndex: pageIndex,
-          toPdfIndex: toPdfIndex,
-          toPlaceholderRow: type === "placeholderRow" ? true : false,
-        })
-      }
-    },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging()
-    })
-  });
-
-  useEffect(() => {
-    setUserIsDragging(isDragging)
-  }, [isDragging])
-
-  drag(drop(ref));
-
-  return <>
-    <div
-      key={`thumbnail-${pdfIndex}-${pageIndex}`}
-      id={`thumbnail-${pdfIndex}-${pageIndex}`}
-      ref={ref}
-      className={
-        `relative group flex items-center justify-center rounded-md overflow-hidden
-        before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
-        ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
-          ? "border-4 border-amber-300 before:z-10"
-          : "before:z-[-1]"}
-        opacity-${isDragging ? '10' : '100'}`
-      }
-      {...onClick && { onClick }}
-    >
-      <Page
-        scale={1}
-        loading={<Loading />}
-        className={
-          `w-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
-            pdf-${pdfIndex}-${pageIndex} object-contain`
-        }
-        pageIndex={pageIndex}
-        width={150}
-      />
-      <div className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
-        <div className="grid grid-cols-2 gap-1 pb-4">
-          {actionButtons}
-        </div>
-      </div>
-    </div>
-  </>
-}
-
-
-
-
-
-
-
-
-
-
-const Row = ({ children, pdfIndex }) => {
-  const [{ isOver, isNotOverPlaceholderThumbnail, canDrop }, drop] = useDrop({
-    accept: "pdfThumbnail",
-    drop: () => {
-      if (isNotOverPlaceholderThumbnail) return { pdfIndex: pdfIndex, type: 'row' }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-      isNotOverPlaceholderThumbnail: monitor.isOver({ shallow: true }),
-      canDrop: monitor.canDrop(),
-    }),
-  });
-
-  return <div
-    ref={drop}
-    className={`
-    p-4 rounded-lg w-[660px] mb-4
-    ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-white/20 shadow-2xl'}
-    `}
-  >
-    {children}
-  </div>
-};
-
-
-
-
-
-
-
-
-
-
-const PlaceholderRow = ({ pdfIndex, isDragging, isLoading, totalPages }) => {
-  const [{ canDrop, isOver }, drop] = useDrop({
-    accept: "pdfThumbnail",
-    drop: () => ({ pdfIndex: Math.ceil(pdfIndex), type: 'placeholderRow' }),
-    collect: (monitor) => ({
-      canDrop: monitor.canDrop(),
-      isOver: monitor.isOver(),
-    }),
-  });
-
-  return <div
-    ref={drop}
-    className={`
-      shadow-2xl rounded-lg w-[660px] flex items-center justify-center
-      border-dashed border-lime-200 border
-      ${isDragging && canDrop // && totalPages[pdfIndex] > 1
-        ? 'h-auto p-1 opacity-100 mb-4'
-        : 'h-0 p-0 opacity-0 border-0 mb-0'}
-      ${isOver && canDrop// && totalPages[pdfIndex] > 1
-        ? 'p-8 bg-lime-100/90 border-transparent'
-        : ''}
-      ${isLoading ? 'hidden' : ''}
-    `}
-  >
-    <BsPlus className={`text-lime-200 ${!isDragging ? 'hidden' : ''} ${isOver ? '!text-black text-4xl' : 'text-xs'}`} />
-  </div>
-};
-
-
-
-
-
-
-
-
-
-
-function PlaceholderThumbnail({ pdfIndex, pageIndex, isDragging, isLoading, totalPages, margin }) {
-  // hide placeholders if only 1 page in PDF
-  //if (totalPages[pdfIndex] === 1) return null;
-
-  const [{ canDrop, isOver }, drop] = useDrop({
-    accept: "pdfThumbnail",
-    drop: () => {
-      console.log(`toPageIndex: ${pageIndex}. toPdfIndex: ${pdfIndex}`)
-      return { pdfIndex, pageIndex: Math.ceil(pageIndex), type: 'placeholderThumbnail' }
-    },
-    collect: (monitor) => ({
-      canDrop: monitor.canDrop(),
-      isOver: monitor.isOver(),
-    }),
-  });
-
-  return <>
-    <div
-      ref={drop}
-      className={
-        `h-auto relative rounded-lg bg-gradient-to-b from-lime-50/0 via-lime-200 to lime-50/0 group
-        before:content-[''] before:absolute before:w-[60px] before:h-full before:z-20 before:bg-blue-3000 before:translate-x-[-100%]
-        ${isOver ? 'w-[10px]' : 'w-[0]'}
-        after:content-[''] after:absolute after:left-[100%] after:w-[60px] after:h-full after:z-20 after:bg-red-3000 after:translate-x-[0]
-        ${isOver ? margin : null}
-        ${isDragging ? 'pointer-events-auto' : 'pointer-events-none'}
-      `}
-    />
-  </>
-}
-
-
-
-
-
-
-
-
-
-
-function ScrollDropTarget({ isDragging, position }) {
-  const scrollBy =
-    position === 'top'
-      ? -20
-      : 20;
-
-  const scrollUp = () => {
-    window.scrollBy(0, scrollBy);
-  };
-
-  const scrollTopDropRef = useRef(null);
-  const [{ isOver }, drop] = useDrop({
-    accept: "pdfThumbnail",
-    drop: () => ({ type: 'scrollDropTarget' }),
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  });
-
-  drop(scrollTopDropRef);
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (isOver) {
-        scrollUp();
-      } else {
-        clearInterval(intervalId);
-      }
-    }, 10);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [isOver]);
-
-  return <div
-    ref={scrollTopDropRef}
-    className={
-      `fixed left-0 right-0 h-[80px] z-50
-      ${position === 'top' ? 'top-0' : 'bottom-0'}
-      ${isDragging ? 'pointer-events-auto' : 'pointer-events-none'}`
-    }
-  />;
-}

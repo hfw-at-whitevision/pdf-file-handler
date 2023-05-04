@@ -46,3 +46,7 @@ pre {
 .react-pdf__message {
     @apply hidden;
 }
+
+.pdf-thumbnail canvas {
+    @apply max-h-[150px] object-contain;
+}
