@@ -92,7 +92,7 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
                 loading={<Loading />}
                 className={
                     `w-[150px] max-h-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
-              pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail`
+              pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
                 }
                 pageIndex={pageIndex}
                 renderAnnotationLayer={false}

@@ -48,5 +48,5 @@ pre {
 }
 
 .pdf-thumbnail canvas {
-    @apply max-h-[150px] object-contain;
+    @apply max-h-[150px] object-contain !w-auto rounded-md overflow-hidden;
 }

@@ -509,6 +509,8 @@ const Home: NextPage = () => {
     setIsLoading(true)
 
     for (let i = 0; i < files.length; i++) {
+      let newPdf: any = await blobToURL(files[i]);
+
       // check file size
       const fileSize = files[i]['size'] / 1024 / 1024;
       if (fileSize > 25) {
@@ -566,7 +568,6 @@ const Home: NextPage = () => {
       }
       // if its a JPG / PNG, convert it to pdf
       else if (files[i]['type'] === 'image/jpeg' || files[i]['type'] === 'image/png') {
-        let newPdf: any = await blobToURL(files[i]);
         const pdfDoc = await PDFDocument.create()
         const image = (files[i]['type'] === 'image/jpeg')
           ? await pdfDoc.embedJpg(newPdf)
@@ -580,29 +581,28 @@ const Home: NextPage = () => {
           height: dims.height,
         });
         newPdf = await pdfDoc.saveAsBase64({ dataUri: true })
-
-        setPdfs((oldPdfs) => {
-          const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
-          return result;
-        });
-        const newPdfDoc = await PDFDocument.load(newPdf)
-        const pages = newPdfDoc.getPages().length
-        setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
-        setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
-        console.log('Updating numberOfThumbnails')
-
-        let pagesOfUploadedPdf = []
-        for (let x = 0; x < pages; x++) {
-          pagesOfUploadedPdf.push(x)
-        }
-        setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
       }
-
       // skip the file if its not an image or pdf
-      else {
+      else if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
         alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
         continue;
       }
+
+      setPdfs((oldPdfs) => {
+        const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+        return result;
+      });
+      const newPdfDoc = await PDFDocument.load(newPdf)
+      const pages = newPdfDoc.getPages().length
+      setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
+      setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
+      console.log('Updating numberOfThumbnails')
+
+      let pagesOfUploadedPdf = []
+      for (let x = 0; x < pages; x++) {
+        pagesOfUploadedPdf.push(x)
+      }
+      setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
     }
 
     setStateChanged(oldValue => oldValue + 1)

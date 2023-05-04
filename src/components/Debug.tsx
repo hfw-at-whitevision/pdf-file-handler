@@ -9,7 +9,7 @@ export default function Debug({
         : 0
 
     return <pre>
-        build: 0.1.0
+        build: 0.1.1
         <br />
         pdfs.length: {JSON.stringify(pdfs?.length)}
         <br />
