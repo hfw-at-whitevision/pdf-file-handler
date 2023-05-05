@@ -176,30 +176,19 @@ const Home: NextPage = () => {
     setStateChanged(oldValue => oldValue + 1);
   };
 
-  const handleMovePage = async ({ fromPdfIndex, fromPageIndex, toPdfIndex, toPageIndex, toPlaceholderRow = false, toPlaceholderThumbnail = false }) => {
+  const handleMovePage = async ({ fromRow, fromRowIndice, toRow, toRowIndice, toPlaceholderRow = false, toPlaceholderThumbnail = false }) => {
     setIsLoading(true);
 
-    if (typeof toPdfIndex === 'undefined' && typeof toPageIndex === 'undefined') return;
+    if (typeof toRow === 'undefined' && typeof toRowIndice === 'undefined') return;
 
-    if (toPlaceholderThumbnail && fromPdfIndex === toPdfIndex) {
-      const pdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500, });
-      const [currentPage]: any = await pdfDoc.copyPages(pdfDoc, [fromPageIndex]);
-      pdfDoc.insertPage(toPageIndex, currentPage);
-      await pdfDoc.save();
-      // if moving up, we need to account for the fact that the page will be removed from the original PDF
-      pdfDoc.removePage(toPageIndex < fromPageIndex ? fromPageIndex + 1 : fromPageIndex);
-      const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-      setPdfs(oldPdfs => {
-        let newPdfs = oldPdfs
-        newPdfs[fromPdfIndex] = URL
-        return newPdfs
-      });
+    // when moving thumbnail inside the same row)
+    if (toPlaceholderThumbnail && fromRow === toRow) {
       setCurrent({
-        pdfIndex: fromPdfIndex,
+        pdfIndex: toRow,
         pageIndex:
-          (toPageIndex < fromPageIndex)
-            ? toPageIndex
-            : toPageIndex - 1
+          (toRowIndice < fromRowIndice)
+            ? toRowIndice
+            : toRowIndice - 1
       });
 
       setIsLoading(false);
@@ -208,67 +197,59 @@ const Home: NextPage = () => {
       return;
     }
 
-
-    console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
-    // if moving down, we need to account for the fact that the page will be removed from the original PDF
-    if (toPlaceholderRow && toPdfIndex > fromPdfIndex) toPdfIndex -= 1;
+    // when moving thumbnail to a different row
+    console.log(`Moving thumbnail ${fromRowIndice} from row ${fromRow} to pdf ${toRow}`)
+    if (toPlaceholderRow && toRow > fromRow) toRow -= 1;
 
     const toPdfDoc = toPlaceholderRow
       ? await PDFDocument.create()
-      : await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
-    const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
+      : await PDFDocument.load(pdfs[toRow], { ignoreEncryption: true, parseSpeed: 1500 });
+    const fromPdfDoc = await PDFDocument.load(pdfs[fromRow], { ignoreEncryption: true, parseSpeed: 1500 });
+    const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromRowIndice]);
 
-    // copy the moved page from PDF
-    const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromPageIndex]);
-
-    // insert the copied page to target PDF
-    if (toPageIndex) toPdfDoc.insertPage(toPageIndex, copiedPage);
+    if (toRowIndice) toPdfDoc.insertPage(toRowIndice, copiedPage);
     else toPdfDoc.addPage(copiedPage);
+    fromPdfDoc.removePage(fromRowIndice);
 
-    // remove the moved page from source PDF
-    fromPdfDoc.removePage(fromPageIndex);
-
-    // save the PDF files
     const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
-
     const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
 
     let newTotalPages = totalPages
-    newTotalPages[fromPdfIndex] = totalPages[fromPdfIndex] - 1
-    newTotalPages[toPdfIndex] = toPlaceholderRow
-      ? newTotalPages[toPdfIndex]
-      : totalPages[toPdfIndex] + 1
+    newTotalPages[fromRow] = totalPages[fromRow] - 1
+    newTotalPages[toRow] = toPlaceholderRow
+      ? newTotalPages[toRow]
+      : totalPages[toRow] + 1
 
     let newNumberOfThumbnails = numberOfThumbnails
-    newNumberOfThumbnails[fromPdfIndex].pop();
-    if (!toPlaceholderRow) newNumberOfThumbnails[toPdfIndex].push(1);
+    newNumberOfThumbnails[fromRow].pop();
+    if (!toPlaceholderRow) newNumberOfThumbnails[toRow].push(1);
 
     let newPdfs = pdfs
-    newPdfs[fromPdfIndex] = URL
-    newPdfs[toPdfIndex] = toPlaceholderRow
-      ? newPdfs[toPdfIndex]
+    newPdfs[fromRow] = URL
+    newPdfs[toRow] = toPlaceholderRow
+      ? newPdfs[toRow]
       : URL2
 
     // if source document is empty, remove it
     if (fromPdfDoc.getPageCount() === 1) {
-      pdfFileNames.splice(fromPdfIndex, 1);
-      newTotalPages.splice(fromPdfIndex, 1);
-      newNumberOfThumbnails.splice(fromPdfIndex, 1);
-      newPdfs.splice(fromPdfIndex, 1);
+      pdfFileNames.splice(fromRow, 1);
+      newTotalPages.splice(fromRow, 1);
+      newNumberOfThumbnails.splice(fromRow, 1);
+      newPdfs.splice(fromRow, 1);
     }
 
     // if moving to placeholder row, add a new placeholder row
     if (toPlaceholderRow) {
-      pdfFileNames.splice(toPdfIndex, 0, 'Nieuw document')
-      newTotalPages.splice(toPdfIndex, 0, 1);
-      newNumberOfThumbnails.splice(toPdfIndex, 0, [1]);
-      newPdfs.splice(toPdfIndex, 0, URL2);
+      pdfFileNames.splice(toRow, 0, 'Nieuw document')
+      newTotalPages.splice(toRow, 0, 1);
+      newNumberOfThumbnails.splice(toRow, 0, [1]);
+      newPdfs.splice(toRow, 0, URL2);
     }
 
     setTotalPages(newTotalPages);
     setNumberOfThumbnails(newNumberOfThumbnails);
-    setPdfs(newPdfs)
-    setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPageCount() - 1 });
+    setPdfs(newPdfs);
+    setCurrent({ pdfIndex: toRow, pageIndex: toRowIndice ?? toPdfDoc.getPageCount() - 1 });
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
   };
