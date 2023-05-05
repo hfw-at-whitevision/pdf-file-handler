@@ -3,8 +3,9 @@ import { useDrop, useDrag } from "react-dnd";
 import { Page } from "react-pdf";
 import Loading from "./Loading";
 
-export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging }) {
+export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation }) {
     const ref = useRef(null);
+
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
         hover(item: any, monitor) {
@@ -41,6 +42,13 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
             const type = dropResult?.type;
 
             if (dropResult && type === "placeholderThumbnail") {
+                // move the page to placeholder thumbnail (drop on Thumbnail)
+
+                console.log(`dropResult:`);
+                console.log(dropResult);
+                console.log(`item:`);
+                console.log(item);
+
                 await handleMovePage({
                     fromPdfIndex: pdfIndex,
                     fromPageIndex: pageIndex,
@@ -53,7 +61,7 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
                 dropResult && pdfIndex !== toPdfIndex && type !== "scrollDropTarget"
                 || dropResult && pdfIndex === toPdfIndex && type === "placeholderRow"
             ) {
-                // move the page to other PDF
+                // move the page to other PDF (drop on Row)
                 await handleMovePage({
                     fromPdfIndex: pdfIndex,
                     fromPageIndex: pageIndex,
@@ -81,19 +89,19 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
             className={
                 `relative group flex items-center justify-center rounded-md overflow-hidden
                 box-border border-4
-          before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
-          ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
+                before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
+                ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
                     ? "border-amber-300 before:z-10"
                     : "before:z-[-1] border-transparent"}
-          opacity-${isDragging ? '10' : '100'}`
+                opacity-${isDragging ? '10' : '100'}`
             }
             {...onClick && { onClick }}
         >
-            <Page
+            <div
                 loading={<Loading />}
                 className={
-                    `w-[150px] max-h-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
-              pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
+                    `w-[150px] max-h-[150px] h-[150px] cursor-pointer relative rounded-md overflow-hidden
+                    pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
                 }
                 pageIndex={pageIndex}
                 renderAnnotationLayer={false}
@@ -101,7 +109,13 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
                 renderMode="canvas"
                 width={150}
                 height={150}
-            />
+            >
+                pdfIndex: {pdfIndex}
+                <br />
+                pageIndex: {pageIndex}
+                <br />
+                rotation: {rotation}
+            </div>
             <div className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
                 <div className="grid grid-cols-2 gap-1 pb-4">
                     {actionButtons}

@@ -27,7 +27,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
 const Home: NextPage = () => {
   const [pdfFileNames, setPdfFileNames] = useState([]);
-  const [pdfs, setPdfs]: [any, any] = useState();
+  const [pdfs, setPdfs]: [any, any] = useState([]);
   const [current, setCurrent] = useState({ pdfIndex: 0, pageIndex: 0 });
   const [totalPages, setTotalPages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,12 +37,16 @@ const Home: NextPage = () => {
   const [userIsDragging, setUserIsDragging] = useState(false);
   const documentRef = useRef(null);
 
+  const [rowsState, setRowsState] = useState([]);
+
+
   const handleReset = async () => {
     setPdfs([]);
     setTotalPages([]);
     setPdfFileNames([]);
     setCurrent({ pdfIndex: 0, pageIndex: 0 });
     setNumberOfThumbnails([]);
+    setRowsState([]);
 
     await set('numberOfThumbnails', numberOfThumbnails);
     await set('totalPages', totalPages);
@@ -515,6 +519,7 @@ const Home: NextPage = () => {
 
     for (let i = 0; i < files.length; i++) {
       let newPdf: string = await blobToURL(files[i]);
+      const currentPdfIndex = pdfs?.length;
 
       setLoadingMessage(`Document ${i + 1} van ${files.length} wordt geladen...`)
 
@@ -605,13 +610,13 @@ const Home: NextPage = () => {
       // JPG / PNG / PDF files: further process it
       await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
         .then(newPdfDoc => {
-          const pages = newPdfDoc?.getPageCount()
-          setTotalPages(oldTotalPages => [pages, ...oldTotalPages]);
+          const pageCount = newPdfDoc?.getPageCount()
+          setTotalPages(oldTotalPages => [pageCount, ...oldTotalPages]);
           setPdfFileNames(oldFileNames => [files[i]['name'], ...oldFileNames]);
           console.log('Updating numberOfThumbnails')
 
           let pagesOfUploadedPdf = []
-          for (let x = 0; x < pages; x++) {
+          for (let x = 0; x < pageCount; x++) {
             pagesOfUploadedPdf.push(x)
           }
           setNumberOfThumbnails(oldValue => [pagesOfUploadedPdf, ...oldValue]);
@@ -619,6 +624,16 @@ const Home: NextPage = () => {
             const result = oldPdfs ? [newPdf].concat(oldPdfs) : [newPdf];
             return result;
           });
+
+          const row = new Array(pageCount).fill(false).map((_, currentPageIndex) => {
+            return {
+              pdfIndex: currentPdfIndex,
+              pageIndex: currentPageIndex,
+              rotation: 0,
+            }
+          });
+
+          setRowsState(oldRowsState => oldRowsState?.concat([row]));
         })
         .catch(err => {
           // on error: as a last resort, send to Serge API to try repair
@@ -687,6 +702,7 @@ const Home: NextPage = () => {
         numberOfThumbnails={numberOfThumbnails}
         current={current}
         userIsDragging={userIsDragging}
+        rowsState={rowsState}
       />
 
       <div className={
@@ -741,7 +757,7 @@ const Home: NextPage = () => {
                 <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
 
                 {pdfs?.map((pdfDoc, pdfIndex) => <>
-                  <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
+                  <Row rowIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
                     <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
                       <span className="text-sm">
                         <h3 className="mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
