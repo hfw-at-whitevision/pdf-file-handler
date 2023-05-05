@@ -21,6 +21,7 @@ import PlaceholderThumbnail from "@/components/PlaceholderThumbnail";
 import Row from "@/components/Row";
 import ScrollDropTarget from "@/components/ScrollDropTarget";
 import Thumbnail from "@/components/Thumbnail";
+import { VariableSizeList } from "react-window";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
@@ -245,7 +246,7 @@ const Home: NextPage = () => {
       : URL2
 
     // if source document is empty, remove it
-    if (fromPdfDoc.getPages().length === 1) {
+    if (fromPdfDoc.getPageCount() === 1) {
       pdfFileNames.splice(fromPdfIndex, 1);
       newTotalPages.splice(fromPdfIndex, 1);
       newNumberOfThumbnails.splice(fromPdfIndex, 1);
@@ -263,7 +264,7 @@ const Home: NextPage = () => {
     setTotalPages(newTotalPages);
     setNumberOfThumbnails(newNumberOfThumbnails);
     setPdfs(newPdfs)
-    setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPages().length - 1 });
+    setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPageCount() - 1 });
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
   };
@@ -302,7 +303,7 @@ const Home: NextPage = () => {
     newPdfs[pdfIndex] = URL
 
     // if source document is empty, remove it
-    if (fromPdfDoc.getPages().length === 1) {
+    if (fromPdfDoc.getPageCount() === 1) {
       pdfFileNames.splice(pdfIndex, 1);
       newTotalPages.splice(pdfIndex, 1);
       newNumberOfThumbnails.splice(pdfIndex, 1);
@@ -325,7 +326,10 @@ const Home: NextPage = () => {
 
   // scroll thumbnail into view
   useEffect(() => {
-    if (!pdfs?.length) return;
+    if (
+      !pdfs?.length
+      || current?.skipScrollIntoView
+    ) return;
 
     let timer = null;
     if (timer) clearTimeout(timer);
@@ -512,7 +516,7 @@ const Home: NextPage = () => {
     for (let i = 0; i < files.length; i++) {
       let newPdf: string = await blobToURL(files[i]);
 
-      setLoadingMessage(`PDF ${i + 1} van ${files.length} wordt geladen...`)
+      setLoadingMessage(`Document ${i + 1} van ${files.length} wordt geladen...`)
 
       // check file size
       const fileSize = files[i]['size'] / 1024 / 1024;
@@ -545,15 +549,26 @@ const Home: NextPage = () => {
 
         const returnedPdfs = res?.pdfFiles
 
+        // iterating over returned PDF's from API
         for (let i = 0; i < returnedPdfs?.length; i++) {
-          const newPdf = 'data:application/pdf;base64,' + returnedPdfs[i].pdfFileBase64;
           const filename = returnedPdfs[i].fileName;
+          let dataHeaders = '';
+          if (filename.endsWith('.pdf')) dataHeaders = 'data:application/pdf;base64,';
+          else if (filename.endsWith('.tif') || filename.endsWith('.tiff')) dataHeaders = 'data:image/tiff;base64,';
+          else if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) dataHeaders = 'data:image/jpeg;base64,';
+          else if (filename.endsWith('.png')) dataHeaders = 'data:image/png;base64,';
+          else continue;
+
+          const newPdf = 'data:application/pdf;base64,' + returnedPdfs[i].pdfFileBase64;
+
+          console.log(`${filename}: \n ${newPdf}`)
+
           setPdfs((oldPdfs) => {
             const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
             return result;
           });
           const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
-          const pages = newPdfDoc.getPages().length
+          const pages = newPdfDoc.getPageCount();
           setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
           setPdfFileNames(oldFileNames => [...oldFileNames, filename]);
           console.log('Updating numberOfThumbnails')
@@ -588,26 +603,69 @@ const Home: NextPage = () => {
         continue;
       }
 
-      setPdfs((oldPdfs) => {
-        const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
-        return result;
-      });
-      const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
-        .catch(err => {
-          alert(`Fout bij het laden van ${files[i]['name']}. Het document wordt overgeslagen.`);
-          console.log(err);
-          return;
-        })
-      const pages = newPdfDoc?.getPageCount()
-      setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
-      setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
-      console.log('Updating numberOfThumbnails')
+      await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
+        .then(newPdfDoc => {
+          const pages = newPdfDoc?.getPageCount()
+          setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
+          setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
+          console.log('Updating numberOfThumbnails')
 
-      let pagesOfUploadedPdf = []
-      for (let x = 0; x < pages; x++) {
-        pagesOfUploadedPdf.push(x)
-      }
-      setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf])
+          let pagesOfUploadedPdf = []
+          for (let x = 0; x < pages; x++) {
+            pagesOfUploadedPdf.push(x)
+          }
+          setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf]);
+          setPdfs((oldPdfs) => {
+            const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+            return result;
+          });
+        })
+        .catch(err => {
+          // on error: as a last resort, send to Serge API to try repair
+          try {
+            const theDoc = newPdf.replace(`data:application/pdf;base64,`, '')
+            console.log(`Sending document to API to attempt repair for ${files[i]['name']}.`)
+            fetch('/api/converttopdf', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                msgFileBase64: theDoc,
+                fileName: files[i]['name']
+              })
+            })
+              .then(res => res.json())
+              .then(async (res2) => {
+                const repairedPdf = 'data:application/pdf;base64,' + res2.pdfFiles[0].pdfFileBase64;
+                console.log('PDF repair attempt successful. ')
+
+                await PDFDocument.load(repairedPdf, { ignoreEncryption: true, parseSpeed: 1500 })
+                  .then(newPdfDoc => {
+                    const pages = newPdfDoc?.getPageCount();
+                    setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
+                    setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
+                    console.log('Updating numberOfThumbnails')
+
+                    let pagesOfUploadedPdf = []
+                    for (let x = 0; x < pages; x++) {
+                      pagesOfUploadedPdf.push(x)
+                    }
+                    setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf]);
+                    setPdfs((oldPdfs) => {
+                      const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+                      return result;
+                    });
+                  })
+              })
+          }
+          catch {
+            alert(`Fout bij het laden van ${files[i]['name']}. Het document wordt overgeslagen.`);
+            console.log(err);
+            console.log(newPdf)
+            return;
+          }
+        })
     }
 
     setStateChanged(oldValue => oldValue + 1)
@@ -628,6 +686,7 @@ const Home: NextPage = () => {
         totalPages={totalPages}
         numberOfThumbnails={numberOfThumbnails}
         current={current}
+        userIsDragging={userIsDragging}
       />
 
       <div className={
@@ -718,6 +777,7 @@ const Home: NextPage = () => {
                           `grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 w-full`
                         }
                       >
+
                         {/* thumbnails of current PDF */}
                         {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) => <>
                           <div className="flex flex-row">
@@ -734,10 +794,10 @@ const Home: NextPage = () => {
                               pdfIndex={pdfIndex}
                               setUserIsDragging={setUserIsDragging}
                               current={current}
-                              onClick={() => setCurrent(oldValues => ({
-                                ...oldValues,
+                              onClick={() => setCurrent(_ => ({
                                 pdfIndex: pdfIndex,
                                 pageIndex: pageIndex,
+                                skipScrollIntoView: true,
                               }))}
                               actionButtons={renderActionButtons(pdfIndex, pageIndex)}
                             />
@@ -746,14 +806,16 @@ const Home: NextPage = () => {
                         </>
                         )
                         }
+
                       </Document>
                     </div>
                   </Row>
 
                   <PlaceholderRow pdfIndex={pdfIndex + 0.5} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
+
                 </>
-                )
-                }
+                )}
+
               </main>
             ) : null}
 

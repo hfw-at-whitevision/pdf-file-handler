@@ -3,6 +3,7 @@ export default function Debug({
     numberOfThumbnails,
     totalPages,
     current,
+    userIsDragging
 }) {
     const pdfsSize = pdfs?.length
         ? Buffer.from(JSON.stringify(pdfs)).length / 1000
@@ -18,6 +19,8 @@ export default function Debug({
         totalPages: {JSON.stringify(totalPages)}
         <br />
         current: {JSON.stringify(current, 2, 2)}
+        <br />
+        userIsDragging: {JSON.stringify(userIsDragging)}
         <br />
         size: {pdfsSize} KB
     </pre>
