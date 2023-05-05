@@ -21,7 +21,11 @@ import PlaceholderThumbnail from "@/components/PlaceholderThumbnail";
 import Row from "@/components/Row";
 import ScrollDropTarget from "@/components/ScrollDropTarget";
 import Thumbnail from "@/components/Thumbnail";
-import { VariableSizeList } from "react-window";
+import dynamic from "next/dynamic";
+
+const pdfThumbnailsGenerator = dynamic(() => import('pdf-thumbnails-generator'), {
+  loading: () => <p>Loading...</p>,
+});
 
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
@@ -510,6 +514,35 @@ const Home: NextPage = () => {
     fetchState();
   }, []);
 
+  // generate thumbnails when dropping files in DropZone
+  const [thumbnails, setThumbnails] = useState(null);
+  const [generateThumbnailsTrigger, setGenerateThumbnailsTrigger] = useState(0);
+  useEffect(() => {
+    if (generateThumbnailsTrigger === 0) {
+      console.log(`Skipping thumbnails generation.`)
+      return;
+    }
+    (async () => {
+      const { generatePdfThumbnails } = await import('pdf-thumbnails-generator');
+
+      console.log(`Converting pdf to file...`)
+      const file = await fetch(pdfs[0])
+        .then(res => res.arrayBuffer())
+        .then(buffer => new File([buffer], pdfFileNames[0], { type: 'application/pdf' }))
+      console.log(`File successfully parsed.`)
+      console.log(file)
+      try {
+        console.log(`Generating thumbnails for ${file['name']}...`)
+        const thumbnailsResult = await generatePdfThumbnails(file, 150);
+        setThumbnails(thumbnailsResult);
+      }
+      catch (err) {
+        console.log(`Thumbnails generation for ${file['name']} failed...`)
+        console.log(`error: ${err}`);
+      }
+    })();
+  }, [generateThumbnailsTrigger]);
+
   const handleDropzoneLoaded = async (files) => {
     setIsLoading(true)
 
@@ -602,7 +635,7 @@ const Home: NextPage = () => {
         alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
         continue;
       }
-
+      // PDF / JPG / PNG: further process it
       await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
         .then(newPdfDoc => {
           const pages = newPdfDoc?.getPageCount()
@@ -668,6 +701,7 @@ const Home: NextPage = () => {
         })
     }
 
+    setGenerateThumbnailsTrigger(oldValue => oldValue + 1)
     setStateChanged(oldValue => oldValue + 1)
     setLoadingMessage('')
     setIsLoading(false)
