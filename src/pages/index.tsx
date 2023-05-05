@@ -602,21 +602,21 @@ const Home: NextPage = () => {
         alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
         continue;
       }
-
+      // JPG / PNG / PDF files: further process it
       await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
         .then(newPdfDoc => {
           const pages = newPdfDoc?.getPageCount()
-          setTotalPages(oldTotalPages => [...oldTotalPages, pages]);
-          setPdfFileNames(oldFileNames => [...oldFileNames, files[i].name]);
+          setTotalPages(oldTotalPages => [pages, ...oldTotalPages]);
+          setPdfFileNames(oldFileNames => [files[i]['name'], ...oldFileNames]);
           console.log('Updating numberOfThumbnails')
 
           let pagesOfUploadedPdf = []
           for (let x = 0; x < pages; x++) {
             pagesOfUploadedPdf.push(x)
           }
-          setNumberOfThumbnails(oldValue => [...oldValue, pagesOfUploadedPdf]);
+          setNumberOfThumbnails(oldValue => [pagesOfUploadedPdf, ...oldValue]);
           setPdfs((oldPdfs) => {
-            const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+            const result = oldPdfs ? [newPdf].concat(oldPdfs) : [newPdf];
             return result;
           });
         })
