@@ -1,10 +1,10 @@
 import { useDrop } from "react-dnd";
 
-export default function Row({ children, rowIndex }) {
+export default function Row({ children, row }) {
     const [{ isOver, isNotOverPlaceholderThumbnail, canDrop }, drop] = useDrop({
         accept: "pdfThumbnail",
         drop: () => {
-            if (isNotOverPlaceholderThumbnail) return { rowIndex, type: 'row' }
+            if (isNotOverPlaceholderThumbnail) return { row, type: 'row' }
         },
         collect: (monitor) => ({
             isOver: monitor.isOver(),
@@ -20,7 +20,7 @@ export default function Row({ children, rowIndex }) {
             ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-white/20 shadow-2xl'}
         `}
     >
-        rowIndex: {rowIndex}
+        row: {row}
         {children}
     </div>
 }

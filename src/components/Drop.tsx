@@ -1,13 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
 
 export default function Drop({ onLoaded = (acceptedFiles: any) => { }, className = null }) {
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isFocused } = useDropzone({
     onDrop: (files) => onLoaded(files),
     accept: ["application/pdf", "image/jpeg", "image/png", "image/tiff", "message/rfc822",
       "application/vnd.ms-outlook"] as any,
   });
+
+  useEffect(() => {
+    if (isFocused) {
+      alert('test')
+    }
+  }, [isFocused])
 
   return (
     <div

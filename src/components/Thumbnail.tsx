@@ -1,9 +1,8 @@
 import { useRef, useEffect } from "react";
 import { useDrop, useDrag } from "react-dnd";
-import { Page } from "react-pdf";
 import Loading from "./Loading";
 
-export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation }) {
+export default function Thumbnail({ rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation }) {
     const ref = useRef(null);
 
     const [collected, drop] = useDrop({
@@ -34,28 +33,38 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
 
     const [{ isDragging }, drag]: any = useDrag({
         type: "pdfThumbnail",
-        item: { index, pdfIndex, pageIndex, type: "pdfThumbnail" },
+        item: { row, rowIndice, pdfIndex, pageIndex, type: "pdfThumbnail" },
         end: async (item, monitor) => {
             const dropResult = monitor.getDropResult();
-            const toPdfIndex = dropResult?.pdfIndex;
-            const toPageIndex = dropResult?.pageIndex;
             const type = dropResult?.type;
 
             if (dropResult && type === "placeholderThumbnail") {
                 // move the page to placeholder thumbnail (drop on Thumbnail)
+                console.log(`Moving pdf-${item.pdfIndex}-${item.pageIndex} from row ${row}-${rowIndice} to row ${dropResult.row}-${dropResult.rowIndice}`);
 
-                console.log(`dropResult:`);
-                console.log(dropResult);
-                console.log(`item:`);
-                console.log(item);
+                const theThumbnail = rows[row][rowIndice];
 
-                await handleMovePage({
-                    fromPdfIndex: pdfIndex,
-                    fromPageIndex: pageIndex,
-                    toPdfIndex: toPdfIndex,
-                    toPageIndex: toPageIndex,
-                    toPlaceholderThumbnail: true,
+                setRows(oldRows => {
+                    const updatedRows = oldRows;
+                    updatedRows[row].splice(rowIndice, 1);
+                    updatedRows[dropResult.row].splice(dropResult.rowIndice, 0, theThumbnail);
+                    return updatedRows;
                 })
+
+                /* let updatedRows = oldRows;
+                 updatedRows[row] = fromRow;
+                 updatedRows[dropResult.row] = toRow;
+ */
+                //                setRows(updatedRows);
+
+                /*
+                                await handleMovePage({
+                                    fromPdfIndex: pdfIndex,
+                                    fromPageIndex: pageIndex,
+                                    toPdfIndex: toPdfIndex,
+                                    toPageIndex: toPageIndex,
+                                    toPlaceholderThumbnail: true,
+                                })*/
             }
             else if (
                 dropResult && pdfIndex !== toPdfIndex && type !== "scrollDropTarget"
@@ -101,7 +110,7 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
                 loading={<Loading />}
                 className={
                     `w-[150px] max-h-[150px] h-[150px] cursor-pointer relative rounded-md overflow-hidden
-                    pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
+                    pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex flex-col items-center justify-center`
                 }
                 pageIndex={pageIndex}
                 renderAnnotationLayer={false}
@@ -110,11 +119,13 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
                 width={150}
                 height={150}
             >
-                pdfIndex: {pdfIndex}
-                <br />
-                pageIndex: {pageIndex}
-                <br />
-                rotation: {rotation}
+                pdf-{pdfIndex}-page-{pageIndex}
+
+                <span className="text-xs mt-4">
+                    row {row}
+                    <br />
+                    indice {rowIndice}
+                </span>
             </div>
             <div className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
                 <div className="grid grid-cols-2 gap-1 pb-4">

@@ -21,7 +21,6 @@ import PlaceholderThumbnail from "@/components/PlaceholderThumbnail";
 import Row from "@/components/Row";
 import ScrollDropTarget from "@/components/ScrollDropTarget";
 import Thumbnail from "@/components/Thumbnail";
-import { VariableSizeList } from "react-window";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
@@ -37,7 +36,7 @@ const Home: NextPage = () => {
   const [userIsDragging, setUserIsDragging] = useState(false);
   const documentRef = useRef(null);
 
-  const [rowsState, setRowsState] = useState([]);
+  const [rows, setRows] = useState([]);
 
 
   const handleReset = async () => {
@@ -46,7 +45,7 @@ const Home: NextPage = () => {
     setPdfFileNames([]);
     setCurrent({ pdfIndex: 0, pageIndex: 0 });
     setNumberOfThumbnails([]);
-    setRowsState([]);
+    setRows([]);
 
     await set('numberOfThumbnails', numberOfThumbnails);
     await set('totalPages', totalPages);
@@ -468,6 +467,7 @@ const Home: NextPage = () => {
     await set('totalPages', totalPages);
     await set('pdfFileNames', pdfFileNames);
     await set('pdfs', pdfs);
+    await set('rows', rows);
     console.log(`PDF's saved.`)
   }
   useEffect(() => {
@@ -480,12 +480,15 @@ const Home: NextPage = () => {
       if (!pdfs) return;
       get('pdfFileNames').then((pdfFileNames) => {
         get('totalPages').then((totalPages) => {
-          get('numberOfThumbnails').then((numberOfThumbnails) => {
-            setPdfFileNames(pdfFileNames);
-            setTotalPages(totalPages);
-            setNumberOfThumbnails(numberOfThumbnails);
-            setPdfs(pdfs);
-            console.log(`PDF's fetched.`)
+          get('rows').then((rows) => {
+            get('numberOfThumbnails').then((numberOfThumbnails) => {
+              setPdfFileNames(pdfFileNames);
+              setTotalPages(totalPages);
+              setNumberOfThumbnails(numberOfThumbnails);
+              setRows(rows);
+              setPdfs(pdfs);
+              console.log(`PDF's fetched.`)
+            });
           });
         });
       });
@@ -614,7 +617,7 @@ const Home: NextPage = () => {
             }
           });
 
-          setRowsState(oldRowsState => oldRowsState?.concat([row]));
+          setRows(oldRowsState => [row]?.concat(oldRowsState));
         })
         .catch(err => {
           // on error: as a last resort, send to Serge API to try repair
@@ -683,7 +686,7 @@ const Home: NextPage = () => {
         numberOfThumbnails={numberOfThumbnails}
         current={current}
         userIsDragging={userIsDragging}
-        rowsState={rowsState}
+        rows={rows}
       />
 
       <div className={
@@ -691,20 +694,15 @@ const Home: NextPage = () => {
       }>
 
         <div className={
-          `flex gap-8 px-4 py-16
-          ${pdfs ? "flex-row" : "flex-col items-center justify-center"}`
+          `flex gap-8 px-4 py-16          ${pdfs ? "flex-row" : "flex-col items-center justify-center"}`
         }>
           <header className={
-            `flex flex-col
-            ${!pdfs ? "items-center" : "max-w-xs"}
-            `
+            `flex flex-col            ${!pdfs ? "items-center" : "max-w-xs"}            `
           }>
             <nav className="sticky top-8">
               <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg " />
               <div className={
-                `grid gap-4 mt-6
-              ${!pdfs ? "grid-cols-1" : "grid-cols-1"}
-              `
+                `grid gap-4 mt-6              ${!pdfs ? "grid-cols-1" : "grid-cols-1"}              `
               }>
                 <Drop
                   onLoaded={handleDropzoneLoaded}
@@ -737,38 +735,37 @@ const Home: NextPage = () => {
 
                 <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
 
-                {pdfs?.map((pdfDoc, pdfIndex) => <>
-                  <Row rowIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
+                {rows?.map((singleRow, rowNumber) => <>
+                  <Row row={rowNumber} key={`row-${rowNumber}`}>
                     <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
                       <span className="text-sm">
-                        <h3 className="mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
-                        ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
+                        <h3 className="mr-2 inline">{pdfFileNames[rowNumber]}</h3>
+                        ({totalPages[rowNumber]} {totalPages[rowNumber] > 1 ? ' pagina\'s' : ' pagina'})
                       </span>
 
                       <nav className={`${isLoading ? "disabled" : ""} flex gap-1 w-[270px] justify-end`}>
                         <BigButton
                           title={<><BsCheck2Circle /><span className="text-xs">naar administratie</span></>}
                           onClick={async () => {
-                            const base64 = await handleSaveDocument(pdfIndex);
+                            const base64 = await handleSaveDocument(rowNumber);
                             alert(base64)
                           }}
                         />
                         <BigButton
                           title={<><GrRotateRight /></>}
-                          onClick={async () => await handleRotateDocument(pdfIndex)}
+                          onClick={async () => await handleRotateDocument(rowNumber)}
                           disabled={isRotating}
                         />
                         <BigButton
                           title={<><BsTrash /></>}
-                          onClick={async () => await handleDeleteDocument(pdfIndex)}
+                          onClick={async () => await handleDeleteDocument(rowNumber)}
                           disabled={isRotating}
                         />
                       </nav>
                     </div>
 
                     <div className='relative'>
-                      <Document
-                        file={pdfDoc}
+                      <div
                         loading={<Loading />}
                         className={
                           `grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 w-full`
@@ -776,39 +773,38 @@ const Home: NextPage = () => {
                       >
 
                         {/* thumbnails of current PDF */}
-                        {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) => <>
+                        {singleRow?.map((item, rowIndice) => <>
                           <div className="flex flex-row">
                             {
                               /* first placeholder thumbnail in row */
-                              pageIndex % 4 === 0 &&
-                              <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={pageIndex - 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
+                              rowIndice % 4 === 0 &&
+                              <PlaceholderThumbnail row={rowNumber} rowIndice={rowIndice - 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
                             }
                             <Thumbnail
-                              key={`thumbnail-${pdfIndex}-${pageIndex}`}
-                              index={pageIndex}
+                              rows={rows}
+                              setRows={setRows}
+                              key={`thumbnail-${rowNumber}-${rowIndice}`}
+                              index={rowIndice}
                               handleMovePage={handleMovePage}
-                              pageIndex={pageIndex}
-                              pdfIndex={pdfIndex}
+                              row={rowNumber}
+                              rowIndice={rowIndice}
+                              pdfIndex={item?.pdfIndex}
+                              pageIndex={item?.pageIndex}
                               setUserIsDragging={setUserIsDragging}
                               current={current}
-                              onClick={() => setCurrent(_ => ({
-                                pdfIndex: pdfIndex,
-                                pageIndex: pageIndex,
-                                skipScrollIntoView: true,
-                              }))}
-                              actionButtons={renderActionButtons(pdfIndex, pageIndex)}
+                              actionButtons={renderActionButtons(rowNumber, rowIndice)}
                             />
-                            <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={pageIndex + 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`} margin='ml-2' />
+                            <PlaceholderThumbnail row={rowNumber} rowIndice={rowIndice + 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} key={`thumbnail-${rowNumber}-${rowIndice + 0.5}-placeholder`} margin='ml-2' />
                           </div>
                         </>
                         )
                         }
 
-                      </Document>
+                      </div>
                     </div>
                   </Row>
 
-                  <PlaceholderRow pdfIndex={pdfIndex + 0.5} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
+                  <PlaceholderRow row={rowNumber + 0.5} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
 
                 </>
                 )}
