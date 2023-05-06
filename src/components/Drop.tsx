@@ -9,12 +9,6 @@ export default function Drop({ onLoaded = (acceptedFiles: any) => { }, className
       "application/vnd.ms-outlook"] as any,
   });
 
-  useEffect(() => {
-    if (isFocused) {
-      alert('test')
-    }
-  }, [isFocused])
-
   return (
     <div
       {...getRootProps()}

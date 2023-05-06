@@ -176,79 +176,18 @@ const Home: NextPage = () => {
   };
 
   const handleMovePage = async ({ fromRow, fromRowIndice, toRow, toRowIndice, toPlaceholderRow = false, toPlaceholderThumbnail = false }) => {
+    if (typeof toRow === 'undefined' && typeof toRowIndice === 'undefined') return;
     setIsLoading(true);
 
-    if (typeof toRow === 'undefined' && typeof toRowIndice === 'undefined') return;
+    const theThumbnail = rows[fromRow][fromRowIndice];
 
-    // when moving thumbnail inside the same row)
-    if (toPlaceholderThumbnail && fromRow === toRow) {
-      setCurrent({
-        pdfIndex: toRow,
-        pageIndex:
-          (toRowIndice < fromRowIndice)
-            ? toRowIndice
-            : toRowIndice - 1
-      });
+    setRows(oldRows => {
+      const updatedRows = oldRows;
+      updatedRows[fromRow].splice(fromRowIndice, 1);
+      updatedRows[toRowIndice].splice(toRowIndice, 0, theThumbnail);
+      return updatedRows;
+    })
 
-      setIsLoading(false);
-      setStateChanged(oldValue => oldValue + 1);
-
-      return;
-    }
-
-    // when moving thumbnail to a different row
-    console.log(`Moving thumbnail ${fromRowIndice} from row ${fromRow} to pdf ${toRow}`)
-    if (toPlaceholderRow && toRow > fromRow) toRow -= 1;
-
-    const toPdfDoc = toPlaceholderRow
-      ? await PDFDocument.create()
-      : await PDFDocument.load(pdfs[toRow], { ignoreEncryption: true, parseSpeed: 1500 });
-    const fromPdfDoc = await PDFDocument.load(pdfs[fromRow], { ignoreEncryption: true, parseSpeed: 1500 });
-    const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromRowIndice]);
-
-    if (toRowIndice) toPdfDoc.insertPage(toRowIndice, copiedPage);
-    else toPdfDoc.addPage(copiedPage);
-    fromPdfDoc.removePage(fromRowIndice);
-
-    const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
-    const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
-
-    let newTotalPages = totalPages
-    newTotalPages[fromRow] = totalPages[fromRow] - 1
-    newTotalPages[toRow] = toPlaceholderRow
-      ? newTotalPages[toRow]
-      : totalPages[toRow] + 1
-
-    let newNumberOfThumbnails = numberOfThumbnails
-    newNumberOfThumbnails[fromRow].pop();
-    if (!toPlaceholderRow) newNumberOfThumbnails[toRow].push(1);
-
-    let newPdfs = pdfs
-    newPdfs[fromRow] = URL
-    newPdfs[toRow] = toPlaceholderRow
-      ? newPdfs[toRow]
-      : URL2
-
-    // if source document is empty, remove it
-    if (fromPdfDoc.getPageCount() === 1) {
-      pdfFileNames.splice(fromRow, 1);
-      newTotalPages.splice(fromRow, 1);
-      newNumberOfThumbnails.splice(fromRow, 1);
-      newPdfs.splice(fromRow, 1);
-    }
-
-    // if moving to placeholder row, add a new placeholder row
-    if (toPlaceholderRow) {
-      pdfFileNames.splice(toRow, 0, 'Nieuw document')
-      newTotalPages.splice(toRow, 0, 1);
-      newNumberOfThumbnails.splice(toRow, 0, [1]);
-      newPdfs.splice(toRow, 0, URL2);
-    }
-
-    setTotalPages(newTotalPages);
-    setNumberOfThumbnails(newNumberOfThumbnails);
-    setPdfs(newPdfs);
-    setCurrent({ pdfIndex: toRow, pageIndex: toRowIndice ?? toPdfDoc.getPageCount() - 1 });
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
   };
@@ -781,6 +720,7 @@ const Home: NextPage = () => {
                               <PlaceholderThumbnail row={rowNumber} rowIndice={rowIndice - 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
                             }
                             <Thumbnail
+                              pdfs={pdfs}
                               rows={rows}
                               setRows={setRows}
                               key={`thumbnail-${rowNumber}-${rowIndice}`}
@@ -831,6 +771,7 @@ const Home: NextPage = () => {
                     renderAnnotationLayer={false}
                     renderTextLayer={false}
                     className={`rounded-lg shadow-lg overflow-hidden`}
+                    devicePixelRatio={20}
                   />
                 }
               </Document>

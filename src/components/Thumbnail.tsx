@@ -1,8 +1,9 @@
 import { useRef, useEffect } from "react";
 import { useDrop, useDrag } from "react-dnd";
 import Loading from "./Loading";
+import { Document, Page } from "react-pdf";
 
-export default function Thumbnail({ rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation }) {
+export default function Thumbnail({ pdfs, rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation }) {
     const ref = useRef(null);
 
     const [collected, drop] = useDrop({
@@ -36,48 +37,29 @@ export default function Thumbnail({ rows, setRows, pdfIndex, pageIndex, row, row
         item: { row, rowIndice, pdfIndex, pageIndex, type: "pdfThumbnail" },
         end: async (item, monitor) => {
             const dropResult = monitor.getDropResult();
-            const type = dropResult?.type;
 
-            if (dropResult && type === "placeholderThumbnail") {
-                // move the page to placeholder thumbnail (drop on Thumbnail)
-                console.log(`Moving pdf-${item.pdfIndex}-${item.pageIndex} from row ${row}-${rowIndice} to row ${dropResult.row}-${dropResult.rowIndice}`);
+            if (!dropResult) return;
 
-                const theThumbnail = rows[row][rowIndice];
+            // move the page to placeholder thumbnail (drop on Thumbnail)
+            console.log(`Moving pdf-${item.pdfIndex}-${item.pageIndex} from row ${row}-${rowIndice} to row ${dropResult.row}-${dropResult.rowIndice}`);
 
-                setRows(oldRows => {
-                    const updatedRows = oldRows;
-                    updatedRows[row].splice(rowIndice, 1);
-                    updatedRows[dropResult.row].splice(dropResult.rowIndice, 0, theThumbnail);
-                    return updatedRows;
-                })
+            const theThumbnail = rows[row][rowIndice];
 
-                /* let updatedRows = oldRows;
-                 updatedRows[row] = fromRow;
-                 updatedRows[dropResult.row] = toRow;
- */
-                //                setRows(updatedRows);
-
-                /*
-                                await handleMovePage({
-                                    fromPdfIndex: pdfIndex,
-                                    fromPageIndex: pageIndex,
-                                    toPdfIndex: toPdfIndex,
-                                    toPageIndex: toPageIndex,
-                                    toPlaceholderThumbnail: true,
-                                })*/
-            }
-            else if (
-                dropResult && pdfIndex !== toPdfIndex && type !== "scrollDropTarget"
-                || dropResult && pdfIndex === toPdfIndex && type === "placeholderRow"
-            ) {
-                // move the page to other PDF (drop on Row)
-                await handleMovePage({
-                    fromPdfIndex: pdfIndex,
-                    fromPageIndex: pageIndex,
-                    toPdfIndex: toPdfIndex,
-                    toPlaceholderRow: type === "placeholderRow" ? true : false,
-                })
-            }
+            setRows(oldRows => {
+                const updatedRows = oldRows;
+                updatedRows[row].splice(rowIndice, 1);
+                updatedRows[dropResult.row].splice(dropResult.rowIndice, 0, theThumbnail);
+                return updatedRows;
+            })
+            return;
+            await handleMovePage({
+                fromRow: row,
+                fromRowIndice: rowIndice,
+                toRow: dropResult.row,
+                toRowIndice: dropResult.rowIndice,
+                toPlaceholderThumbnail: dropResult?.type === 'pdfThumbnail' ? true : false,
+                toPlaceholderRow: dropResult?.type === "placeholderRow" ? true : false,
+            });
         },
         collect: (monitor) => ({
             isDragging: monitor.isDragging()
@@ -92,6 +74,13 @@ export default function Thumbnail({ rows, setRows, pdfIndex, pageIndex, row, row
 
     return <>
         <div
+            pageIndex={pageIndex}
+            devicePixelRatio={20}
+            width={150}
+            height={150}
+            renderAnnotationLayer={false}
+            renderTextLayer={false}
+            renderMode="canvas"
             key={`thumbnail-${pdfIndex}-${pageIndex}`}
             id={`thumbnail-${pdfIndex}-${pageIndex}`}
             ref={ref}
@@ -105,6 +94,7 @@ export default function Thumbnail({ rows, setRows, pdfIndex, pageIndex, row, row
                 opacity-${isDragging ? '10' : '100'}`
             }
             {...onClick && { onClick }}
+            loading={<Loading />}
         >
             <div
                 loading={<Loading />}
