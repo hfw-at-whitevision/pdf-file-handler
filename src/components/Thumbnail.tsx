@@ -1,10 +1,15 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useDrop, useDrag } from "react-dnd";
 import Loading from "./Loading";
 import { Document, Page } from "react-pdf";
+import { BsTrash } from "react-icons/bs";
+import { GrRotateRight } from "react-icons/gr";
+import { BigButton } from "./BigButton";
 
-export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation }) {
+export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation: defaultRotation }) {
     const ref = useRef(null);
+    const [rotation, setRotation] = useState(defaultRotation)
+    const [deleted, setDeleted] = useState(false)
 
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
@@ -72,6 +77,7 @@ export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row
 
     drag(drop(ref));
 
+    if (deleted) return null;
     return <>
         <div
             pageIndex={pageIndex}
@@ -97,22 +103,21 @@ export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row
             loading={<Loading />}
         >
             <div
-                loading={<Loading />}
                 className={
                     `w-[150px] max-h-[150px] h-[150px] cursor-pointer relative rounded-md overflow-hidden
                     pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex flex-col items-center justify-center`
                 }
-                pageIndex={pageIndex}
-                renderAnnotationLayer={false}
-                renderTextLayer={false}
-                renderMode="canvas"
-                width={150}
-                height={150}
             >
-                <img src={src} className='absolute inset-0' />
+                <img src={src} className={`absolute inset-0 rotate-[${rotation}deg]`} />
 
                 <div className="flex flex-col absolute inset-0 items-center justify-center z-10 bg-black/40 font-bold">
-                    pdf-{pdfIndex}-page-{pageIndex}
+                    pdf-{pdfIndex}-{pageIndex}
+
+                    <br />
+
+                    rotation: {rotation}
+
+                    <br />
 
                     <span className="text-xs mt-4">
                         row {row}
@@ -124,7 +129,21 @@ export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row
             </div>
             <div className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
                 <div className="grid grid-cols-2 gap-1 pb-4">
-                    {actionButtons}
+
+                    <BigButton
+                        title={<><GrRotateRight /></>}
+                        onClick={() => setRotation(oldValue => {
+                            if (oldValue === 270) return 0;
+                            else return oldValue + 90;
+                        })}
+                        transparent={false}
+                    />
+                    <BigButton
+                        title={<><BsTrash /></>}
+                        transparent={false}
+                        onClick={() => setDeleted(true)}
+                    />
+
                 </div>
             </div>
         </div>

@@ -49,7 +49,7 @@ export default function FilerHandler() {
 
     try {
       const thumbnailsResult = await generatePdfThumbnails(inputFile, 150);
-      setThumbnails((oldValues: Array<string>) => [...oldValues, thumbnailsResult]);
+      setThumbnails((oldValues: Array<string>) => [thumbnailsResult, ...oldValues]);
 
       let theThumbnails = [];
       for (let i = 0; i < thumbnailsResult.length; i++) {
@@ -189,6 +189,12 @@ export default function FilerHandler() {
   const handleRotatePage = async ({ pdfIndex, pageIndex }) => {
     setIsLoading(true);
     setIsRotating(true);
+
+    setCurrent({ pdfIndex, pageIndex });
+
+    setIsRotating(false);
+    setIsLoading(false);
+    return;
     const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
       ignoreEncryption: true, parseSpeed: 1500
     });
