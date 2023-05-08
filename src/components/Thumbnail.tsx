@@ -3,7 +3,7 @@ import { useDrop, useDrag } from "react-dnd";
 import Loading from "./Loading";
 import { Document, Page } from "react-pdf";
 
-export default function Thumbnail({ pdfs, rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation }) {
+export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation }) {
     const ref = useRef(null);
 
     const [collected, drop] = useDrop({
@@ -109,13 +109,18 @@ export default function Thumbnail({ pdfs, rows, setRows, pdfIndex, pageIndex, ro
                 width={150}
                 height={150}
             >
-                pdf-{pdfIndex}-page-{pageIndex}
+                <img src={src} className='absolute inset-0' />
 
-                <span className="text-xs mt-4">
-                    row {row}
-                    <br />
-                    indice {rowIndice}
-                </span>
+                <div className="flex flex-col absolute inset-0 items-center justify-center z-10 bg-black/40 font-bold">
+                    pdf-{pdfIndex}-page-{pageIndex}
+
+                    <span className="text-xs mt-4">
+                        row {row}
+                        <br />
+                        indice {rowIndice}
+                    </span>
+                </div>
+
             </div>
             <div className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
                 <div className="grid grid-cols-2 gap-1 pb-4">

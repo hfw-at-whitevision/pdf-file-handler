@@ -1,4 +1,3 @@
-import { type NextPage } from "next";
 import Head from "next/head";
 import { get, set } from 'idb-keyval';
 
@@ -24,7 +23,7 @@ import Thumbnail from "@/components/Thumbnail";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
-const Home: NextPage = () => {
+export default function FilerHandler() {
   const [pdfFileNames, setPdfFileNames] = useState([]);
   const [pdfs, setPdfs]: [any, any] = useState([]);
   const [current, setCurrent] = useState({ pdfIndex: 0, pageIndex: 0 });
@@ -38,7 +37,45 @@ const Home: NextPage = () => {
 
   const [rows, setRows] = useState([]);
 
+  // *********************************************************
+  // thumbnails generation  
+  // *********************************************************
+  const [thumbnails, setThumbnails]: [any, any] = useState([]);
+  const generateThumbnails = async (inputFile) => {
+    setIsLoading(true);
+    setLoadingMessage('Thumbnails aan het genereren...');
 
+    const { generatePdfThumbnails } = await import('pdf-thumbnails-generator')
+
+    try {
+      const thumbnailsResult = await generatePdfThumbnails(inputFile, 150);
+      setThumbnails((oldValues: Array<string>) => [...oldValues, thumbnailsResult]);
+
+      let theThumbnails = [];
+      for (let i = 0; i < thumbnailsResult.length; i++) {
+        const thumbnail = thumbnailsResult[i];
+        theThumbnails.push(thumbnail);
+      }
+      await set('thumbnails', theThumbnails);
+    }
+    catch (err) {
+      console.log('Error generating thumbnails.');
+      console.error(err);
+    }
+
+    setIsLoading(false);
+    setLoadingMessage('');
+  }
+  const saveThumbnails = async () => {
+    await set('thumbnails', JSON.stringify(thumbnails));
+  }
+  useEffect(() => {
+    saveThumbnails();
+  }, [thumbnails])
+
+  // *********************************************************
+  // functions
+  // *********************************************************
   const handleReset = async () => {
     setPdfs([]);
     setTotalPages([]);
@@ -453,6 +490,14 @@ const Home: NextPage = () => {
         continue;
       }
 
+      // generate thumbnails
+      const reader = new FileReader();
+      reader.readAsDataURL(files[i]);
+      reader.onloadend = async () => {
+        const file = reader.result;
+        await generateThumbnails(file);
+      };
+
       // MSG / EML / TIFF files: send to Serge API
       if (
         files[i]['type'] === 'application/vnd.ms-outlook'
@@ -620,6 +665,7 @@ const Home: NextPage = () => {
       <Loading inset={true} loading={isLoading} message={loadingMessage} />
 
       <Debug
+        thumbnails={thumbnails}
         pdfs={pdfs}
         totalPages={totalPages}
         numberOfThumbnails={numberOfThumbnails}
@@ -720,7 +766,6 @@ const Home: NextPage = () => {
                               <PlaceholderThumbnail row={rowNumber} rowIndice={rowIndice - 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
                             }
                             <Thumbnail
-                              pdfs={pdfs}
                               rows={rows}
                               setRows={setRows}
                               key={`thumbnail-${rowNumber}-${rowIndice}`}
@@ -730,9 +775,18 @@ const Home: NextPage = () => {
                               rowIndice={rowIndice}
                               pdfIndex={item?.pdfIndex}
                               pageIndex={item?.pageIndex}
+                              rotation={0}
+                              src={thumbnails?.[item?.pdfIndex]?.[item?.pageIndex]?.thumbnail}
                               setUserIsDragging={setUserIsDragging}
                               current={current}
                               actionButtons={renderActionButtons(rowNumber, rowIndice)}
+                              current={current}
+                              onClick={() => {
+                                setCurrent({
+                                  pdfIndex: item?.pdfIndex,
+                                  pageIndex: item?.pageIndex
+                                })
+                              }}
                             />
                             <PlaceholderThumbnail row={rowNumber} rowIndice={rowIndice + 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} key={`thumbnail-${rowNumber}-${rowIndice + 0.5}-placeholder`} margin='ml-2' />
                           </div>
@@ -771,16 +825,14 @@ const Home: NextPage = () => {
                     renderAnnotationLayer={false}
                     renderTextLayer={false}
                     className={`rounded-lg shadow-lg overflow-hidden`}
-                    devicePixelRatio={20}
+                    devicePixelRatio={10}
                   />
                 }
               </Document>
             </div>
           }
         </div>
-
       </div>
     </>
   );
 };
-export default Home;

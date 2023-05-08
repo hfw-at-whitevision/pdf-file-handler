@@ -1,4 +1,5 @@
 export default function Debug({
+    thumbnails,
     pdfs,
     numberOfThumbnails,
     totalPages,
@@ -13,7 +14,9 @@ export default function Debug({
     return <pre>
         build: {process.env.NEXT_PUBLIC_BUILD_VERSION}
         <br />
-        rows: {JSON.stringify(rows, 2, 2)}
+        thumbnails: {JSON.stringify(thumbnails, 2, 2)}
+        <br />
+        rows: {JSON.stringify(rows)}
         <br />
         pdfs.length: {JSON.stringify(pdfs?.length)}
         <br />
