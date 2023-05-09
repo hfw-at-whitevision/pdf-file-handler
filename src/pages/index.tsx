@@ -49,21 +49,23 @@ export default function FilerHandler() {
 
     try {
       const thumbnailsResult = await generatePdfThumbnails(inputFile, 150);
-      setThumbnails((oldValues: Array<string>) => [...oldValues, thumbnailsResult]);
 
       let theThumbnails = [];
       for (let i = 0; i < thumbnailsResult.length; i++) {
         const thumbnail = thumbnailsResult[i];
         theThumbnails.push(thumbnail);
       }
+
+      setIsLoading(false);
+      setLoadingMessage('');
+
+      return theThumbnails;
     }
     catch (err) {
       console.log('Error generating thumbnails: ' + err);
     }
-
-    setIsLoading(false);
-    setLoadingMessage('');
   }
+  // save thumbnails to indexedDB
   const saveThumbnails = async () => {
     await set('thumbnails', thumbnails);
   }
@@ -440,6 +442,7 @@ export default function FilerHandler() {
     setIsLoading(true)
     console.log('handleDropzoneLoaded')
 
+    let newThumbnails = [];
     for (let i = 0; i < files.length; i++) {
       let newPdf: string = await blobToURL(files[i]);
       const currentPdfIndex = pdfs?.length;
@@ -458,7 +461,8 @@ export default function FilerHandler() {
       reader.readAsDataURL(files[i]);
       reader.onloadend = async () => {
         const file = reader.result;
-        await generateThumbnails(file);
+        const thumbnails = await generateThumbnails(file);
+        newThumbnails.push(thumbnails);
       };
 
       // MSG / EML / TIFF files: send to Serge API
