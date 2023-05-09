@@ -1,15 +1,27 @@
 import { useRef, useEffect, useState } from "react";
 import { useDrop, useDrag } from "react-dnd";
-import Loading from "./Loading";
-import { Document, Page } from "react-pdf";
 import { BsTrash } from "react-icons/bs";
 import { GrRotateRight } from "react-icons/gr";
 import { BigButton } from "./BigButton";
 
-export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging, rotation: defaultRotation }) {
+export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row, rowIndice, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging }) {
     const ref = useRef(null);
-    const [rotation, setRotation] = useState(defaultRotation)
     const [deleted, setDeleted] = useState(false)
+    const rotation = rows[row][rowIndice]?.rotation;
+
+    const setRotation = () => {
+        setRows(oldRows => {
+            const updatedRows = oldRows;
+            const oldRotation = updatedRows[row][rowIndice].rotation;
+            const newRotation =
+                oldRotation !== 270
+                    ? oldRotation + 90
+                    : 0;
+
+            updatedRows[row][rowIndice].rotation = newRotation;
+            return updatedRows;
+        });
+    }
 
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
@@ -50,13 +62,26 @@ export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row
 
             const theThumbnail = rows[row][rowIndice];
 
-            setRows(oldRows => {
-                const updatedRows = oldRows;
-                updatedRows[row].splice(rowIndice, 1);
-                updatedRows[dropResult.row].splice(dropResult.rowIndice, 0, theThumbnail);
-                return updatedRows;
-            })
-            return;
+            // if dragged to a placeholder row
+            if (dropResult.type === 'placeholderRow') {
+                setRows(oldRows => {
+                    const updatedRows = oldRows;
+                    updatedRows[row]?.splice(rowIndice, 1);
+                    updatedRows?.splice(dropResult.row, 0, [theThumbnail]);
+                    return updatedRows;
+                });
+                return;
+            }
+            // if dragged to an existing row
+            else {
+                setRows(oldRows => {
+                    const updatedRows = oldRows;
+                    updatedRows[row]?.splice(rowIndice, 1);
+                    updatedRows[dropResult.row]?.splice(dropResult.rowIndice, 0, theThumbnail);
+                    return updatedRows;
+                })
+                return;
+            }
             await handleMovePage({
                 fromRow: row,
                 fromRowIndice: rowIndice,
@@ -80,13 +105,8 @@ export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row
     if (deleted) return null;
     return <>
         <div
-            pageIndex={pageIndex}
-            devicePixelRatio={20}
             width={150}
             height={150}
-            renderAnnotationLayer={false}
-            renderTextLayer={false}
-            renderMode="canvas"
             key={`thumbnail-${pdfIndex}-${pageIndex}`}
             id={`thumbnail-${pdfIndex}-${pageIndex}`}
             ref={ref}
@@ -100,7 +120,6 @@ export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row
                 opacity-${isDragging ? '10' : '100'}`
             }
             {...onClick && { onClick }}
-            loading={<Loading />}
         >
             <div
                 className={
@@ -108,7 +127,11 @@ export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row
                     pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex flex-col items-center justify-center`
                 }
             >
-                <img src={src} className={`absolute inset-0 rotate-[${rotation}deg]`} />
+                <img src={src} className={`absolute inset-0`}
+                    style={{
+                        transform: `rotate(${rotation}deg)`
+                    }}
+                />
 
                 <div className="flex flex-col absolute inset-0 items-center justify-center z-10 bg-black/40 font-bold">
                     pdf-{pdfIndex}-{pageIndex}
@@ -132,10 +155,7 @@ export default function Thumbnail({ src, rows, setRows, pdfIndex, pageIndex, row
 
                     <BigButton
                         title={<><GrRotateRight /></>}
-                        onClick={() => setRotation(oldValue => {
-                            if (oldValue === 270) return 0;
-                            else return oldValue + 90;
-                        })}
+                        onClick={() => setRotation()}
                         transparent={false}
                     />
                     <BigButton

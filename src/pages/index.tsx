@@ -49,27 +49,26 @@ export default function FilerHandler() {
 
     try {
       const thumbnailsResult = await generatePdfThumbnails(inputFile, 150);
-      setThumbnails((oldValues: Array<string>) => [thumbnailsResult, ...oldValues]);
+      setThumbnails((oldValues: Array<string>) => [...oldValues, thumbnailsResult]);
 
       let theThumbnails = [];
       for (let i = 0; i < thumbnailsResult.length; i++) {
         const thumbnail = thumbnailsResult[i];
         theThumbnails.push(thumbnail);
       }
-      await set('thumbnails', theThumbnails);
     }
     catch (err) {
-      console.log('Error generating thumbnails.');
-      console.error(err);
+      console.log('Error generating thumbnails: ' + err);
     }
 
     setIsLoading(false);
     setLoadingMessage('');
   }
   const saveThumbnails = async () => {
-    await set('thumbnails', JSON.stringify(thumbnails));
+    await set('thumbnails', thumbnails);
   }
   useEffect(() => {
+    if (!stateChanged) return;
     saveThumbnails();
   }, [thumbnails])
 
@@ -83,6 +82,7 @@ export default function FilerHandler() {
     setCurrent({ pdfIndex: 0, pageIndex: 0 });
     setNumberOfThumbnails([]);
     setRows([]);
+    setThumbnails([]);
 
     await set('numberOfThumbnails', numberOfThumbnails);
     await set('totalPages', totalPages);
@@ -92,23 +92,16 @@ export default function FilerHandler() {
     setStateChanged(oldValue => oldValue + 1);
   };
 
-  const handleDeleteDocument = (inputPdfIndex: number) => {
+  const handleDeleteDocument = (rowNumber: number) => {
     setIsLoading(true);
     setIsDeleting(true);
 
-    if (current.pdfIndex === inputPdfIndex && current.pdfIndex === pdfs?.length - 1 && current.pdfIndex > 0) {
-      setCurrent({ pdfIndex: current.pdfIndex - 1, pageIndex: 0 });
-    }
-
-    setPdfs((oldPdfs: any) => oldPdfs.filter((_, index) => index !== inputPdfIndex));
-    setTotalPages(oldTotalPages => oldTotalPages.filter((_, index) => index !== inputPdfIndex));
-    setPdfFileNames(oldPdfFileNames => oldPdfFileNames.filter((_, index) => index !== inputPdfIndex));
-    setNumberOfThumbnails((oldNumberOfThumbnails: any) => oldNumberOfThumbnails.filter((_, index) => index !== inputPdfIndex))
+    setRows(oldRows => oldRows.filter((row, index) => index !== rowNumber));
 
     setCurrent({
-      pdfIndex: (inputPdfIndex === pdfs?.length - 1 && inputPdfIndex > 0)
-        ? inputPdfIndex - 1
-        : inputPdfIndex,
+      pdfIndex: (rowNumber === pdfs?.length - 1 && rowNumber > 0)
+        ? rowNumber - 1
+        : rowNumber,
       pageIndex: 0
     })
 
@@ -158,32 +151,27 @@ export default function FilerHandler() {
     setStateChanged(oldValue => oldValue + 1);
   };
 
-  const handleRotateDocument = async (inputPdfIndex: number) => {
+  const handleRotateDocument = async (rowNumber: number) => {
     setIsLoading(true);
-    console.log(`Rotating document ${inputPdfIndex}`)
+    console.log(`Rotating row ${rowNumber}`)
     setIsRotating(true);
-    const pdfDoc = await PDFDocument.load(pdfs[inputPdfIndex], {
-      ignoreEncryption: true, parseSpeed: 1500
-    });
-    const pages = pdfDoc.getPages();
 
-    pages.forEach((page) => {
-      const currentPageRotation = page.getRotation().angle;
-      const newDegrees = currentPageRotation + 90;
-      page.setRotation(degrees(newDegrees));
+    let updatedRow = [];
+    for (let i = 0; i < rows[rowNumber].length; i++) {
+      const oldRotation = rows[rowNumber][i].rotation;
+      let newRotation = oldRotation + 90;
+      if (newRotation === 360) newRotation = 0;
+      updatedRow.push({ ...rows[rowNumber][i], rotation: newRotation });
+    }
+    setRows(oldRows => {
+      let newRows = oldRows;
+      newRows[rowNumber] = updatedRow;
+      return newRows;
     });
 
-    const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-
-    setPdfs(oldPdfs => {
-      let newPdfs = oldPdfs
-      newPdfs[inputPdfIndex] = URL
-      return newPdfs
-    });
     setIsRotating(false);
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
-    console.log('finished')
   }
 
   const handleRotatePage = async ({ pdfIndex, pageIndex }) => {
@@ -194,32 +182,14 @@ export default function FilerHandler() {
 
     setIsRotating(false);
     setIsLoading(false);
-    return;
-    const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
-      ignoreEncryption: true, parseSpeed: 1500
-    });
-    const pages = pdfDoc.getPages();
-    const currentPage = pages[pageIndex];
-    const currentPageRotation = currentPage.getRotation().angle;
-    const newDegrees = currentPageRotation + 90
-
-    if (currentPage) currentPage.setRotation(degrees(newDegrees));
-
-    const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-
-    setPdfs(oldPdfs => {
-      let newPdfs = oldPdfs
-      newPdfs[pdfIndex] = URL
-      return newPdfs
-    });
-    setIsRotating(false);
-    setCurrent({ pdfIndex, pageIndex });
-    setIsLoading(false);
-    setStateChanged(oldValue => oldValue + 1);
   };
 
   const handleMovePage = async ({ fromRow, fromRowIndice, toRow, toRowIndice, toPlaceholderRow = false, toPlaceholderThumbnail = false }) => {
-    if (typeof toRow === 'undefined' && typeof toRowIndice === 'undefined') return;
+    if (typeof toRow === 'undefined' && typeof toRowIndice === 'undefined') {
+      console.log('Undefined toRow / toRowIndice.');
+      return;
+    }
+
     setIsLoading(true);
 
     const theThumbnail = rows[fromRow][fromRowIndice];
@@ -230,6 +200,8 @@ export default function FilerHandler() {
       updatedRows[toRowIndice].splice(toRowIndice, 0, theThumbnail);
       return updatedRows;
     })
+
+    setCurrent({ pdfIndex: toRow, pageIndex: toRowIndice });
 
     setIsLoading(false);
     setStateChanged(oldValue => oldValue + 1);
@@ -290,24 +262,6 @@ export default function FilerHandler() {
     setStateChanged(oldValue => oldValue + 1);
   }
 
-  // scroll thumbnail into view
-  useEffect(() => {
-    if (
-      !pdfs?.length
-      || current?.skipScrollIntoView
-    ) return;
-
-    let timer = null;
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      const thumbnailId = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
-      if (thumbnailId) thumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [current]);
-
-
   const handleSaveDocument = async (pdfIndex) => {
     setIsLoading(true);
     const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
@@ -337,8 +291,6 @@ export default function FilerHandler() {
         pageCount: totalPages[pdfIndex],
       })
     });
-
-    alert(JSON.stringify(res))
 
     setIsLoading(false);
     return base64
@@ -450,10 +402,11 @@ export default function FilerHandler() {
     await set('pdfFileNames', pdfFileNames);
     await set('pdfs', pdfs);
     await set('rows', rows);
-    console.log(`PDF's saved.`)
+    await set('thumbnails', thumbnails);
+    console.log(`PDF's saved to indexedDB.`)
   }
   useEffect(() => {
-    if (!pdfs) return;
+    if (!pdfs || !stateChanged) return;
     saveState();
   }, [stateChanged]);
   // state fetch
@@ -461,15 +414,18 @@ export default function FilerHandler() {
     get('pdfs').then((pdfs) => {
       if (!pdfs) return;
       get('pdfFileNames').then((pdfFileNames) => {
-        get('totalPages').then((totalPages) => {
-          get('rows').then((rows) => {
-            get('numberOfThumbnails').then((numberOfThumbnails) => {
-              setPdfFileNames(pdfFileNames);
-              setTotalPages(totalPages);
-              setNumberOfThumbnails(numberOfThumbnails);
-              setRows(rows);
-              setPdfs(pdfs);
-              console.log(`PDF's fetched.`)
+        get('thumbnails').then((thumbnails) => {
+          get('totalPages').then((totalPages) => {
+            get('rows').then((rows) => {
+              get('numberOfThumbnails').then((numberOfThumbnails) => {
+                setPdfFileNames(pdfFileNames);
+                setTotalPages(totalPages);
+                setNumberOfThumbnails(numberOfThumbnails);
+                setRows(rows);
+                setPdfs(pdfs);
+                setThumbnails(thumbnails);
+                console.log(`PDF's fetched from indexedDB.`)
+              });
             });
           });
         });
@@ -482,6 +438,7 @@ export default function FilerHandler() {
 
   const handleDropzoneLoaded = async (files) => {
     setIsLoading(true)
+    console.log('handleDropzoneLoaded')
 
     for (let i = 0; i < files.length; i++) {
       let newPdf: string = await blobToURL(files[i]);
@@ -543,7 +500,7 @@ export default function FilerHandler() {
           console.log(`${filename}: \n ${newPdf}`)
 
           setPdfs((oldPdfs) => {
-            const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+            const result = oldPdfs?.length ? oldPdfs.concat([newPdf]) : [newPdf];
             return result;
           });
           const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
@@ -595,7 +552,7 @@ export default function FilerHandler() {
           }
           setNumberOfThumbnails(oldValue => [pagesOfUploadedPdf, ...oldValue]);
           setPdfs((oldPdfs) => {
-            const result = oldPdfs ? [newPdf].concat(oldPdfs) : [newPdf];
+            const result = oldPdfs?.length ? oldPdfs.concat([newPdf]) : [newPdf];
             return result;
           });
 
@@ -724,7 +681,7 @@ export default function FilerHandler() {
                 className="flex-col text-white items-start"
               >
 
-                <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
+                <PlaceholderRow row={0} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
 
                 {rows?.map((singleRow, rowNumber) => <>
                   <Row row={rowNumber} key={`row-${rowNumber}`}>
@@ -781,18 +738,13 @@ export default function FilerHandler() {
                               rowIndice={rowIndice}
                               pdfIndex={item?.pdfIndex}
                               pageIndex={item?.pageIndex}
-                              rotation={0}
                               src={thumbnails?.[item?.pdfIndex]?.[item?.pageIndex]?.thumbnail}
                               setUserIsDragging={setUserIsDragging}
-                              current={current}
                               actionButtons={renderActionButtons(rowNumber, rowIndice)}
-                              current={current}
-                              onClick={() => {
-                                setCurrent({
-                                  pdfIndex: item?.pdfIndex,
-                                  pageIndex: item?.pageIndex
-                                })
-                              }}
+                              onClick={() => setCurrent({
+                                pdfIndex: item?.pdfIndex,
+                                pageIndex: item?.pageIndex
+                              })}
                             />
                             <PlaceholderThumbnail row={rowNumber} rowIndice={rowIndice + 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} key={`thumbnail-${rowNumber}-${rowIndice + 0.5}-placeholder`} margin='ml-2' />
                           </div>
@@ -816,7 +768,7 @@ export default function FilerHandler() {
           </DndProvider>
 
           {/* PDF preview */}
-          {(pdfs?.length && current?.pdfIndex !== undefined && current?.pageIndex !== undefined && pdfs[current?.pdfIndex])
+          {(pdfs?.length)
             && <div>
               <Document
                 file={pdfs[current?.pdfIndex]}
@@ -831,7 +783,6 @@ export default function FilerHandler() {
                     renderAnnotationLayer={false}
                     renderTextLayer={false}
                     className={`rounded-lg shadow-lg overflow-hidden`}
-                    devicePixelRatio={10}
                   />
                 }
               </Document>
