@@ -684,7 +684,7 @@ export default function FilerHandler() {
                 <PlaceholderRow row={0} isDragging={userIsDragging} isLoading={isLoading} totalPages={totalPages} />
 
                 {rows?.map((singleRow, rowNumber) => <>
-                  <Row row={rowNumber} key={`row-${rowNumber}`}>
+                  <Row rows={rows} row={rowNumber} key={`row-${rowNumber}`}>
                     <div className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
                       <span className="text-sm">
                         <h3 className="mr-2 inline">{pdfFileNames[rowNumber]}</h3>
@@ -783,6 +783,7 @@ export default function FilerHandler() {
                     renderAnnotationLayer={false}
                     renderTextLayer={false}
                     className={`rounded-lg shadow-lg overflow-hidden`}
+                    rotate={rows[current?.pdfIndex][current?.pageIndex]?.rotation || 0}
                   />
                 }
               </Document>
