@@ -1,6 +1,6 @@
 import React from "react";
 
-export function BigButton({
+export  default function Button({
   title = '' as any,
   onClick = () => { },
   id = '',

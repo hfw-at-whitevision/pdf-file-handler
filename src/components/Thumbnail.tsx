@@ -1,10 +1,28 @@
-import { useRef, useEffect } from "react";
-import { useDrop, useDrag } from "react-dnd";
-import { Page } from "react-pdf";
-import Loading from "./Loading";
+import {useRef, useEffect} from "react";
+import {useDrop, useDrag} from "react-dnd";
+import {Page} from "react-pdf";
+import Loading from "./layout/Loading";
 
-export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons, current, handleMovePage, index, setUserIsDragging }) {
-    const ref = useRef(null);
+export default function Thumbnail({
+                                      pdfIndex,
+                                      pageIndex,
+                                      onClick,
+                                      actionButtons,
+                                      current,
+                                      handleMovePage,
+                                      index,
+                                      setUserIsDragging
+                                  }: {
+    pdfIndex: number,
+    pageIndex: number,
+    onClick: any,
+    actionButtons: any,
+    current: { pdfIndex?: number, pageIndex?: number, type?: string },
+    handleMovePage: any,
+    index: number,
+    setUserIsDragging: any
+}) {
+    const ref: any = useRef(null);
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
         hover(item: any, monitor) {
@@ -15,10 +33,10 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
             if (dragIndex === hoverIndex) {
                 return;
             }
-            const hoverBoundingRect = ref.current?.getBoundingClientRect();
+            const hoverBoundingRect = ref.current.getBoundingClientRect();
             const hoverMiddleX =
                 (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
-            const clientOffset = monitor.getClientOffset();
+            const clientOffset: any = monitor.getClientOffset();
             const hoverClientX = clientOffset.x - hoverBoundingRect.left;
 
             if (dragIndex < hoverIndex && hoverClientX < hoverMiddleX) {
@@ -31,11 +49,11 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
         },
     });
 
-    const [{ isDragging }, drag]: any = useDrag({
+    const [{isDragging}, drag]: any = useDrag({
         type: "pdfThumbnail",
-        item: { index, pdfIndex, pageIndex, type: "pdfThumbnail" },
+        item: {index, pdfIndex, pageIndex, type: "pdfThumbnail"},
         end: async (item, monitor) => {
-            const dropResult = monitor.getDropResult();
+            const dropResult: dropResultType = monitor.getDropResult();
             const toPdfIndex = dropResult?.pdfIndex;
             const toPageIndex = dropResult?.pageIndex;
             const type = dropResult?.type;
@@ -48,8 +66,7 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
                     toPageIndex: toPageIndex,
                     toPlaceholderThumbnail: true,
                 })
-            }
-            else if (
+            } else if (
                 dropResult && pdfIndex !== toPdfIndex && type !== "scrollDropTarget"
                 || dropResult && pdfIndex === toPdfIndex && type === "placeholderRow"
             ) {
@@ -87,10 +104,10 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
                     : "before:z-[-1] border-transparent"}
           opacity-${isDragging ? '10' : '100'}`
             }
-            {...onClick && { onClick }}
+            {...onClick && {onClick}}
         >
             <Page
-                loading={<Loading />}
+                loading={<Loading/>}
                 className={
                     `w-[150px] max-h-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
               pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
@@ -102,7 +119,8 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
                 width={150}
                 height={150}
             />
-            <div className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
+            <div
+                className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
                 <div className="grid grid-cols-2 gap-1 pb-4">
                     {actionButtons}
                 </div>
@@ -110,3 +128,9 @@ export default function Thumbnail({ pdfIndex, pageIndex, onClick, actionButtons,
         </div>
     </>
 }
+
+export type dropResultType = {
+    pdfIndex?: number,
+    pageIndex?: number,
+    type?: string
+} | null;

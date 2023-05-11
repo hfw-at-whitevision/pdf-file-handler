@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
 
-export default function Drop({ onLoaded = (acceptedFiles: any) => { }, className = null }) {
+export default function Drop({ onLoaded = (acceptedFiles: any) => { }, className = '' }) {
   const onDrop = useCallback((acceptedFiles: any) => {
     onLoaded(acceptedFiles);
   }, []);

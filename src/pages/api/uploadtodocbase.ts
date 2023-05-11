@@ -1,9 +1,9 @@
-export const config = { api: { bodyParser: { sizeLimit: '25mb' } } };
+export const config = {api: {bodyParser: {sizeLimit: '25mb'}}};
 
-export default async function handler(req, res) {
-    const { pdfBase64, fileName, creationDate, pageCount } = req.body;
-
-    fetch(process.env.UPLOAD_API_URL, {
+export default async function handler(req: any, res: any) {
+    const {pdfBase64, fileName, creationDate, pageCount} = req.body;
+    const api: any = process.env.UPLOAD_API_URL
+    fetch(api, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 export default function Loading({
     inset = false,
     loading = true,
-    message = null,
+    message = '',
 }) {
     if (inset) {
         if (!loading) return null;

@@ -5,17 +5,17 @@ import { BsCheck2Circle, BsTrash } from "react-icons/bs";
 import { GrRotateRight } from "react-icons/gr";
 import { RxReset } from "react-icons/rx";
 import { Page } from "react-pdf";
-import { BigButton } from "./BigButton";
-import ButtonXl from "./ButtonXl";
+import { Button } from "../Button";
+import ButtonXl from "../ButtonXl";
 import Debug from "./Debug";
-import Drop from "./Drop";
+import Drop from "../Drop";
 import Loading from "./Loading";
-import ScrollDropTarget from "./ScrollDropTarget";
-import PlaceholderRow from "./PlaceholderRow";
+import ScrollDropTarget from "../ScrollDropTarget";
+import PlaceholderRow from "../PlaceholderRow";
 import { Document } from 'react-pdf'
-import PlaceholderThumbnail from "./PlaceholderThumbnail";
-import Row from "./Row";
-import Thumbnail from "./Thumbnail";
+import PlaceholderThumbnail from "../PlaceholderThumbnail";
+import Row from "../Row";
+import Thumbnail from "../Thumbnail";
 import { get, set } from 'idb-keyval';
 import { useRef } from "react";
 
@@ -97,19 +97,19 @@ export default function Layout(
                                         </span>
 
                                         <nav className={`${isLoading ? "disabled" : ""} flex gap-1 w-[270px] justify-end`}>
-                                            <BigButton
+                                            <Button
                                                 title={<><BsCheck2Circle /><span className="text-xs">naar administratie</span></>}
                                                 onClick={async () => {
                                                     const base64 = await handleSaveDocument(pdfIndex);
                                                     alert(base64)
                                                 }}
                                             />
-                                            <BigButton
+                                            <Button
                                                 title={<><GrRotateRight /></>}
                                                 onClick={async () => await handleRotateDocument(pdfIndex)}
                                                 disabled={isRotating}
                                             />
-                                            <BigButton
+                                            <Button
                                                 title={<><BsTrash /></>}
                                                 onClick={async () => await handleDeleteDocument(pdfIndex)}
                                                 disabled={isRotating}
@@ -196,13 +196,13 @@ export default function Layout(
 
 const renderActionButtons = (pdfIndex, pageIndex) => {
     return <>
-        <BigButton
+        <Button
             title={<><GrRotateRight /></>}
             onClick={async () => handleRotatePage({ pdfIndex, pageIndex })}
             disabled={isRotating}
             transparent={false}
         />
-        <BigButton
+        <Button
             title={<><BsTrash /></>}
             onClick={async () => handleDeletePage({ pdfIndex, pageIndex })}
             disabled={isRotating}
