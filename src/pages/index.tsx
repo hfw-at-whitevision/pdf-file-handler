@@ -1,4 +1,3 @@
-import {type NextPage} from "next";
 import Head from "next/head";
 import {get, set} from 'idb-keyval';
 
@@ -13,7 +12,7 @@ import {BsTrash, BsPlus, BsCheck2Circle} from "react-icons/bs";
 import {RxReset} from "react-icons/rx";
 import {GrRotateRight} from "react-icons/gr";
 import Loading from "@/components/layout/Loading";
-import {DndProvider, useDrag, useDrop} from "react-dnd";
+import {DndProvider} from "react-dnd";
 import {HTML5Backend} from "react-dnd-html5-backend";
 import Debug from "@/components/layout/Debug";
 import PlaceholderRow from "@/components/PlaceholderRow";
@@ -21,21 +20,21 @@ import PlaceholderThumbnail from "@/components/PlaceholderThumbnail";
 import Row from "@/components/Row";
 import ScrollDropTarget from "@/components/ScrollDropTarget";
 import Thumbnail from "@/components/Thumbnail";
-import {VariableSizeList} from "react-window";
+import {FixedSizeGrid} from "react-window";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
-const Home: NextPage = () => {
+export default function Home() {
     const [pdfFileNames, setPdfFileNames]: [Array<string>, any] = useState([]);
     const [pdfs, setPdfs]: [any, any] = useState();
     const [current, setCurrent]: any = useState({pdfIndex: 0, pageIndex: 0});
     const [totalPages, setTotalPages]: [any, any] = useState([]);
-    const [isLoading, setIsLoading]: [ boolean, any] = useState(false);
-    const [loadingMessage, setLoadingMessage] : [ string, any]= useState('');
-    const [isDeleting, setIsDeleting] : [boolean, any]= useState(false);
-    const [isRotating, setIsRotating] : [boolean, any] = useState(false);
-    const [userIsDragging, setUserIsDragging]  : [boolean, any]= useState(false);
-    const documentRef : any= useRef(null);
+    const [isLoading, setIsLoading]: [boolean, any] = useState(false);
+    const [loadingMessage, setLoadingMessage]: [string, any] = useState('');
+    const [isDeleting, setIsDeleting]: [boolean, any] = useState(false);
+    const [isRotating, setIsRotating]: [boolean, any] = useState(false);
+    const [userIsDragging, setUserIsDragging]: [boolean, any] = useState(false);
+    const documentRef: any = useRef(null);
 
     const handleReset = async () => {
         setPdfs([]);
@@ -61,8 +60,8 @@ const Home: NextPage = () => {
         }
 
         setPdfs((oldPdfs: any) => oldPdfs.filter((_: any, index: number) => index !== inputPdfIndex));
-        setTotalPages((oldTotalPages:any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
-        setPdfFileNames((oldPdfFileNames:any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
+        setTotalPages((oldTotalPages: any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
+        setPdfFileNames((oldPdfFileNames: any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
         setNumberOfThumbnails((oldNumberOfThumbnails: any) => oldNumberOfThumbnails.filter((_: any, index: number) => index !== inputPdfIndex))
 
         setCurrent({
@@ -564,7 +563,7 @@ const Home: NextPage = () => {
                     });
                     const newPdfDoc = await PDFDocument.load(newPdf, {ignoreEncryption: true, parseSpeed: 1500})
                     const pages = newPdfDoc.getPageCount();
-                    setTotalPages((oldTotalPages : any)=> [...oldTotalPages, pages]);
+                    setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
                     setPdfFileNames((oldFileNames: any) => [...oldFileNames, filename]);
                     console.log('Updating numberOfThumbnails')
 
@@ -639,7 +638,7 @@ const Home: NextPage = () => {
                                     .then(newPdfDoc => {
                                         const pages = newPdfDoc?.getPageCount();
                                         setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
-                                        setPdfFileNames((oldFileNames : any)=> [...oldFileNames, files[i].name]);
+                                        setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i].name]);
                                         console.log('Updating numberOfThumbnails')
 
                                         let pagesOfUploadedPdf: Array<number> = []
@@ -666,195 +665,210 @@ const Home: NextPage = () => {
         setLoadingMessage('')
         setIsLoading(false)
     }
-
-    return (
-        <>
-            <Head>
-                <title>PDF File Handler</title>
-            </Head>
-
-            <Loading inset={true} loading={isLoading} message={loadingMessage}/>
-
-            <Debug
-                pdfs={pdfs}
-                totalPages={totalPages}
-                numberOfThumbnails={numberOfThumbnails}
+    const renderThumbnailWithPlaceholders = ({rowIndex: pdfIndex, columnIndex: pageIndex}: any) => (
+        <div className="flex flex-row">
+            {
+                /* first placeholder thumbnail in row */
+                pageIndex % 4 === 0 &&
+                <PlaceholderThumbnail pdfIndex={pdfIndex}
+                                      pageIndex={pageIndex - 0.5}
+                                      isDragging={userIsDragging}
+                                      totalPages={totalPages}
+                                      isLoading={isLoading} margin='mr-2'/>
+            }
+            <Thumbnail
+                key={`thumbnail-${pdfIndex}-${pageIndex}`}
+                index={pageIndex}
+                handleMovePage={handleMovePage}
+                pageIndex={pageIndex}
+                pdfIndex={pdfIndex}
+                setUserIsDragging={setUserIsDragging}
                 current={current}
-                userIsDragging={userIsDragging}
+                onClick={() => setCurrent({
+                    pdfIndex: pdfIndex,
+                    pageIndex: pageIndex,
+                    skipScrollIntoView: true,
+                })}
+                actionButtons={renderActionButtons(pdfIndex, pageIndex)}
             />
+            <PlaceholderThumbnail pdfIndex={pdfIndex}
+                                  pageIndex={pageIndex + 0.5}
+                                  isDragging={userIsDragging}
+                                  totalPages={totalPages}
+                                  isLoading={isLoading}
+                                  key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`}
+                                  margin='ml-2'/>
+        </div>
+    )
+    const innerElementType = ({pdfIndex, pdfDoc, children}: any, props: any) => (
+        <Document
+            file={pdfDoc}
+            loading={<Loading/>}
+            className={
+                `grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 w-full`
+            }
+            {...props}
+        >
+            <div>test: {JSON.stringify(children)}</div>
+            {children}
+        </Document>
+    )
+
+    return <>
+        <Head>
+            <title>PDF File Handler</title>
+        </Head>
+
+        <Loading inset={true} loading={isLoading} message={loadingMessage}/>
+
+        <Debug
+            pdfs={pdfs}
+            totalPages={totalPages}
+            numberOfThumbnails={numberOfThumbnails}
+            current={current}
+            userIsDragging={userIsDragging}
+        />
+
+        <div className={
+            `flex min-h-screen ${!pdfs?.length ? 'items-center' : ''} justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]`
+        }>
 
             <div className={
-                `flex min-h-screen ${!pdfs?.length ? 'items-center' : ''} justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]`
-            }>
-
-                <div className={
-                    `flex gap-8 px-4 py-16
+                `flex gap-8 px-4 py-16
           ${pdfs ? "flex-row" : "flex-col items-center justify-center"}`
-                }>
-                    <header className={
-                        `flex flex-col
+            }>
+                <header className={
+                    `flex flex-col
             ${!pdfs ? "items-center" : "max-w-xs"}
             `
-                    }>
-                        <nav className="sticky top-8">
-                            <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg "/>
-                            <div className={
-                                `grid gap-4 mt-6
+                }>
+                    <nav className="sticky top-8">
+                        <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg "/>
+                        <div className={
+                            `grid gap-4 mt-6
               ${!pdfs ? "grid-cols-1" : "grid-cols-1"}
               `
-                            }>
-                                <Drop
-                                    onLoaded={handleDropzoneLoaded}
-                                    className={pdfs?.length ? "opacity-50" : "!p-16"}
-                                />
-                                {
-                                    pdfs?.length
-                                        ? <>
-                                            <ButtonXl
-                                                title={"Reset"}
-                                                icon={<RxReset/>}
-                                                description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                                                onClick={async () => await handleReset()}
-                                            />
-                                        </>
-                                        : null
-                                }
-                            </div>
-                        </nav>
-                    </header>
+                        }>
+                            <Drop
+                                onLoaded={handleDropzoneLoaded}
+                                className={pdfs?.length ? "opacity-50" : "!p-16"}
+                            />
+                            {
+                                pdfs?.length
+                                    ? <>
+                                        <ButtonXl
+                                            title={"Reset"}
+                                            icon={<RxReset/>}
+                                            description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                                            onClick={async () => await handleReset()}
+                                        />
+                                    </>
+                                    : null
+                            }
+                        </div>
+                    </nav>
+                </header>
 
-                    <DndProvider backend={HTML5Backend}>
-                        <ScrollDropTarget position='top' isDragging={userIsDragging}/>
+                <DndProvider backend={HTML5Backend}>
+                    <ScrollDropTarget position='top' isDragging={userIsDragging}/>
 
-                        {pdfs?.length ? (
-                            <main
-                                ref={documentRef}
-                                className="flex-col text-white items-start"
-                            >
+                    {pdfs?.length ? (
+                        <main
+                            ref={documentRef}
+                            className="flex-col text-white items-start"
+                        >
 
-                                <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading}
-                                                totalPages={totalPages}/>
+                            <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading}
+                                            totalPages={totalPages}/>
 
-                                {pdfs?.map((pdfDoc: any, pdfIndex: number) => <>
-                                        <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
-                                            <div
-                                                className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
+                            {pdfs?.map((pdfDoc: string, pdfIndex: number) => <>
+                                    <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
+                                        <div
+                                            className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
                       <span className="text-sm">
                         <h3 className="mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
                         ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
                       </span>
 
-                                                <nav
-                                                    className={`${isLoading ? "disabled" : ""} flex gap-1 w-[270px] justify-end`}>
-                                                    <Button
-                                                        title={<><BsCheck2Circle/><span className="text-xs">naar administratie</span></>}
-                                                        onClick={async () => {
-                                                            const base64 = await handleSaveDocument(pdfIndex);
-                                                            alert(base64)
-                                                        }}
-                                                    />
-                                                    <Button
-                                                        title={<><GrRotateRight/></>}
-                                                        onClick={async () => await handleRotateDocument(pdfIndex)}
-                                                        disabled={isRotating}
-                                                    />
-                                                    <Button
-                                                        title={<><BsTrash/></>}
-                                                        onClick={async () => await handleDeleteDocument(pdfIndex)}
-                                                        disabled={isRotating}
-                                                    />
-                                                </nav>
-                                            </div>
+                                            <nav
+                                                className={`${isLoading ? "disabled" : ""} flex gap-1 w-[270px] justify-end`}>
+                                                <Button
+                                                    title={<><BsCheck2Circle/><span
+                                                        className="text-xs">naar administratie</span></>}
+                                                    onClick={async () => {
+                                                        const base64 = await handleSaveDocument(pdfIndex);
+                                                        alert(base64)
+                                                    }}
+                                                />
+                                                <Button
+                                                    title={<><GrRotateRight/></>}
+                                                    onClick={async () => await handleRotateDocument(pdfIndex)}
+                                                    disabled={isRotating}
+                                                />
+                                                <Button
+                                                    title={<><BsTrash/></>}
+                                                    onClick={async () => await handleDeleteDocument(pdfIndex)}
+                                                    disabled={isRotating}
+                                                />
+                                            </nav>
+                                        </div>
 
-                                            <div className='relative'>
-                                                <Document
-                                                    file={pdfDoc}
-                                                    loading={<Loading/>}
-                                                    className={
-                                                        `grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 w-full`
-                                                    }
-                                                >
+                                        <Document
+                                            file={pdfDoc}
+                                            loading={<Loading/>}
+                                            className={
+                                                `grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 w-full relative`
+                                            }
+                                        >
+                                            <FixedSizeGrid
+                                                columnCount={4}
+                                                rowCount={Math.ceil(totalPages[pdfIndex] / 4)}
+                                                columnWidth={150}
+                                                rowHeight={150}
+                                                width={800}
+                                                height={Math.ceil(totalPages[pdfIndex] / 4) * 150}
+                                                
+                                            >
+                                                {renderThumbnailWithPlaceholders}
+                                            </FixedSizeGrid>
+                                        </Document>
+                                    </Row>
 
-                                                    {/* thumbnails of current PDF */}
-                                                    {numberOfThumbnails[pdfIndex]?.map((item: any, pageIndex: number) => <>
-                                                            <div className="flex flex-row">
-                                                                {
-                                                                    /* first placeholder thumbnail in row */
-                                                                    pageIndex % 4 === 0 &&
-                                                                    <PlaceholderThumbnail pdfIndex={pdfIndex}
-                                                                                          pageIndex={pageIndex - 0.5}
-                                                                                          isDragging={userIsDragging}
-                                                                                          totalPages={totalPages}
-                                                                                          isLoading={isLoading} margin='mr-2'/>
-                                                                }
-                                                                <Thumbnail
-                                                                    key={`thumbnail-${pdfIndex}-${pageIndex}`}
-                                                                    index={pageIndex}
-                                                                    handleMovePage={handleMovePage}
-                                                                    pageIndex={pageIndex}
-                                                                    pdfIndex={pdfIndex}
-                                                                    setUserIsDragging={setUserIsDragging}
-                                                                    current={current}
-                                                                    onClick={() => setCurrent({
-                                                                        pdfIndex: pdfIndex,
-                                                                        pageIndex: pageIndex,
-                                                                        skipScrollIntoView: true,
-                                                                    })}
-                                                                    actionButtons={renderActionButtons(pdfIndex, pageIndex)}
-                                                                />
-                                                                <PlaceholderThumbnail pdfIndex={pdfIndex}
-                                                                                      pageIndex={pageIndex + 0.5}
-                                                                                      isDragging={userIsDragging}
-                                                                                      totalPages={totalPages}
-                                                                                      isLoading={isLoading}
-                                                                                      key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`}
-                                                                                      margin='ml-2'/>
-                                                            </div>
-                                                        </>
-                                                    )
-                                                    }
+                                    <PlaceholderRow pdfIndex={pdfIndex + 0.5} isDragging={userIsDragging}
+                                                    isLoading={isLoading} totalPages={totalPages}/>
 
-                                                </Document>
-                                            </div>
-                                        </Row>
+                                </>
+                            )}
 
-                                        <PlaceholderRow pdfIndex={pdfIndex + 0.5} isDragging={userIsDragging}
-                                                        isLoading={isLoading} totalPages={totalPages}/>
+                        </main>
+                    ) : null}
 
-                                    </>
-                                )}
+                    <ScrollDropTarget position='bottom' isDragging={userIsDragging}/>
+                </DndProvider>
 
-                            </main>
-                        ) : null}
-
-                        <ScrollDropTarget position='bottom' isDragging={userIsDragging}/>
-                    </DndProvider>
-
-                    {/* PDF preview */}
-                    {(pdfs?.length && current?.pdfIndex !== undefined && current?.pageIndex !== undefined && pdfs[current?.pdfIndex])
-                        && <div>
-                            <Document
-                                file={pdfs[current?.pdfIndex]}
-                                loading={<Loading/>}
-                                className='w-[800px] sticky top-8'
-                            >
-                                {!isLoading &&
-                                    <Page
-                                        pageIndex={current?.pageIndex}
-                                        loading={<Loading/>}
-                                        width={800}
-                                        renderAnnotationLayer={false}
-                                        renderTextLayer={false}
-                                        className={`rounded-lg shadow-lg overflow-hidden`}
-                                    />
-                                }
-                            </Document>
-                        </div>
-                    }
-                </div>
-
+                {/* PDF preview */}
+                {(pdfs?.length && current?.pdfIndex !== undefined && current?.pageIndex !== undefined && pdfs[current?.pdfIndex])
+                    && <div>
+                        <Document
+                            file={pdfs[current?.pdfIndex]}
+                            loading={<Loading/>}
+                            className='w-[800px] sticky top-8'
+                        >
+                            {!isLoading &&
+                                <Page
+                                    pageIndex={current?.pageIndex}
+                                    loading={<Loading/>}
+                                    width={800}
+                                    renderAnnotationLayer={false}
+                                    renderTextLayer={false}
+                                    className={`rounded-lg shadow-lg overflow-hidden`}
+                                />
+                            }
+                        </Document>
+                    </div>
+                }
             </div>
-        </>
-    );
-};
-export default Home;
+
+        </div>
+    </>
+}
