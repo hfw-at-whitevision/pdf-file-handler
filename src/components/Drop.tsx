@@ -9,6 +9,10 @@ export default function Drop({ onLoaded = (acceptedFiles: any) => { }, className
       "application/vnd.ms-outlook"] as any,
   });
 
+  useEffect(() => {
+    console.log(`isDragActive: ${isDragActive}`);
+  }, [isDragActive]);
+
   return (
     <div
       {...getRootProps()}

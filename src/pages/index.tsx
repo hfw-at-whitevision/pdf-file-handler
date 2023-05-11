@@ -462,7 +462,7 @@ export default function FilerHandler() {
       reader.onloadend = async () => {
         const file = reader.result;
         const thumbnails = await generateThumbnails(file);
-        newThumbnails.push(thumbnails);
+        setThumbnails(oldThumbnails => oldThumbnails.concat([thumbnails]))
       };
 
       // MSG / EML / TIFF files: send to Serge API
@@ -617,7 +617,6 @@ export default function FilerHandler() {
           }
         })
     }
-
     setStateChanged(oldValue => oldValue + 1)
     setLoadingMessage('')
     setIsLoading(false)
@@ -718,7 +717,6 @@ export default function FilerHandler() {
 
                     <div className='relative'>
                       <div
-                        loading={<Loading />}
                         className={
                           `grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 w-full`
                         }
@@ -787,7 +785,7 @@ export default function FilerHandler() {
                     renderAnnotationLayer={false}
                     renderTextLayer={false}
                     className={`rounded-lg shadow-lg overflow-hidden`}
-                    rotate={rows[current?.pdfIndex][current?.pageIndex]?.rotation || 0}
+                    rotate={rows?.[current.pdfIndex]?.[current.pageIndex]?.rotation}
                   />
                 }
               </Document>
@@ -797,4 +795,4 @@ export default function FilerHandler() {
       </div>
     </>
   );
-};
+}
