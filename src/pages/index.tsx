@@ -1,4 +1,4 @@
-import { Provider, atom, useAtom } from 'jotai'
+import { useAtom } from 'jotai'
 import Head from "next/head";
 import { get, set } from 'idb-keyval';
 
@@ -664,7 +664,8 @@ const HomePage = () => {
 
     // debug
     const router = useRouter()
-    const { debug } = router.query
+    let { debug } = router.query
+    if (!debug) debug = false
 
     return (
         <>
@@ -672,13 +673,15 @@ const HomePage = () => {
                 <title>PDF File Handler</title>
             </Head>
 
-            <Debug
-                pdfs={pdfs}
-                totalPages={totalPages}
-                numberOfThumbnails={numberOfThumbnails}
-                current={current}
-                userIsDragging={userIsDragging}
-            />
+            {debug &&
+                <Debug
+                    pdfs={pdfs}
+                    totalPages={totalPages}
+                    numberOfThumbnails={numberOfThumbnails}
+                    current={current}
+                    userIsDragging={userIsDragging}
+                />
+            }
 
             <div className={
                 `flex min-h-screen ${!pdfs?.length ? 'items-center' : ''} justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]`
