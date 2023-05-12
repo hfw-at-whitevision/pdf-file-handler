@@ -1,47 +1,42 @@
-import {type NextPage} from "next";
 import Head from "next/head";
-import {get, set} from 'idb-keyval';
+import { get, set } from 'idb-keyval';
 
-import {useEffect, useRef, useState} from "react";
+import { useEffect, useRef, useState } from "react";
 import Drop from "@/components/Drop";
-import {Document, Page, pdfjs} from "react-pdf";
-import {PDFDocument, degrees} from "pdf-lib";
-import {blobToURL} from "@/utils";
+import { degrees, PDFDocument } from "pdf-lib";
+import { blobToURL } from "@/utils";
 import Button from "@/components/Button";
 import ButtonXl from "@/components/ButtonXl";
-import {BsTrash, BsPlus, BsCheck2Circle} from "react-icons/bs";
-import {RxReset} from "react-icons/rx";
-import {GrRotateRight} from "react-icons/gr";
+import { BsCheck2Circle, BsTrash } from "react-icons/bs";
+import { RxReset } from "react-icons/rx";
+import { GrRotateRight } from "react-icons/gr";
 import Loading from "@/components/layout/Loading";
-import {DndProvider, useDrag, useDrop} from "react-dnd";
-import {HTML5Backend} from "react-dnd-html5-backend";
 import Debug from "@/components/layout/Debug";
 import PlaceholderRow from "@/components/PlaceholderRow";
-import PlaceholderThumbnail from "@/components/PlaceholderThumbnail";
 import Row from "@/components/Row";
 import ScrollDropTarget from "@/components/ScrollDropTarget";
+import PdfPreview from "@/components/PdfPreview";
+import PlaceholderThumbnail from "@/components/PlaceholderThumbnail";
 import Thumbnail from "@/components/Thumbnail";
-import {VariableSizeList} from "react-window";
+import { useRouter } from "next/router";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
-
-const Home: NextPage = () => {
+const HomePage = () => {
     const [pdfFileNames, setPdfFileNames]: [Array<string>, any] = useState([]);
     const [pdfs, setPdfs]: [any, any] = useState();
-    const [current, setCurrent]: any = useState({pdfIndex: 0, pageIndex: 0});
+    const [current, setCurrent]: any = useState({ pdfIndex: 0, pageIndex: 0 });
     const [totalPages, setTotalPages]: [any, any] = useState([]);
-    const [isLoading, setIsLoading]: [ boolean, any] = useState(false);
-    const [loadingMessage, setLoadingMessage] : [ string, any]= useState('');
-    const [isDeleting, setIsDeleting] : [boolean, any]= useState(false);
-    const [isRotating, setIsRotating] : [boolean, any] = useState(false);
-    const [userIsDragging, setUserIsDragging]  : [boolean, any]= useState(false);
-    const documentRef : any= useRef(null);
+    const [isLoading, setIsLoading]: [boolean, any] = useState(false);
+    const [loadingMessage, setLoadingMessage]: [string, any] = useState('');
+    const [isDeleting, setIsDeleting]: [boolean, any] = useState(false);
+    const [isRotating, setIsRotating]: [boolean, any] = useState(false);
+    const [userIsDragging, setUserIsDragging]: [boolean, any] = useState(false);
+    const documentRef: any = useRef(null);
 
     const handleReset = async () => {
         setPdfs([]);
         setTotalPages([]);
         setPdfFileNames([]);
-        setCurrent({pdfIndex: 0, pageIndex: 0});
+        setCurrent({ pdfIndex: 0, pageIndex: 0 });
         setNumberOfThumbnails([]);
 
         await set('numberOfThumbnails', numberOfThumbnails);
@@ -57,12 +52,11 @@ const Home: NextPage = () => {
         setIsDeleting(true);
 
         if (current.pdfIndex === inputPdfIndex && current.pdfIndex === pdfs?.length - 1 && current.pdfIndex > 0) {
-            setCurrent({pdfIndex: current.pdfIndex - 1, pageIndex: 0});
+            setCurrent({ pdfIndex: current.pdfIndex - 1, pageIndex: 0 });
         }
-
         setPdfs((oldPdfs: any) => oldPdfs.filter((_: any, index: number) => index !== inputPdfIndex));
-        setTotalPages((oldTotalPages:any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
-        setPdfFileNames((oldPdfFileNames:any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
+        setTotalPages((oldTotalPages: any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
+        setPdfFileNames((oldPdfFileNames: any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
         setNumberOfThumbnails((oldNumberOfThumbnails: any) => oldNumberOfThumbnails.filter((_: any, index: number) => index !== inputPdfIndex))
 
         setCurrent({
@@ -77,7 +71,7 @@ const Home: NextPage = () => {
         setStateChanged(oldValue => oldValue + 1);
     }
 
-    const handleDeletePage = async ({pdfIndex, pageIndex}: { pdfIndex: number, pageIndex: number }) => {
+    const handleDeletePage = async ({ pdfIndex, pageIndex }: { pdfIndex: number, pageIndex: number }) => {
         setIsLoading(true);
         setIsDeleting(true);
 
@@ -91,7 +85,7 @@ const Home: NextPage = () => {
             ignoreEncryption: true, parseSpeed: 1500
         });
         pdfDoc.removePage(pageIndex);
-        const URL = await pdfDoc.saveAsBase64({dataUri: true});
+        const URL = await pdfDoc.saveAsBase64({ dataUri: true });
         setPdfs((oldPdfs: Array<string>) => {
             let newPdfs = oldPdfs
             newPdfs[pdfIndex] = URL
@@ -133,7 +127,7 @@ const Home: NextPage = () => {
             page.setRotation(degrees(newDegrees));
         });
 
-        const URL = await pdfDoc.saveAsBase64({dataUri: true});
+        const URL = await pdfDoc.saveAsBase64({ dataUri: true });
 
         setPdfs((oldPdfs: any) => {
             let newPdfs = oldPdfs
@@ -146,7 +140,7 @@ const Home: NextPage = () => {
         console.log('finished')
     }
 
-    const handleRotatePage = async ({pdfIndex, pageIndex}: any) => {
+    const handleRotatePage = async ({ pdfIndex, pageIndex }: any) => {
         setIsLoading(true);
         setIsRotating(true);
         const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
@@ -159,7 +153,7 @@ const Home: NextPage = () => {
 
         if (currentPage) currentPage.setRotation(degrees(newDegrees));
 
-        const URL = await pdfDoc.saveAsBase64({dataUri: true});
+        const URL = await pdfDoc.saveAsBase64({ dataUri: true });
 
         setPdfs((oldPdfs: any) => {
             let newPdfs = oldPdfs
@@ -167,31 +161,31 @@ const Home: NextPage = () => {
             return newPdfs
         });
         setIsRotating(false);
-        setCurrent({pdfIndex, pageIndex});
+        setCurrent({ pdfIndex, pageIndex });
         setIsLoading(false);
         setStateChanged(oldValue => oldValue + 1);
     };
 
     const handleMovePage = async ({
-                                      fromPdfIndex,
-                                      fromPageIndex,
-                                      toPdfIndex,
-                                      toPageIndex,
-                                      toPlaceholderRow = false,
-                                      toPlaceholderThumbnail = false
-                                  }: any) => {
+        fromPdfIndex,
+        fromPageIndex,
+        toPdfIndex,
+        toPageIndex,
+        toPlaceholderRow = false,
+        toPlaceholderThumbnail = false
+    }: any) => {
         setIsLoading(true);
 
         if (typeof toPdfIndex === 'undefined' && typeof toPageIndex === 'undefined') return;
 
         if (toPlaceholderThumbnail && fromPdfIndex === toPdfIndex) {
-            const pdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], {ignoreEncryption: true, parseSpeed: 1500,});
+            const pdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500, });
             const [currentPage]: any = await pdfDoc.copyPages(pdfDoc, [fromPageIndex]);
             pdfDoc.insertPage(toPageIndex, currentPage);
             await pdfDoc.save();
             // if moving up, we need to account for the fact that the page will be removed from the original PDF
             pdfDoc.removePage(toPageIndex < fromPageIndex ? fromPageIndex + 1 : fromPageIndex);
-            const URL = await pdfDoc.saveAsBase64({dataUri: true});
+            const URL = await pdfDoc.saveAsBase64({ dataUri: true });
             setPdfs((oldPdfs: any) => {
                 let newPdfs = oldPdfs
                 newPdfs[fromPdfIndex] = URL
@@ -211,15 +205,14 @@ const Home: NextPage = () => {
             return;
         }
 
-
         console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
         // if moving down, we need to account for the fact that the page will be removed from the original PDF
         if (toPlaceholderRow && toPdfIndex > fromPdfIndex) toPdfIndex -= 1;
 
         const toPdfDoc = toPlaceholderRow
             ? await PDFDocument.create()
-            : await PDFDocument.load(pdfs[toPdfIndex], {ignoreEncryption: true, parseSpeed: 1500});
-        const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], {ignoreEncryption: true, parseSpeed: 1500});
+            : await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
+        const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
 
         // copy the moved page from PDF
         const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromPageIndex]);
@@ -232,9 +225,9 @@ const Home: NextPage = () => {
         fromPdfDoc.removePage(fromPageIndex);
 
         // save the PDF files
-        const URL = await fromPdfDoc.saveAsBase64({dataUri: true});
+        const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
 
-        const URL2 = await toPdfDoc.saveAsBase64({dataUri: true});
+        const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
 
         let newTotalPages: any = totalPages
         newTotalPages[fromPdfIndex] = totalPages[fromPdfIndex] - 1
@@ -271,18 +264,18 @@ const Home: NextPage = () => {
         setTotalPages(newTotalPages);
         setNumberOfThumbnails(newNumberOfThumbnails);
         setPdfs(newPdfs)
-        setCurrent({pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPageCount() - 1});
+        setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPageCount() - 1 });
         setIsLoading(false);
         setStateChanged(oldValue => oldValue + 1);
     };
 
-    const handleSplitDocument = async ({pdfIndex, pageIndex}: any) => {
+    const handleSplitDocument = async ({ pdfIndex, pageIndex }: any) => {
         if (pageIndex === 0) return;
 
         setIsLoading(true);
 
         const toPdfDoc = await PDFDocument.create()
-        const fromPdfDoc = await PDFDocument.load(pdfs[pdfIndex], {ignoreEncryption: true, parseSpeed: 1500});
+        const fromPdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
 
         const pagesToMove = fromPdfDoc.getPageIndices().slice(pageIndex)
 
@@ -296,9 +289,9 @@ const Home: NextPage = () => {
         }
 
         // save the PDF files
-        const URL = await fromPdfDoc.saveAsBase64({dataUri: true});
+        const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
 
-        const URL2 = await toPdfDoc.saveAsBase64({dataUri: true});
+        const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
 
         let newTotalPages: any = totalPages
         newTotalPages[pdfIndex] = totalPages[pdfIndex] - pagesToMove.length
@@ -326,7 +319,7 @@ const Home: NextPage = () => {
         setTotalPages(newTotalPages);
         setNumberOfThumbnails(newNumberOfThumbnails);
         setPdfs(newPdfs)
-        setCurrent({pdfIndex: pdfIndex + 1, pageIndex: 0});
+        setCurrent({ pdfIndex: pdfIndex + 1, pageIndex: 0 });
         setIsLoading(false);
         setStateChanged(oldValue => oldValue + 1);
     }
@@ -342,7 +335,7 @@ const Home: NextPage = () => {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
             const thumbnailId = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
-            if (thumbnailId) thumbnailId.scrollIntoView({behavior: 'smooth', block: 'center'});
+            if (thumbnailId) thumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 400);
 
         return () => clearTimeout(timer);
@@ -351,8 +344,8 @@ const Home: NextPage = () => {
 
     const handleSaveDocument = async (pdfIndex: number) => {
         setIsLoading(true);
-        const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {ignoreEncryption: true, parseSpeed: 1500});
-        const base64 = await pdfDoc.saveAsBase64({dataUri: false});
+        const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
+        const base64 = await pdfDoc.saveAsBase64({ dataUri: false });
 
         const res = await fetch("https://devweb.docbaseweb.nl/api/files/uploadtodocbase", {
             method: 'POST',
@@ -379,14 +372,14 @@ const Home: NextPage = () => {
     const renderActionButtons = (pdfIndex: number, pageIndex: number) => {
         return <>
             <Button
-                title={<><GrRotateRight/></>}
-                onClick={async () => handleRotatePage({pdfIndex, pageIndex})}
+                title={<><GrRotateRight /></>}
+                onClick={async () => handleRotatePage({ pdfIndex, pageIndex })}
                 disabled={isRotating}
                 transparent={false}
             />
             <Button
-                title={<><BsTrash/></>}
-                onClick={async () => handleDeletePage({pdfIndex, pageIndex})}
+                title={<><BsTrash /></>}
+                onClick={async () => handleDeletePage({ pdfIndex, pageIndex })}
                 disabled={isRotating}
                 transparent={false}
             />
@@ -396,7 +389,7 @@ const Home: NextPage = () => {
     const returnCurrentAndScroll = (newPdfIndex: number, newPageIndex: number) => {
         //const newThumbnailId = document.getElementById(`thumbnail-${newPdfIndex}-${newPageIndex}`);
         //if (newThumbnailId) newThumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return ({pdfIndex: newPdfIndex, pageIndex: newPageIndex});
+        return ({ pdfIndex: newPdfIndex, pageIndex: newPageIndex });
     }
 
     // keypress listener
@@ -562,9 +555,9 @@ const Home: NextPage = () => {
                         const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
                         return result;
                     });
-                    const newPdfDoc = await PDFDocument.load(newPdf, {ignoreEncryption: true, parseSpeed: 1500})
+                    const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
                     const pages = newPdfDoc.getPageCount();
-                    setTotalPages((oldTotalPages : any)=> [...oldTotalPages, pages]);
+                    setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
                     setPdfFileNames((oldFileNames: any) => [...oldFileNames, filename]);
                     console.log('Updating numberOfThumbnails')
 
@@ -590,7 +583,7 @@ const Home: NextPage = () => {
                     width: dims.width,
                     height: dims.height,
                 });
-                newPdf = await pdfDoc.saveAsBase64({dataUri: true})
+                newPdf = await pdfDoc.saveAsBase64({ dataUri: true })
             }
             // skip the file if its not an image or pdf
             else if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
@@ -598,7 +591,7 @@ const Home: NextPage = () => {
                 continue;
             }
             // JPG / PNG / PDF files: further process it
-            await PDFDocument.load(newPdf, {ignoreEncryption: true, parseSpeed: 1500})
+            await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
                 .then(newPdfDoc => {
                     const pages = newPdfDoc?.getPageCount()
                     setTotalPages((oldTotalPages: any) => [pages, ...oldTotalPages]);
@@ -635,11 +628,11 @@ const Home: NextPage = () => {
                                 const repairedPdf = 'data:application/pdf;base64,' + res2.pdfFiles[0].pdfFileBase64;
                                 console.log('PDF repair attempt successful. ')
 
-                                await PDFDocument.load(repairedPdf, {ignoreEncryption: true, parseSpeed: 1500})
+                                await PDFDocument.load(repairedPdf, { ignoreEncryption: true, parseSpeed: 1500 })
                                     .then(newPdfDoc => {
                                         const pages = newPdfDoc?.getPageCount();
                                         setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
-                                        setPdfFileNames((oldFileNames : any)=> [...oldFileNames, files[i].name]);
+                                        setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i].name]);
                                         console.log('Updating numberOfThumbnails')
 
                                         let pagesOfUploadedPdf: Array<number> = []
@@ -667,41 +660,44 @@ const Home: NextPage = () => {
         setIsLoading(false)
     }
 
+    // debug
+    const router = useRouter()
+    const { debug } = router.query
+
     return (
         <>
             <Head>
                 <title>PDF File Handler</title>
             </Head>
 
-            <Loading inset={true} loading={isLoading} message={loadingMessage}/>
+            <Loading inset={true} loading={isLoading} message={loadingMessage} />
 
-            <Debug
-                pdfs={pdfs}
-                totalPages={totalPages}
-                numberOfThumbnails={numberOfThumbnails}
-                current={current}
-                userIsDragging={userIsDragging}
-            />
+            {
+                (typeof debug !== 'undefined' && debug === 'true')
+                && <Debug
+                    pdfs={pdfs}
+                    totalPages={totalPages}
+                    numberOfThumbnails={numberOfThumbnails}
+                    current={current}
+                    userIsDragging={userIsDragging}
+                />
+            }
 
             <div className={
                 `flex min-h-screen ${!pdfs?.length ? 'items-center' : ''} justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]`
             }>
 
                 <div className={
-                    `flex gap-8 px-4 py-16
-          ${pdfs ? "flex-row" : "flex-col items-center justify-center"}`
-                }>
+                    `flex gap-8 px-4 py-16 flex-col
+                    ${pdfs?.length ? "xl:flex-row" : "items-center justify-center"}
+                    `}>
                     <header className={
-                        `flex flex-col
-            ${!pdfs ? "items-center" : "max-w-xs"}
-            `
+                        `flex flex-col ${!pdfs?.length ? "items-center" : "max-w-xs"}`
                     }>
                         <nav className="sticky top-8">
-                            <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg "/>
+                            <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg " />
                             <div className={
-                                `grid gap-4 mt-6
-              ${!pdfs ? "grid-cols-1" : "grid-cols-1"}
-              `
+                                `grid gap-4 mt-6 grid-cols-2 xl:grid-cols-1`
                             }>
                                 <Drop
                                     onLoaded={handleDropzoneLoaded}
@@ -712,7 +708,7 @@ const Home: NextPage = () => {
                                         ? <>
                                             <ButtonXl
                                                 title={"Reset"}
-                                                icon={<RxReset/>}
+                                                icon={<RxReset />}
                                                 description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
                                                 onClick={async () => await handleReset()}
                                             />
@@ -723,138 +719,103 @@ const Home: NextPage = () => {
                         </nav>
                     </header>
 
-                    <DndProvider backend={HTML5Backend}>
-                        <ScrollDropTarget position='top' isDragging={userIsDragging}/>
+                    {/* PDF documents / rows */}
+                    <ScrollDropTarget position='top' isDragging={userIsDragging} />
 
-                        {pdfs?.length ? (
-                            <main
-                                ref={documentRef}
-                                className="flex-col text-white items-start"
-                            >
+                    {pdfs?.length ? (
+                        <main
+                            ref={documentRef}
+                            className="flex-col text-white items-start"
+                        >
 
-                                <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading}
-                                                totalPages={totalPages}/>
+                            <PlaceholderRow pdfIndex={0} isDragging={userIsDragging} isLoading={isLoading}
+                                totalPages={totalPages} />
 
-                                {pdfs?.map((pdfDoc: any, pdfIndex: number) => <>
-                                        <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
-                                            <div
-                                                className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
-                      <span className="text-sm">
-                        <h3 className="mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
-                        ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
-                      </span>
+                            {pdfs?.map((pdfDoc: any, pdfIndex: number) => <>
+                                <Row pdfIndex={pdfIndex} key={`pdf-${pdfIndex}`}>
+                                    <div
+                                        className="col-span-2 lg:col-span-3 xl:col-span-4 mb-4 flex items-center justify-between">
+                                        <span className="text-sm">
+                                            <h3 className="mr-2 inline">{pdfFileNames[pdfIndex]}</h3>
+                                            ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
+                                        </span>
 
-                                                <nav
-                                                    className={`${isLoading ? "disabled" : ""} flex gap-1 w-[270px] justify-end`}>
-                                                    <Button
-                                                        title={<><BsCheck2Circle/><span className="text-xs">naar administratie</span></>}
-                                                        onClick={async () => {
-                                                            const base64 = await handleSaveDocument(pdfIndex);
-                                                            alert(base64)
-                                                        }}
-                                                    />
-                                                    <Button
-                                                        title={<><GrRotateRight/></>}
-                                                        onClick={async () => await handleRotateDocument(pdfIndex)}
-                                                        disabled={isRotating}
-                                                    />
-                                                    <Button
-                                                        title={<><BsTrash/></>}
-                                                        onClick={async () => await handleDeleteDocument(pdfIndex)}
-                                                        disabled={isRotating}
-                                                    />
-                                                </nav>
-                                            </div>
+                                        <nav
+                                            className={`${isLoading ? "disabled" : ""} flex gap-1 w-[270px] justify-end`}>
+                                            <Button
+                                                title={<><BsCheck2Circle /><span className="text-xs">naar administratie</span></>}
+                                                onClick={async () => {
+                                                    const base64 = await handleSaveDocument(pdfIndex);
+                                                    alert(base64)
+                                                }}
+                                            />
+                                            <Button
+                                                title={<><GrRotateRight /></>}
+                                                onClick={async () => await handleRotateDocument(pdfIndex)}
+                                                disabled={isRotating}
+                                            />
+                                            <Button
+                                                title={<><BsTrash /></>}
+                                                onClick={async () => await handleDeleteDocument(pdfIndex)}
+                                                disabled={isRotating}
+                                            />
+                                        </nav>
+                                    </div>
 
-                                            <div className='relative'>
-                                                <Document
-                                                    file={pdfDoc}
-                                                    loading={<Loading/>}
-                                                    className={
-                                                        `grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 w-full`
+                                    <div
+                                        className={
+                                            `grid grid-cols-4 gap-2 w-full`
+                                        }
+                                    >
+                                        {/* thumbnails of current PDF */}
+                                        {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) =>
+                                            <>
+                                                <div className="flex flex-row">
+                                                    {
+                                                        /* first placeholder thumbnail in row */
+                                                        pageIndex % 4 === 0 &&
+                                                        <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={pageIndex - 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
                                                     }
-                                                >
+                                                    <Thumbnail
+                                                        fileUrl={pdfs[pdfIndex]}
+                                                        key={`thumbnail-${pdfIndex}-${pageIndex}`}
+                                                        index={pageIndex}
+                                                        handleMovePage={handleMovePage}
+                                                        pageIndex={pageIndex}
+                                                        pdfIndex={pdfIndex}
+                                                        setUserIsDragging={setUserIsDragging}
+                                                        current={current}
+                                                        setCurrent={setCurrent}
+                                                        actionButtons={renderActionButtons(pdfIndex, pageIndex)}
+                                                    />
+                                                    <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={pageIndex + 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`} margin='ml-2' />
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </Row>
 
-                                                    {/* thumbnails of current PDF */}
-                                                    {numberOfThumbnails[pdfIndex]?.map((item: any, pageIndex: number) => <>
-                                                            <div className="flex flex-row">
-                                                                {
-                                                                    /* first placeholder thumbnail in row */
-                                                                    pageIndex % 4 === 0 &&
-                                                                    <PlaceholderThumbnail pdfIndex={pdfIndex}
-                                                                                          pageIndex={pageIndex - 0.5}
-                                                                                          isDragging={userIsDragging}
-                                                                                          totalPages={totalPages}
-                                                                                          isLoading={isLoading} margin='mr-2'/>
-                                                                }
-                                                                <Thumbnail
-                                                                    key={`thumbnail-${pdfIndex}-${pageIndex}`}
-                                                                    index={pageIndex}
-                                                                    handleMovePage={handleMovePage}
-                                                                    pageIndex={pageIndex}
-                                                                    pdfIndex={pdfIndex}
-                                                                    setUserIsDragging={setUserIsDragging}
-                                                                    current={current}
-                                                                    onClick={() => setCurrent({
-                                                                        pdfIndex: pdfIndex,
-                                                                        pageIndex: pageIndex,
-                                                                        skipScrollIntoView: true,
-                                                                    })}
-                                                                    actionButtons={renderActionButtons(pdfIndex, pageIndex)}
-                                                                />
-                                                                <PlaceholderThumbnail pdfIndex={pdfIndex}
-                                                                                      pageIndex={pageIndex + 0.5}
-                                                                                      isDragging={userIsDragging}
-                                                                                      totalPages={totalPages}
-                                                                                      isLoading={isLoading}
-                                                                                      key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`}
-                                                                                      margin='ml-2'/>
-                                                            </div>
-                                                        </>
-                                                    )
-                                                    }
+                                <PlaceholderRow pdfIndex={pdfIndex + 0.5} isDragging={userIsDragging}
+                                    isLoading={isLoading} totalPages={totalPages} />
 
-                                                </Document>
-                                            </div>
-                                        </Row>
+                            </>
+                            )}
 
-                                        <PlaceholderRow pdfIndex={pdfIndex + 0.5} isDragging={userIsDragging}
-                                                        isLoading={isLoading} totalPages={totalPages}/>
+                        </main>
+                    ) : null}
 
-                                    </>
-                                )}
-
-                            </main>
-                        ) : null}
-
-                        <ScrollDropTarget position='bottom' isDragging={userIsDragging}/>
-                    </DndProvider>
+                    <ScrollDropTarget position='bottom' isDragging={userIsDragging} />
 
                     {/* PDF preview */}
-                    {(pdfs?.length && current?.pdfIndex !== undefined && current?.pageIndex !== undefined && pdfs[current?.pdfIndex])
-                        && <div>
-                            <Document
-                                file={pdfs[current?.pdfIndex]}
-                                loading={<Loading/>}
-                                className='w-[800px] sticky top-8'
-                            >
-                                {!isLoading &&
-                                    <Page
-                                        pageIndex={current?.pageIndex}
-                                        loading={<Loading/>}
-                                        width={800}
-                                        renderAnnotationLayer={false}
-                                        renderTextLayer={false}
-                                        className={`rounded-lg shadow-lg overflow-hidden`}
-                                    />
-                                }
-                            </Document>
-                        </div>
-                    }
+                    <div className="w-[800px] relative">
+                        {pdfs?.length
+                            ? <PdfPreview fileUrl={pdfs[current?.pdfIndex]} pageIndex={current?.pageIndex} />
+                            : null
+                        }
+                    </div>
                 </div>
-
             </div>
         </>
     );
 };
-export default Home;
+export default HomePage;

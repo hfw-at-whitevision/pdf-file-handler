@@ -50,3 +50,19 @@ pre {
 .pdf-thumbnail canvas {
     @apply max-h-[150px] object-contain !w-auto rounded-md overflow-hidden;
 }
+
+.rpv-thumbnail__cover-loader {
+    @apply flex justify-center;
+}
+
+.rpv-thumbnail__cover-inner {
+    @apply flex justify-center items-center;
+}
+
+.pdf-thumbnail img.rpv-thumbnail__cover-image {
+    @apply max-h-[150px] object-contain !w-auto rounded-md overflow-hidden;
+}
+
+.rpv-core__doc-loading, .core__doc-loading, .rpv-core__viewer.rpv-core__viewer--light {
+    background-color: none !important;
+}

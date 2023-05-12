@@ -13,7 +13,7 @@ export default function Loading({
         </>
     }
     else return <>
-        <div className="p-8 w-full h-full flex justify-center items-center bg-white invert rounded-lg">
+        <div className="p-8 w-full h-full flex justify-center items-center bg-white invert rounded-lg h-[300px]">
             <img src="./loadingspinner.svg" width={150} className="flex justify-center gap-2 text-lg mb-4 w-8" />
         </div>
     </>
