@@ -1,27 +1,30 @@
-import {useRef, useEffect} from "react";
-import {useDrop, useDrag} from "react-dnd";
-import {Page} from "react-pdf";
-import Loading from "./layout/Loading";
+import { useRef, useEffect } from "react";
+import { useDrop, useDrag } from "react-dnd";
+import { Page } from "react-pdf";
+import React from "react";
 
-export default function Thumbnail({
-                                      pdfIndex,
-                                      pageIndex,
-                                      onClick,
-                                      actionButtons,
-                                      current,
-                                      handleMovePage,
-                                      index,
-                                      setUserIsDragging
-                                  }: {
-    pdfIndex: number,
-    pageIndex: number,
-    onClick: any,
-    actionButtons: any,
-    current: { pdfIndex?: number, pageIndex?: number, type?: string },
-    handleMovePage: any,
-    index: number,
-    setUserIsDragging: any
-}) {
+const Thumbnail = (
+    {
+        pdfIndex,
+        pageIndex,
+        onClick,
+        actionButtons,
+        current,
+        handleMovePage,
+        index,
+        setUserIsDragging,
+        isLoadingPdfs,
+    }: {
+        pdfIndex: number,
+        pageIndex: number,
+        onClick: any,
+        actionButtons: any,
+        current: { pdfIndex?: number, pageIndex?: number, type?: string },
+        handleMovePage: any,
+        index: number,
+        setUserIsDragging: any,
+        isLoadingPdfs: any,
+    }) => {
     const ref: any = useRef(null);
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
@@ -49,9 +52,9 @@ export default function Thumbnail({
         },
     });
 
-    const [{isDragging}, drag]: any = useDrag({
+    const [{ isDragging }, drag]: any = useDrag({
         type: "pdfThumbnail",
-        item: {index, pdfIndex, pageIndex, type: "pdfThumbnail"},
+        item: { index, pdfIndex, pageIndex, type: "pdfThumbnail" },
         end: async (item, monitor) => {
             const dropResult: dropResultType = monitor.getDropResult();
             const toPdfIndex = dropResult?.pdfIndex;
@@ -104,10 +107,9 @@ export default function Thumbnail({
                     : "before:z-[-1] border-transparent"}
           opacity-${isDragging ? '10' : '100'}`
             }
-            {...onClick && {onClick}}
+            {...onClick && { onClick }}
         >
             <Page
-                loading={<Loading/>}
                 className={
                     `w-[150px] max-h-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
               pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
@@ -128,6 +130,22 @@ export default function Thumbnail({
         </div>
     </>
 }
+function skipRerender(prevProps, nextProps) {
+    if (
+        // DO RERENDER..
+        // ..if this thumbnail becomes selected thumbnail
+        prevProps.current.pageIndex !== nextProps.current.pageIndex
+        && prevProps.pageIndex === nextProps.current.pageIndex
+        ||
+        // ..if this thumbnail was selected thumbnail, but now is not
+        prevProps.current.pageIndex === prevProps.pageIndex
+        && prevProps.pageIndex !== nextProps.current.pageIndex
+        // ..if selecting another PDF with same pageIndex
+        || prevProps.current.pdfIndex !== nextProps.current.pdfIndex
+    ) return false
+    else return true
+}
+export default React.memo(Thumbnail, skipRerender);
 
 export type dropResultType = {
     pdfIndex?: number,

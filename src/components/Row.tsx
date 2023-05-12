@@ -1,6 +1,7 @@
+import React from "react";
 import { useDrop } from "react-dnd";
 
-export default function Row({ children, pdfIndex }) {
+const Row = ({ children, pdfIndex }) => {
     const [{ isOver, isNotOverPlaceholderThumbnail, canDrop }, drop] = useDrop({
         accept: "pdfThumbnail",
         drop: () => {
@@ -23,3 +24,4 @@ export default function Row({ children, pdfIndex }) {
         {children}
     </div>
 }
+export default React.memo(Row, () => false);
