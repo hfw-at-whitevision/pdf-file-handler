@@ -1,3 +1,4 @@
+import { Provider, atom, useAtom } from 'jotai'
 import Head from "next/head";
 import { get, set } from 'idb-keyval';
 
@@ -19,10 +20,11 @@ import PdfPreview from "@/components/PdfPreview";
 import PlaceholderThumbnail from "@/components/PlaceholderThumbnail";
 import Thumbnail from "@/components/Thumbnail";
 import { useRouter } from "next/router";
+import { pdfsAtom } from '@/components/atoms';
 
 const HomePage = () => {
     const [pdfFileNames, setPdfFileNames]: [Array<string>, any] = useState([]);
-    const [pdfs, setPdfs]: [any, any] = useState();
+    const [pdfs, setPdfs]: [any, any] = useAtom(pdfsAtom);
     const [current, setCurrent]: any = useState({ pdfIndex: 0, pageIndex: 0 });
     const [totalPages, setTotalPages]: [any, any] = useState([]);
     const [isLoading, setIsLoading]: [boolean, any] = useState(false);
@@ -475,7 +477,7 @@ const HomePage = () => {
     }
     useEffect(() => {
         if (!pdfs) return;
-        saveState();
+        //   saveState();
     }, [stateChanged]);
     // state fetch
     const fetchState = async () => {
@@ -495,7 +497,7 @@ const HomePage = () => {
         });
     }
     useEffect(() => {
-        fetchState();
+        //   fetchState();
     }, []);
 
     const handleDropzoneLoaded = async (files: any) => {
@@ -508,7 +510,7 @@ const HomePage = () => {
 
             // check file size
             const fileSize = files[i]['size'] / 1024 / 1024;
-            if (fileSize > 25) {
+            if (fileSize > 250) {
                 alert(`${files[i]['name']} is groter dan 25MB. Gelieve het bestand te verkleinen.`)
                 continue;
             }
@@ -670,18 +672,13 @@ const HomePage = () => {
                 <title>PDF File Handler</title>
             </Head>
 
-            <Loading inset={true} loading={isLoading} message={loadingMessage} />
-
-            {
-                (typeof debug !== 'undefined' && debug === 'true')
-                && <Debug
-                    pdfs={pdfs}
-                    totalPages={totalPages}
-                    numberOfThumbnails={numberOfThumbnails}
-                    current={current}
-                    userIsDragging={userIsDragging}
-                />
-            }
+            <Debug
+                pdfs={pdfs}
+                totalPages={totalPages}
+                numberOfThumbnails={numberOfThumbnails}
+                current={current}
+                userIsDragging={userIsDragging}
+            />
 
             <div className={
                 `flex min-h-screen ${!pdfs?.length ? 'items-center' : ''} justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]`
@@ -777,7 +774,6 @@ const HomePage = () => {
                                                         <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={pageIndex - 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} margin='mr-2' />
                                                     }
                                                     <Thumbnail
-                                                        fileUrl={pdfs[pdfIndex]}
                                                         key={`thumbnail-${pdfIndex}-${pageIndex}`}
                                                         index={pageIndex}
                                                         handleMovePage={handleMovePage}
@@ -787,6 +783,7 @@ const HomePage = () => {
                                                         current={current}
                                                         setCurrent={setCurrent}
                                                         actionButtons={renderActionButtons(pdfIndex, pageIndex)}
+                                                        stateChanged={stateChanged}
                                                     />
                                                     <PlaceholderThumbnail pdfIndex={pdfIndex} pageIndex={pageIndex + 0.5} isDragging={userIsDragging} totalPages={totalPages} isLoading={isLoading} key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`} margin='ml-2' />
                                                 </div>
@@ -809,10 +806,11 @@ const HomePage = () => {
                     {/* PDF preview */}
                     <div className="w-[800px] relative">
                         {pdfs?.length
-                            ? <PdfPreview fileUrl={pdfs[current?.pdfIndex]} pageIndex={current?.pageIndex} />
+                            ? <PdfPreview pdfIndex={current?.pdfIndex} pageIndex={current?.pageIndex} />
                             : null
                         }
                     </div>
+
                 </div>
             </div>
         </>

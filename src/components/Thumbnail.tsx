@@ -9,10 +9,11 @@ import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { useRef, useEffect } from "react";
 import { useDrop, useDrag } from "react-dnd";
 import React from "react";
+import { useAtom } from "jotai";
+import { pdfsAtom } from '@/components/atoms'
 
 const Thumbnail = (
     {
-        fileUrl,
         pdfIndex,
         pageIndex,
         setCurrent,
@@ -20,9 +21,9 @@ const Thumbnail = (
         current,
         handleMovePage,
         index,
-        setUserIsDragging
+        setUserIsDragging,
+        stateChanged,
     }: {
-        fileUrl: string,
         pdfIndex: number,
         pageIndex: number,
         setCurrent: any,
@@ -30,7 +31,8 @@ const Thumbnail = (
         current: { pdfIndex?: number, pageIndex?: number, type?: string },
         handleMovePage: any,
         index: number,
-        setUserIsDragging: any
+        setUserIsDragging: any,
+        stateChanged: number,
     }) => {
     const ref: any = useRef(null);
     const [collected, drop] = useDrop({
@@ -107,6 +109,9 @@ const Thumbnail = (
         PageThumbnail: <Cover getPageIndex={() => pageIndex} width={150} />,
     });
 
+    const [pdfs, setPdfs]: [any, any] = useAtom(pdfsAtom);
+    const fileUrl = pdfs[pdfIndex];
+
     return <>
         <div
             key={`thumbnail-${pdfIndex}-${pageIndex}`}
@@ -160,7 +165,7 @@ function skipRerender(prevProps, nextProps) {
         && prevProps.pageIndex !== nextProps.current.pageIndex
         ||
         // if PDF has changed
-        prevProps.fileUrl !== nextProps.fileUrl
+        prevProps.stateChanged !== nextProps.stateChanged
     ) return false
     else return true
 }
