@@ -21,10 +21,13 @@
     "react-dropzone": "^14.2.3",
     "react-icons": "^4.8.0",
     "react-pdf": "^6.2.2",
+    "react-split": "^2.0.14",
     "react-window": "^1.8.9",
+    "sass": "^1.62.1",
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
     "@types/eslint": "^8.21.3",
     "@types/node": "^18.15.5",
     "@types/prettier": "^2.7.2",

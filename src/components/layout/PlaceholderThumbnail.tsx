@@ -1,6 +1,7 @@
+import React from "react";
 import { useDrop } from "react-dnd";
 
-export default function PlaceholderThumbnail({ pdfIndex, pageIndex, isDragging, isLoading, totalPages, margin }) {
+const PlaceholderThumbnail = ({ pdfIndex, pageIndex, isDragging, isLoading, totalPages, margin }) => {
     // hide placeholders if only 1 page in PDF
     //if (totalPages[pdfIndex] === 1) return null;
 
@@ -30,3 +31,5 @@ export default function PlaceholderThumbnail({ pdfIndex, pageIndex, isDragging, 
         />
     </>
 }
+
+export default React.memo(PlaceholderThumbnail, () => true)

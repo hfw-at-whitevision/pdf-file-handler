@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    @apply transition-all;
+}
+
+body {
+    @apply overflow-y-scroll;
+}
+
+.react-pdf__Page__textContent.textLayer,
+.react-pdf__Page__annotations.annotationLayer {
+    @apply hidden;
+}
+
+.disabled {
+    @apply pointer-events-none opacity-40;
+}
+
+*::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+    @apply bg-amber-200;
+}
+
+*::-webkit-scrollbar-thumb {
+    @apply bg-black border-amber-200;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    @apply bg-amber-200;
+}
+
+pre {
+    max-height: 500px;
+    overflow-y: scroll;
+    padding: 20px;
+    font-size: 12px;
+}
+
+.react-pdf__message {
+    @apply hidden;
+}
+
+.pdf-thumbnail canvas {
+    @apply object-contain rounded-md overflow-hidden;
+}
+
+.gutter.gutter-horizontal {
+    position: relative;
+    cursor: col-resize;
+    margin: 0 20px;
+
+    &::before {
+        content: " ";
+        z-index: 9;
+        height: 100%;
+        width: 6px;
+        background: #f6f7f9;
+        position: fixed;
+        top: 0;
+        border-left: 1px solid #d1d8da;
+        border-right: 1px solid #d1d8da;
+    }
+
+    &::after {
+        content: " ";
+        position: fixed;
+        background: url("data:image/svg+xml;charset=utf-8,%3Csvg fill='%238E929C' viewBox='0 0 4 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 8c0 1.018.828 1.847 1.846 1.847A1.848 1.848 0 0 0 3.692 8a1.848 1.848 0 0 0-1.846-1.846A1.848 1.848 0 0 0 0 8Zm0 6.154C0 15.172.828 16 1.846 16a1.848 1.848 0 0 0 1.846-1.846 1.848 1.848 0 0 0-1.846-1.846A1.848 1.848 0 0 0 0 14.154ZM0 1.846c0 1.018.828 1.846 1.846 1.846a1.848 1.848 0 0 0 1.846-1.846A1.848 1.848 0 0 0 1.846 0 1.848 1.848 0 0 0 0 1.846Z'/%3E%3C/svg%3E") no-repeat 50%/auto 1.2rem;
+        top: calc(50vh - 40px);
+        z-index: 10;
+        width: 5px;
+        height: 40px;
+    }
+}
+
+/* PdfPreview */
+.pdf-preview-container .react-pdf__Page__canvas {
+    width: 100% !important;
+    height: auto !important;
+}
+
+.pdf-thumbnail-container .react-pdf__Page__canvas {
+    width: 100% !important;
+    height: auto !important;
+}

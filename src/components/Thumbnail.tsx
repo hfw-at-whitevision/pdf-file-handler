@@ -2,30 +2,26 @@ import { useRef, useEffect } from "react";
 import { useDrop, useDrag } from "react-dnd";
 import { Page } from "react-pdf";
 import React from "react";
+import { useAtom } from "jotai";
+import { currentAtom, isRotatingAtom, userIsDraggingAtom } from "./store/atoms";
+import { BsTrash } from "react-icons/bs";
+import { GrRotateRight } from "react-icons/gr";
+import Button from "./primitives/Button";
 
 const Thumbnail = (
     {
         pdfIndex,
         pageIndex,
-        onClick,
-        actionButtons,
-        current,
+        handleDeletePage,
+        handleRotatePage,
         handleMovePage,
         index,
-        setUserIsDragging,
-        isLoadingPdfs,
-    }: {
-        pdfIndex: number,
-        pageIndex: number,
-        onClick: any,
-        actionButtons: any,
-        current: { pdfIndex?: number, pageIndex?: number, type?: string },
-        handleMovePage: any,
-        index: number,
-        setUserIsDragging: any,
-        isLoadingPdfs: any,
-    }) => {
-    const ref: any = useRef(null);
+        current,
+        setCurrent,
+    }: any
+) => {
+    const [userIsDragging, setUserIsDragging] = useAtom(userIsDraggingAtom);
+    const [isRotating] = useAtom(isRotatingAtom);
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
         hover(item: any, monitor) {
@@ -51,6 +47,7 @@ const Thumbnail = (
             item.index = hoverIndex;
         },
     });
+    const ref: any = useRef(null);
 
     const [{ isDragging }, drag]: any = useDrag({
         type: "pdfThumbnail",
@@ -100,18 +97,24 @@ const Thumbnail = (
             ref={ref}
             className={
                 `relative group flex items-center justify-center rounded-md overflow-hidden
-                box-border border-4
+                box-border border-4 pdf-thumbnail-container w-full
           before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
           ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
                     ? "border-amber-300 before:z-10"
-                    : "before:z-[-1] border-transparent"}
+                    : "before:z-[-1] border-gray-200"}
           opacity-${isDragging ? '10' : '100'}`
             }
-            {...onClick && { onClick }}
+            onClick={() => setCurrent({
+                pdfIndex: pdfIndex,
+                pageIndex: pageIndex,
+                skipScrollIntoView: true,
+            })}
+            data-pdf-index={pdfIndex}
+            data-page-index={pageIndex}
         >
             <Page
                 className={
-                    `w-[150px] max-h-[150px] h-fit cursor-pointer relative rounded-md overflow-hidden
+                    `w-full cursor-pointer relative rounded-md overflow-hidden
               pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
                 }
                 pageIndex={pageIndex}
@@ -119,18 +122,33 @@ const Thumbnail = (
                 renderTextLayer={false}
                 renderMode="canvas"
                 width={150}
-                height={150}
             />
             <div
-                className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75">
-                <div className="grid grid-cols-2 gap-1 pb-4">
-                    {actionButtons}
+                id={`thumbnail-${pdfIndex}-${pageIndex}-inset`}
+                data-pdf-index={pdfIndex}
+                data-page-index={pageIndex}
+                className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75"
+            >
+                <div className="grid grid-cols-2 gap-1 pb-4" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
+                    <Button
+                        title={<><GrRotateRight /></>}
+                        onClick={async () => handleRotatePage({ pdfIndex, pageIndex })}
+                        disabled={isRotating}
+                        transparent={false}
+                        id={`thumbnail-${pdfIndex}-${pageIndex}-rotate`}
+                    />
+                    <Button
+                        title={<><BsTrash /></>}
+                        onClick={async () => handleDeletePage(pdfIndex, pageIndex)}
+                        transparent={false}
+                        id={`thumbnail-${pdfIndex}-${pageIndex}-delete`}
+                    />
                 </div>
             </div>
         </div>
     </>
 }
-function skipRerender(prevProps, nextProps) {
+function skipRerender(prevProps: any, nextProps: any) {
     if (
         // DO RERENDER..
         // ..if this thumbnail becomes selected thumbnail

@@ -2,7 +2,7 @@ import { type AppType } from "next/dist/shared/lib/utils";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
-import "~/styles/globals.css";
+import "~/styles/globals.scss";
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return <>

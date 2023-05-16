@@ -4,8 +4,8 @@ export default function ButtonXl({ href = "", title = "Go", description = "", st
     return <>
         <Link
             className={
-                `flex w-full flex-col gap-4 rounded-xl p-4 text-white
-                ${style === "flat" ? "bg-white/10  hover:bg-white/20 shadow-xl" : "border-2 border-dotted border-white/20 hover:border-white/40"}"}
+                `flex w-full flex-col gap-4 rounded-xl p-4 text-gray-600
+                ${style === "flat" ? "bg-gray-100 hover:bg-white/20 shadow-xl" : "border-2 border-dotted border-amber/20 hover:border-amber/40"}"}
                 ${className ? className : ''}`
             }
             href={href ? href : ''}

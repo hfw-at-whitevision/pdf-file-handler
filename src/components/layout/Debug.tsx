@@ -4,7 +4,7 @@ export default function Debug({
     totalPages,
     current,
     userIsDragging,
-    isLoadingPdfs,
+    sizes,
 }) {
     const pdfsSize = pdfs?.length
         ? Buffer.from(JSON.stringify(pdfs)).length / 1000
@@ -13,7 +13,7 @@ export default function Debug({
     return <pre>
         build: {process.env.NEXT_PUBLIC_BUILD_VERSION}
         <br />
-        isLoadingPdfs: {JSON.stringify(isLoadingPdfs)}
+        sizes: {JSON.stringify(sizes)}
         <br />
         pdfs.length: {JSON.stringify(pdfs?.length)}
         <br />

@@ -1,7 +1,9 @@
+import { useAtom } from "jotai";
 import { useDrop } from "react-dnd";
 import { BsPlus } from "react-icons/bs";
+import { userIsDraggingAtom, isLoadingAtom } from "../store/atoms";
 
-export default function PlaceholderRow({ pdfIndex, isDragging, isLoading, totalPages }) {
+export default function PlaceholderRow({ pdfIndex }) {
     const [{ canDrop, isOver }, drop] = useDrop({
         accept: "pdfThumbnail",
         drop: () => ({ pdfIndex: Math.ceil(pdfIndex), type: 'placeholderRow' }),
@@ -11,10 +13,13 @@ export default function PlaceholderRow({ pdfIndex, isDragging, isLoading, totalP
         }),
     });
 
+    const [isDragging] = useAtom(userIsDraggingAtom);
+    const [isLoading] = useAtom(isLoadingAtom);
+
     return <div
         ref={drop}
         className={`
-        shadow-2xl rounded-lg w-[660px] flex items-center justify-center
+        shadow-2xl rounded-lg w-full flex items-center justify-center
         border-dashed border-lime-200 border
         ${isDragging && canDrop // && totalPages[pdfIndex] > 1
                 ? 'h-auto p-1 opacity-100 mb-4'
