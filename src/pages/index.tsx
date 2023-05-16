@@ -13,7 +13,7 @@ import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom } from "jotai";
-import { currentAtom, isLoadingAtom, numberOfThumbnailsAtom, pdfFileNamesAtom, pdfsAtom, totalPagesAtom, userIsDraggingAtom } from "@/components/store/atoms";
+import { currentAtom, isLoadingAtom, numberOfThumbnailsAtom, pdfFileNamesAtom, pdfsAtom, setCurrentAtom, setPdfsAtom, totalPagesAtom, userIsDraggingAtom } from "@/components/store/atoms";
 import { useRouter } from "next/router";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
@@ -26,15 +26,13 @@ pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 const Home: NextPage = () => {
     const [pdfFileNames, setPdfFileNames]: [Array<string>, any] = useAtom(pdfFileNamesAtom);
     const [numberOfThumbnails, setNumberOfThumbnails]: any = useAtom(numberOfThumbnailsAtom);
-    const [pdfs, setPdfs]: [any, any] = useAtom(pdfsAtom);
-    const [current, setCurrent]: any = useAtom(currentAtom);
+    const [pdfs]: any = useAtom(pdfsAtom);
+    const [, setPdfs] = useAtom(setPdfsAtom);
+    const [current]: any = useAtom(currentAtom);
+    const [, setCurrent] = useAtom(setCurrentAtom);
     const [totalPages, setTotalPages]: [any, any] = useAtom(totalPagesAtom);
     const [isLoading, setIsLoading]: [boolean, any] = useAtom(isLoadingAtom);
     const [loadingMessage, setLoadingMessage]: [string, any] = useState('');
-    const [isDeleting, setIsDeleting]: [boolean, any] = useState(false);
-    const [isRotating, setIsRotating]: [boolean, any] = useState(false);
-    const [userIsDragging, setUserIsDragging]: [boolean, any] = useAtom(userIsDraggingAtom);
-    const documentRef: any = useRef(null);
 
     const handleReset = useCallback(async () => {
         setPdfs([]);
@@ -53,7 +51,6 @@ const Home: NextPage = () => {
 
     const handleDeleteDocument = useCallback((inputPdfIndex: number) => {
         setIsLoading(true);
-        setIsDeleting(true);
 
         if (current.pdfIndex === inputPdfIndex && current.pdfIndex === pdfs?.length - 1 && current.pdfIndex > 0) {
             setCurrent({ pdfIndex: current.pdfIndex - 1, pageIndex: 0 });
@@ -72,21 +69,18 @@ const Home: NextPage = () => {
         })
 
         setIsLoading(false);
-        setIsDeleting(false);
         setStateChanged(oldValue => oldValue + 1);
     }, []);
 
     const handleDeletePage = useCallback(async (pdfIndex: number, pageIndex: number) => {
         setIsLoading(true);
-        setIsDeleting(true);
-
+        const totalPages = await get('totalPages');
+        const pdfs = await get('pdfs');
         // if we are deleting the last page in PDF = delete the PDF
         if (totalPages[pdfIndex] === 1) {
             handleDeleteDocument(pdfIndex);
             return;
         }
-
-        const pdfs = await get('pdfs');
 
         console.log(`Deleting page ${pageIndex} from document ${pdfIndex}`);
         console.log(pdfs);
@@ -117,7 +111,6 @@ const Home: NextPage = () => {
                 : pageIndex
         });
 
-        setIsDeleting(false);
         setIsLoading(false);
         setStateChanged(oldValue => oldValue + 1);
     }, []);
@@ -125,7 +118,6 @@ const Home: NextPage = () => {
     const handleRotateDocument = useCallback(async (inputPdfIndex: number) => {
         setIsLoading(true);
         console.log(`Rotating document ${inputPdfIndex}`)
-        setIsRotating(true);
 
         const pdfs = await get('pdfs');
 
@@ -147,7 +139,6 @@ const Home: NextPage = () => {
             newPdfs[inputPdfIndex] = URL
             return newPdfs
         });
-        setIsRotating(false);
         setIsLoading(false);
         setStateChanged(oldValue => oldValue + 1);
         console.log('finished')
@@ -155,7 +146,6 @@ const Home: NextPage = () => {
 
     const handleRotatePage = useCallback(async ({ pdfIndex, pageIndex }: any) => {
         setIsLoading(true);
-        setIsRotating(true);
         const pdfs = await get('pdfs');
         console.log(`Rotating page ${pageIndex} from document ${pdfIndex}`)
         const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
@@ -175,7 +165,6 @@ const Home: NextPage = () => {
             newPdfs[pdfIndex] = URL
             return newPdfs
         });
-        setIsRotating(false);
         setCurrent({ pdfIndex, pageIndex });
         setIsLoading(false);
         setStateChanged(oldValue => oldValue + 1);
@@ -671,7 +660,6 @@ const Home: NextPage = () => {
     // ********************************************************
     // react-split
     // ********************************************************
-    const DEFAULT_PANEL_SIZES = [300, 800, 350];
     const [sizes, setSizes]: [any, any] = useState([35, 40, 25]);
     const persistFileHandlerPanelSizes = (sizes: number[]) => setSizes(sizes);
     const getPersistedFileHandlerPanelSizes = () => {
@@ -682,15 +670,25 @@ const Home: NextPage = () => {
             return undefined;
     };
 
+    useEffect(() => {
+        const currentThumbnail = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
+        if (currentThumbnail) currentThumbnail.classList.add('!border-amber-300', '!before:z-10');
+
+        const otherThumbnails = document.querySelectorAll('[id*="thumbnail-"]:not([id*="thumbnail-' + current.pdfIndex + '-' + current.pageIndex + '"])');
+        otherThumbnails.forEach((thumbnail: any) => {
+            thumbnail.classList.remove('!border-amber-300', '!before:z-10');
+        });
+    }, [current]);
+
     return (
         <>
             <Head>
                 <title>PDF File Handler</title>
             </Head>
 
-            <ScrollDropTarget position='top' isDragging={userIsDragging} />
-
             <Loading inset={true} loading={isLoading} message={loadingMessage} />
+
+            <ScrollDropTarget position='top' />
 
             {debug &&
                 <Debug
@@ -699,86 +697,66 @@ const Home: NextPage = () => {
                     totalPages={totalPages}
                     numberOfThumbnails={numberOfThumbnails}
                     current={current}
-                    userIsDragging={userIsDragging}
                 />
             }
 
-            <div className={
-                `flex min-h-screen h-full ${!pdfs?.length ? 'items-center' : ''} justify-center bg-white w-full`
-            }>
+            <main className={`min-h-screen flex gap-8 p-8 w-full h-full first-letter:${pdfs ? "flex-row" : "flex-col items-center justify-center"}`}>
+                <header className={`flex flex-col w-full ${!pdfs ? "items-center" : "max-w-[200px]"}`}>
+                    <nav className="sticky top-8">
+                        <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg" />
+                        <div className={`grid gap-4 mt-6 w-full ${!pdfs ? "grid-cols-1" : "grid-cols-1"}`}>
+                            <Drop
+                                onLoaded={handleDropzoneLoaded}
+                            />
+                            <ButtonXl
+                                title={"Opslaan"}
+                                icon={<BsSave className="text-base" />}
+                                description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                                onClick={handleSaveAllDocuments}
+                                className={!pdfs?.length ? 'disabled' : ''}
+                            />
+                            <ButtonXl
+                                title={"Reset"}
+                                icon={<BsArrowRepeat className="text-base" />}
+                                description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                                onClick={handleReset}
+                                className={!pdfs?.length ? 'disabled' : ''}
+                            />
+                        </div>
+                    </nav>
+                </header>
+                <Split
+                    sizes={getPersistedFileHandlerPanelSizes()}
+                    minSize={[150, 0, 150]}
+                    gutterSize={8}
+                    gutterAlign="center"
+                    className="flex flex-row w-full h-full flex-1"
+                    onDragEnd={persistFileHandlerPanelSizes}
+                    cursor="col-resize"
+                >
+                    {/* PDF row */}
+                    <section className={`flex-col text-gray-900 items-start`}>
+                        {new Array(totalPages?.length).fill(1).map((_: any, pdfIndex: number) =>
+                            <PdfRow
+                                key={`pdf-${pdfIndex}`}
+                                pdf={pdfs[pdfIndex]}
+                                pdfIndex={pdfIndex}
+                                handleMovePage={handleMovePage}
+                                handleRotatePage={handleRotatePage}
+                                handleDeletePage={handleDeletePage}
+                            />
+                        )}
+                    </section>
 
-                <div className={
-                    `flex gap-8 p-8 w-full h-screen
-          ${pdfs ? "flex-row" : "flex-col items-center justify-center"}`
-                }>
-                    <header className={
-                        `flex flex-col w-full
-            ${!pdfs ? "items-center" : "max-w-[200px]"}
-            `
-                    }>
-                        <nav className="sticky top-8">
-                            <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg " />
-                            <div className={
-                                `grid gap-4 mt-6 w-full
-              ${!pdfs ? "grid-cols-1" : "grid-cols-1"}
-              `
-                            }>
-                                <Drop
-                                    onLoaded={handleDropzoneLoaded}
-                                />
-                                <ButtonXl
-                                    title={"Opslaan"}
-                                    icon={<BsSave className="text-base" />}
-                                    description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                                    onClick={async () => await handleSaveAllDocuments()}
-                                    className={!pdfs?.length ? 'disabled' : ''}
-                                />
-                                <ButtonXl
-                                    title={"Reset"}
-                                    icon={<BsArrowRepeat className="text-base" />}
-                                    description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                                    onClick={async () => await handleReset()}
-                                    className={!pdfs?.length ? 'disabled' : ''}
-                                />
-                            </div>
-                        </nav>
-                    </header>
-                    <Split
-                        sizes={getPersistedFileHandlerPanelSizes()}
-                        minSize={[150, 0, 150]}
-                        gutterSize={8}
-                        gutterAlign="center"
-                        className="flex flex-row w-full h-full flex-1"
-                        onDragEnd={persistFileHandlerPanelSizes}
-                        cursor="col-resize"
-                    >
-                        {/* PDF row */}
-                        <main
-                            ref={documentRef}
-                            className={`flex-col text-gray-900 items-start`}
-                        >
-                            {new Array(pdfs?.length).fill(1).map((_: any, pdfIndex: number) =>
-                                <PdfRow
-                                    key={pdfIndex}
-                                    pdfIndex={pdfIndex}
-                                    handleMovePage={handleMovePage}
-                                    handleRotatePage={handleRotatePage}
-                                    handleDeletePage={handleDeletePage}
-                                />
-                            )}
-                        </main>
+                    {/* PDF preview */}
+                    <PdfPreview />
 
-                        {/* PDF preview */}
-                        <PdfPreview />
+                    {/* administration tiles */}
+                    <AdministrationTiles />
+                </Split>
+            </main>
 
-                        {/* administration tiles */}
-                        <AdministrationTiles />
-                    </Split>
-                </div>
-
-            </div>
-
-            <ScrollDropTarget position='bottom' isDragging={userIsDragging} />
+            <ScrollDropTarget position='bottom' />
 
             <ContextMenu
                 handleDeletePage={handleDeletePage}

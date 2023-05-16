@@ -41,7 +41,7 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage }: any) => {
         console.log(`rmb clicked: ${clickedPdfIndex}-${clickedPageIndex}`)
 
         setIsOpen(true);
-        setTop(window.scrollY + e.clientY);
+        setTop(e.clientY);
         setLeft(e.clientX);
     };
 

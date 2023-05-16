@@ -80,9 +80,19 @@ pre {
 }
 
 /* PdfPreview */
-.pdf-preview-container .react-pdf__Page__canvas {
-    width: 100% !important;
-    height: auto !important;
+.pdf-preview-container {
+    .react-pdf__Page {
+        @apply flex flex-1 h-full justify-center;
+
+        .react-pdf__Page__canvas {
+            width: auto !important;
+            height: fit-content !important;
+            max-width: 100%;
+            max-height: calc(100vh - 4rem);
+
+            @apply rounded-lg shadow-2xl overflow-hidden w-full object-contain;
+        }
+    }
 }
 
 .pdf-thumbnail-container .react-pdf__Page__canvas {

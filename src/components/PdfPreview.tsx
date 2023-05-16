@@ -20,7 +20,7 @@ export default function PdfPreview() {
                         <Document
                             file={pdfs[current?.pdfIndex]}
                             loading={<Loading />}
-                            className={`w-full sticky top-8`}
+                            className={`w-full h-screen sticky top-8`}
                         >
                             <Page
                                 pageIndex={current?.pageIndex}
@@ -28,7 +28,6 @@ export default function PdfPreview() {
                                 width={800}
                                 renderAnnotationLayer={false}
                                 renderTextLayer={false}
-                                className={`rounded-lg shadow-lg overflow-hidden w-full`}
                             />
                         </Document>
                     </>

@@ -3,7 +3,7 @@ import { useDrop, useDrag } from "react-dnd";
 import { Page } from "react-pdf";
 import React from "react";
 import { useAtom } from "jotai";
-import { currentAtom, isRotatingAtom, userIsDraggingAtom } from "./store/atoms";
+import { getCurrentAtom, isRotatingAtom, setCurrentAtom, userIsDraggingAtom } from "./store/atoms";
 import { BsTrash } from "react-icons/bs";
 import { GrRotateRight } from "react-icons/gr";
 import Button from "./primitives/Button";
@@ -16,11 +16,10 @@ const Thumbnail = (
         handleRotatePage,
         handleMovePage,
         index,
-        current,
-        setCurrent,
     }: any
 ) => {
-    const [userIsDragging, setUserIsDragging] = useAtom(userIsDraggingAtom);
+    const [, setCurrent] = useAtom(setCurrentAtom);
+    const [, setUserIsDragging] = useAtom(userIsDraggingAtom);
     const [isRotating] = useAtom(isRotatingAtom);
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
@@ -99,9 +98,7 @@ const Thumbnail = (
                 `relative group flex items-center justify-center rounded-md overflow-hidden
                 box-border border-4 pdf-thumbnail-container w-full
           before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
-          ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
-                    ? "border-amber-300 before:z-10"
-                    : "before:z-[-1] border-gray-200"}
+                    before:z-[-1] border-gray-200/20
           opacity-${isDragging ? '10' : '100'}`
             }
             onClick={() => setCurrent({
@@ -132,14 +129,14 @@ const Thumbnail = (
                 <div className="grid grid-cols-2 gap-1 pb-4" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
                     <Button
                         title={<><GrRotateRight /></>}
-                        onClick={async () => handleRotatePage({ pdfIndex, pageIndex })}
+                        onClick={async () => await handleRotatePage({ pdfIndex, pageIndex })}
                         disabled={isRotating}
                         transparent={false}
                         id={`thumbnail-${pdfIndex}-${pageIndex}-rotate`}
                     />
                     <Button
                         title={<><BsTrash /></>}
-                        onClick={async () => handleDeletePage(pdfIndex, pageIndex)}
+                        onClick={async () => await handleDeletePage(pdfIndex, pageIndex)}
                         transparent={false}
                         id={`thumbnail-${pdfIndex}-${pageIndex}-delete`}
                     />
@@ -158,12 +155,17 @@ function skipRerender(prevProps: any, nextProps: any) {
         // ..if this thumbnail was selected thumbnail, but now is not
         prevProps.current.pageIndex === prevProps.pageIndex
         && prevProps.pageIndex !== nextProps.current.pageIndex
+        ||
         // ..if selecting another PDF with same pageIndex
-        || prevProps.current.pdfIndex !== nextProps.current.pdfIndex
+        prevProps.current.pdfIndex !== nextProps.current.pdfIndex
+        ||
+        // ..if this page was rotated
+        nextProps.thumbnailsToRerender.includes(`thumbnail-${nextProps.pdfIndex}-${nextProps.pageIndex}`)
     ) return false
     else return true
 }
-export default React.memo(Thumbnail, skipRerender);
+export default React.memo(Thumbnail, () => true);
+//export default Thumbnail;
 
 export type dropResultType = {
     pdfIndex?: number,

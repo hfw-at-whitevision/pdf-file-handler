@@ -6,23 +6,21 @@ import PlaceholderThumbnail from "./layout/PlaceholderThumbnail";
 import Row from "./layout/Row";
 import Button from "./primitives/Button";
 import { useAtom } from "jotai";
-import { currentAtom, isLoadingAtom, isRotatingAtom, numberOfThumbnailsAtom, pdfFileNamesAtom, pdfsAtom, totalPagesAtom, userIsDraggingAtom } from "./store/atoms";
+import { isLoadingAtom, isRotatingAtom, numberOfThumbnailsAtom, pdfFileNamesAtom, thumbnailsToRerenderAtom, totalPagesAtom, userIsDraggingAtom } from "./store/atoms";
 import { Document } from 'react-pdf'
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import React from "react";
 
-export default function PdfRow({ pdfIndex = 0, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any, props: any) {
+const PdfRow = ({ pdf, pdfIndex = 0, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any, props: any) => {
     const [pdfFileNames] = useAtom(pdfFileNamesAtom);
     const [totalPages]: any = useAtom(totalPagesAtom);
     const [isLoading] = useAtom(isLoadingAtom);
     const [isRotating] = useAtom(isRotatingAtom);
-    const [pdfs]: any = useAtom(pdfsAtom);
     const [numberOfThumbnails]: any = useAtom(numberOfThumbnailsAtom);
     const [userIsDragging] = useAtom(userIsDraggingAtom);
-    const [current, setCurrentAtom] = useAtom(currentAtom);
-    const setCurrent = useCallback((object: any) => setCurrentAtom(object), [])
     const ref = useRef(null);
-
     const [width, setWidth]: any = useState();
+
     useEffect(() => {
         setWidth(ref?.current?.getBoundingClientRect()?.width);
     }, [ref?.current?.getBoundingClientRect()?.width])
@@ -42,7 +40,7 @@ export default function PdfRow({ pdfIndex = 0, handleMovePage, handleRotatePage,
                 >
                     <span className="text-sm">
                         <h3 className="mr-2 inline break-all">{pdfFileNames[pdfIndex]}</h3>
-                        ({totalPages[pdfIndex]} {totalPages[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
+                        ({totalPages?.[pdfIndex]} {totalPages?.[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
                     </span>
 
                     <nav
@@ -71,9 +69,11 @@ export default function PdfRow({ pdfIndex = 0, handleMovePage, handleRotatePage,
                     </nav>
                 </div>
 
-                <div className='relative'>
-                    <Document
-                        file={pdfs[pdfIndex]}
+                <Document
+                    file={pdf}
+                    className='relative'
+                >
+                    <div
                         className={
                             `grid gap-2 w-full
                             ${width > 600
@@ -84,11 +84,10 @@ export default function PdfRow({ pdfIndex = 0, handleMovePage, handleRotatePage,
                                         ? 'grid-cols-2'
                                         : 'grid-cols-1'
                             }       
-                            `}
-                    >
+                            `}>
                         {/* thumbnails of current PDF */}
-                        {numberOfThumbnails[pdfIndex]?.map((item: any, pageIndex: number) => <>
-                            <div className="flex flex-row flex-1">
+                        {numberOfThumbnails?.[pdfIndex]?.map((item: any, pageIndex: number) => <>
+                            <div className="flex flex-row flex-1" key={`thumbnail-${pdfIndex}-${pageIndex}`}>
                                 {
                                     /* first placeholder thumbnail in row */
                                     pageIndex % 4 === 0 &&
@@ -99,15 +98,12 @@ export default function PdfRow({ pdfIndex = 0, handleMovePage, handleRotatePage,
                                         isLoading={isLoading} margin='mr-2' />
                                 }
                                 <Thumbnail
-                                    key={`thumbnail-${pdfIndex}-${pageIndex}`}
                                     index={pageIndex}
                                     pageIndex={pageIndex}
                                     pdfIndex={pdfIndex}
                                     handleDeletePage={handleDeletePage}
                                     handleRotatePage={handleRotatePage}
                                     handleMovePage={handleMovePage}
-                                    current={current}
-                                    setCurrent={setCurrent}
                                 />
                                 <PlaceholderThumbnail pdfIndex={pdfIndex}
                                     pageIndex={pageIndex + 0.5}
@@ -118,11 +114,9 @@ export default function PdfRow({ pdfIndex = 0, handleMovePage, handleRotatePage,
                                     margin='ml-2' />
                             </div>
                         </>
-                        )
-                        }
-
-                    </Document>
-                </div>
+                        )}
+                    </div>
+                </Document>
             </Row>
         </div>
 
@@ -130,3 +124,5 @@ export default function PdfRow({ pdfIndex = 0, handleMovePage, handleRotatePage,
 
     </>
 }
+//export default React.memo(PdfRow, () => true);
+export default PdfRow;

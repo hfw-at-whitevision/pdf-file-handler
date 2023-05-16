@@ -14,8 +14,15 @@ export default function AdministrationTiles(props) {
         }} {...props}>
             <div
                 className={
-                    `bg-gray-100 w-full rounded-lg p-4 grid gap-2 shadow-md sticky top-8
-                    ${width > 500 ? 'grid-cols-3' : width > 350 ? 'grid-cols-2' : 'grid-cols-1'}`
+                    `bg-gray-100 w-full rounded-lg p-4 grid gap-2 sticky top-8 border border-gray-200
+                    ${width > 600
+                        ? 'grid-cols-4'
+                        : width > 400
+                            ? 'grid-cols-3'
+                            : width > 250
+                                ? 'grid-cols-2'
+                                : 'grid-cols-1'
+                    }`
                 }
             >
                 {

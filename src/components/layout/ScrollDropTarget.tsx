@@ -1,7 +1,11 @@
 import { useRef, useEffect } from "react";
 import { useDrop } from "react-dnd";
+import { userIsDraggingAtom } from "../store/atoms";
+import { useAtom } from "jotai";
 
-export default function ScrollDropTarget({ isDragging, position }) {
+export default function ScrollDropTarget({ position }) {
+    const [userIsDragging, setUserIsDragging] = useAtom(userIsDraggingAtom);
+
     const scrollBy =
         position === 'top'
             ? -20
@@ -41,7 +45,7 @@ export default function ScrollDropTarget({ isDragging, position }) {
         className={
             `fixed left-0 right-0 h-[80px] z-50
         ${position === 'top' ? 'top-0' : 'bottom-0'}
-        ${isDragging ? 'pointer-events-auto' : 'pointer-events-none'}`
+        ${userIsDragging ? 'pointer-events-auto' : 'pointer-events-none'}`
         }
     />;
 }
