@@ -89,8 +89,8 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage }: any) => {
                 ? <>
                     <div
                         className={
-                            `fixed z-50 bg-white text-white text-lg font-bold w-[240px] shadow-md rounded-lg border border-gray-200
-                            grid grid-cols-1 divide-y divide-gray-200`
+                            `fixed z-50 bg-white text-white text-lg font-bold w-[240px] shadow-md rounded-lg border border-stone-200
+                            grid grid-cols-1 divide-y divide-stone-200`
                         }
                         style={{
                             top,
@@ -104,7 +104,7 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage }: any) => {
                                     key={item.id}
                                     data-pdf-index={pdfIndex}
                                     data-page-index={pageIndex}
-                                    className="flex items-center gap-2 text-gray-700 text-base font-normal py-2 px-4 hover:bg-gray-100 cursor-pointer"
+                                    className="flex items-center gap-2 text-stone-700 text-base font-normal py-2 px-4 hover:bg-stone-100 cursor-pointer"
                                 >
                                     {
                                         item?.icon

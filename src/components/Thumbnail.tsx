@@ -98,7 +98,7 @@ const Thumbnail = (
                 `relative group flex items-center justify-center rounded-md overflow-hidden
                 box-border border-4 pdf-thumbnail-container w-full
           before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
-                    before:z-[-1] border-gray-200/20
+                    before:z-[-1] border-stone-200/20
           opacity-${isDragging ? '10' : '100'}`
             }
             onClick={() => setCurrent({
@@ -118,7 +118,7 @@ const Thumbnail = (
                 renderAnnotationLayer={false}
                 renderTextLayer={false}
                 renderMode="canvas"
-                width={150}
+                width={200}
             />
             <div
                 id={`thumbnail-${pdfIndex}-${pageIndex}-inset`}

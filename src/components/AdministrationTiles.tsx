@@ -14,7 +14,7 @@ export default function AdministrationTiles(props) {
         }} {...props}>
             <div
                 className={
-                    `bg-gray-100 w-full rounded-lg p-4 grid gap-2 sticky top-8 border border-gray-200
+                    `bg-stone-100 w-full rounded-lg p-4 grid gap-2 sticky top-8 border border-stone-200
                     ${width > 600
                         ? 'grid-cols-4'
                         : width > 400
@@ -30,13 +30,13 @@ export default function AdministrationTiles(props) {
                         <div
                             className={
                                 `block text-sm min-h-[150px] rounded-lg overflow-hidden
-                                bg-white border-gray-200 border aspect-w-1 aspect-h-1
+                                bg-white border-stone-200 border aspect-w-1 aspect-h-1
                                 `
                             }
                             key={`administrationTile-${index}`}
                         >
                             <span className="p-4">
-                                <div className="bg-gray-100 p-4 rounded-lg inline-block mx-auto items-center justify-center mb-2 border border-gray-200">
+                                <div className="bg-stone-100 p-4 rounded-lg inline-block mx-auto items-center justify-center mb-2 border border-stone-200">
                                     <BsCurrencyEuro />
                                 </div>
                                 <h3 className="text-sm font-bold">{tile.title}</h3>

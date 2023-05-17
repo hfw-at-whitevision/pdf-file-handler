@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
+import ButtonXl from "../primitives/ButtonXl";
 
 const Drop = ({ onLoaded = (acceptedFiles: any) => { }, className = '' }) => {
   const onDrop = useCallback((acceptedFiles: any) => {
@@ -13,17 +14,18 @@ const Drop = ({ onLoaded = (acceptedFiles: any) => { }, className = '' }) => {
   });
 
   return (
-    <div
+    <ButtonXl
       {...getRootProps()}
       className={
-        `flex w-full flex-col gap-4 rounded-md text-gray-600 text-sm cursor-pointer bg-gray-100
+        `flex w-full flex-col gap-4 rounded-md text-stone-600 text-sm cursor-pointer bg-stone-100
         ring-2 ring-dashed hover:ring-amber/40 p-4 ring-offset-4 ring-amber-300/50
         ${className}`
       }
+      icon={<BsUpload className="text-base" />}
     >
-      <h3 className="text-2xl font-bold flex items-center gap-2 justify-between">Upload <BsUpload className="text-base" /></h3>
+      Upload
       <input {...getInputProps()} />
-    </div>
+    </ButtonXl>
   );
 }
 

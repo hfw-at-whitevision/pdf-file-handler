@@ -179,6 +179,7 @@ const Home: NextPage = () => {
         toPlaceholderThumbnail = false
     }: any) => {
         setIsLoading(true);
+        const pdfs = await get('pdfs');
 
         if (typeof toPdfIndex === 'undefined' && typeof toPageIndex === 'undefined') return;
 
@@ -501,7 +502,7 @@ const Home: NextPage = () => {
 
             // check file size
             const fileSize = files[i]['size'] / 1024 / 1024;
-            if (fileSize > 25) {
+            if (fileSize > 250) {
                 alert(`${files[i]['name']} is groter dan 25MB. Gelieve het bestand te verkleinen.`)
                 continue;
             }
@@ -661,10 +662,11 @@ const Home: NextPage = () => {
     // react-split
     // ********************************************************
     const [sizes, setSizes]: [any, any] = useState([35, 40, 25]);
-    const persistFileHandlerPanelSizes = (sizes: number[]) => setSizes(sizes);
+    const persistFileHandlerPanelSizes = (sizes: number[]) => {
+        setSizes(sizes);
+    }
     const getPersistedFileHandlerPanelSizes = () => {
-        const savedPanelSizes = sizes;
-        if (savedPanelSizes)
+        if (sizes)
             return sizes;
         else
             return undefined;
@@ -673,12 +675,13 @@ const Home: NextPage = () => {
     useEffect(() => {
         const currentThumbnail = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
         if (currentThumbnail) currentThumbnail.classList.add('!border-amber-300', '!before:z-10');
+        else return;
 
         const otherThumbnails = document.querySelectorAll('[id*="thumbnail-"]:not([id*="thumbnail-' + current.pdfIndex + '-' + current.pageIndex + '"])');
         otherThumbnails.forEach((thumbnail: any) => {
             thumbnail.classList.remove('!border-amber-300', '!before:z-10');
         });
-    }, [current]);
+    }, [current.pdfIndex, current.pageIndex]);
 
     return (
         <>
@@ -701,9 +704,11 @@ const Home: NextPage = () => {
             }
 
             <main className={`min-h-screen flex gap-8 p-8 w-full h-full first-letter:${pdfs ? "flex-row" : "flex-col items-center justify-center"}`}>
-                <header className={`flex flex-col w-full ${!pdfs ? "items-center" : "max-w-[200px]"}`}>
+                <header className={`flex flex-col w-full max-w-[200px]`}>
                     <nav className="sticky top-8">
                         <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg" />
+                        <h3 className="font-black mt-2 tracking-widest uppercase mb-8 text-xs text-stone-700">File Handler</h3>
+
                         <div className={`grid gap-4 mt-6 w-full ${!pdfs ? "grid-cols-1" : "grid-cols-1"}`}>
                             <Drop
                                 onLoaded={handleDropzoneLoaded}
@@ -735,7 +740,7 @@ const Home: NextPage = () => {
                     cursor="col-resize"
                 >
                     {/* PDF row */}
-                    <section className={`flex-col text-gray-900 items-start`}>
+                    <section className={`flex-col text-stone-900 items-start`}>
                         {new Array(totalPages?.length).fill(1).map((_: any, pdfIndex: number) =>
                             <PdfRow
                                 key={`pdf-${pdfIndex}`}
@@ -744,6 +749,7 @@ const Home: NextPage = () => {
                                 handleMovePage={handleMovePage}
                                 handleRotatePage={handleRotatePage}
                                 handleDeletePage={handleDeletePage}
+                                handleRotateDocument={handleRotateDocument}
                             />
                         )}
                     </section>

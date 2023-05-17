@@ -7,7 +7,7 @@
 }
 
 body {
-    @apply overflow-y-scroll;
+    @apply overflow-y-scroll bg-white;
 }
 
 .react-pdf__Page__textContent.textLayer,
@@ -51,6 +51,7 @@ pre {
     @apply object-contain rounded-md overflow-hidden;
 }
 
+/* react split */
 .gutter.gutter-horizontal {
     position: relative;
     cursor: col-resize;
@@ -61,11 +62,10 @@ pre {
         z-index: 9;
         height: 100%;
         width: 6px;
-        background: #f6f7f9;
         position: fixed;
         top: 0;
-        border-left: 1px solid #d1d8da;
-        border-right: 1px solid #d1d8da;
+
+        @apply bg-stone-100 border-l-[1px] border-r-[1px] border-stone-200;
     }
 
     &::after {

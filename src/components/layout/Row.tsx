@@ -17,9 +17,10 @@ const Row = ({ children, pdfIndex }: any, props: any) => {
     return <div
         ref={drop}
         className={`
-      p-4 rounded-lg w-full mb-8
-      ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-gray-100'}
-      border border-gray-200
+      rounded-lg w-full mb-8
+      ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-stone-100'}
+      border border-stone-200
+      flex flex-col divide-y space-y divide-stone-300
       `}
         {...props}
     >

@@ -1,9 +1,13 @@
+import { useAtom } from "jotai";
 import React from "react";
 import { useDrop } from "react-dnd";
+import { userIsDraggingAtom } from "../store/atoms";
 
-const PlaceholderThumbnail = ({ pdfIndex, pageIndex, isDragging, isLoading, totalPages, margin }) => {
+const PlaceholderThumbnail = ({ pdfIndex, pageIndex, margin }) => {
     // hide placeholders if only 1 page in PDF
     //if (totalPages[pdfIndex] === 1) return null;
+
+    const [userIsDragging] = useAtom(userIsDraggingAtom);
 
     const [{ canDrop, isOver }, drop] = useDrop({
         accept: "pdfThumbnail",
@@ -26,10 +30,10 @@ const PlaceholderThumbnail = ({ pdfIndex, pageIndex, isDragging, isLoading, tota
           ${isOver ? 'w-[10px]' : 'w-[0]'}
           after:content-[''] after:absolute after:left-[100%] after:w-[60px] after:h-full after:z-20 after:bg-red-3000 after:translate-x-[0]
           ${isOver ? margin : null}
-          ${isDragging ? 'pointer-events-auto' : 'pointer-events-none'}
+          ${userIsDragging ? 'pointer-events-auto' : 'pointer-events-none'}
         `}
         />
     </>
 }
 
-export default React.memo(PlaceholderThumbnail, () => true)
+export default React.memo(PlaceholderThumbnail)
