@@ -46,11 +46,13 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage }: any) => {
     };
 
     const handleLeftClick = async (e: any) => {
-        e.preventDefault();
         setIsOpen(false);
 
         const clickedContextMenuItem = e.target.getAttribute('id');
-        if (clickedContextMenuItem !== 'delete') return;
+        if (
+            clickedContextMenuItem !== 'delete'
+            && clickedContextMenuItem !== 'rotate'
+        ) return;
 
         const clickedPdfIndex = parseInt(e.target.getAttribute('data-pdf-index'));
         const clickedPageIndex = parseInt(e.target.getAttribute('data-page-index'));
@@ -70,15 +72,14 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage }: any) => {
             default:
                 break;
         }
-        //setClickCounter(oldValue => oldValue + 1);
     }
 
     useEffect(() => {
-        document.addEventListener('click', handleLeftClick);
+        document.addEventListener('click', async (e) => await handleLeftClick(e));
         document.addEventListener('contextmenu', handleRightClick);
 
         return () => {
-            document.removeEventListener('click', handleRightClick);
+            document.removeEventListener('click', async (e) => await handleLeftClick(e));
             document.removeEventListener('contextmenu', handleRightClick);
         };
     }, []);

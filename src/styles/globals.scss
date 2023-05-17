@@ -7,7 +7,7 @@
 }
 
 body {
-    @apply overflow-y-scroll bg-white;
+    @apply bg-white;
 }
 
 .react-pdf__Page__textContent.textLayer,
@@ -96,6 +96,6 @@ pre {
 }
 
 .pdf-thumbnail-container .react-pdf__Page__canvas {
-    width: 100% !important;
+    width: 120px !important;
     height: auto !important;
 }

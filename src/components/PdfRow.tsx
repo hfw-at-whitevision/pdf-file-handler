@@ -41,25 +41,20 @@ const PdfRow = ({ pdf, pdfIndex = 0, handleMovePage, handleRotatePage, handleDel
             : null
         }
 
-        <div ref={ref} style={{
-            height: height
-        }}>
-            {height}
+        <div ref={ref}>
             <Row pdfIndex={pdfIndex}>
-                <div
-                    className={`flex items-center justify-between p-4
-                    ${width < 350 ? 'flex-col' : 'flex-row'}`}
-                >
+                <span className="text-xs mr-auto p-4 pb-0">
+                    <h3 className="mr-2 inline break-all">{pdfFileNames[pdfIndex]}</h3>
+                    ({totalPages?.[pdfIndex]} {totalPages?.[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
+                </span>
+                <div className={`flex items-center justify-between p-4 border-b border-stone-300`}>
                     <BiChevronDown
-                        className={`cursor-pointer ${!open ? 'rotate-180' : ''}`}
+                        className={`
+                            cursor-pointer text-lg
+                            ${!open ? 'rotate-180' : ''}
+                        `}
                         onClick={() => setOpen(oldValue => !oldValue)}
                     />
-
-                    <span className="text-xs mr-auto ml-4">
-                        <h3 className="mr-2 inline break-all font-bold">{pdfFileNames[pdfIndex]}</h3>
-                        ({totalPages?.[pdfIndex]} {totalPages?.[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
-                    </span>
-
                     <nav
                         className={
                             `${isLoading ? "disabled" : ""} flex gap-1 justify-end
@@ -89,22 +84,15 @@ const PdfRow = ({ pdf, pdfIndex = 0, handleMovePage, handleRotatePage, handleDel
                 <Document
                     file={pdf}
                     className={
-                        `relative p-4 grid gap-2 w-full overflow-hidden
+                        `relative p-4 gap-2 w-full overflow-hidden
                         ${open ? 'h-auto' : 'h-0 py-0'}
-                        ${width > 600
-                            ? 'grid-cols-4'
-                            : width > 350
-                                ? 'grid-cols-3'
-                                : width > 200
-                                    ? 'grid-cols-2'
-                                    : 'grid-cols-1'
-                        }       
+                        flex flex-row flex-wrap
                         `}
                 >
                     {/* thumbnails of current PDF */}
                     {numberOfThumbnails?.[pdfIndex]?.map((item: any, pageIndex: number) => <>
                         <div
-                            className={`flex flex-row flex-1 ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
+                            className={`flex flex-row ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
                             key={`thumbnail-${pdfIndex}-${pageIndex}`}
                         >
                             {
@@ -112,7 +100,7 @@ const PdfRow = ({ pdf, pdfIndex = 0, handleMovePage, handleRotatePage, handleDel
                                 pageIndex % 4 === 0 &&
                                 <PlaceholderThumbnail pdfIndex={pdfIndex}
                                     pageIndex={pageIndex - 0.5}
-                                    isLoading={isLoading} margin='mr-2' />
+                                    margin='mr-2' />
                             }
                             <Thumbnail
                                 index={pageIndex}
@@ -121,12 +109,10 @@ const PdfRow = ({ pdf, pdfIndex = 0, handleMovePage, handleRotatePage, handleDel
                                 handleDeletePage={handleDeletePage}
                                 handleRotatePage={handleRotatePage}
                                 handleMovePage={handleMovePage}
+                                handleDeleteDocument={handleDeleteDocument}
                             />
                             <PlaceholderThumbnail pdfIndex={pdfIndex}
                                 pageIndex={pageIndex + 0.5}
-                                isDragging={userIsDragging}
-                                totalPages={totalPages}
-                                isLoading={isLoading}
                                 key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`}
                                 margin='ml-2' />
                         </div>

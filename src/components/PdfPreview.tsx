@@ -25,7 +25,7 @@ export default function PdfPreview() {
                             <Page
                                 pageIndex={current?.pageIndex}
                                 loading={<Loading />}
-                                width={800}
+                                width={1600}
                                 renderAnnotationLayer={false}
                                 renderTextLayer={false}
                             />

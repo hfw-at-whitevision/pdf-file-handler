@@ -20,7 +20,7 @@ const Row = ({ children, pdfIndex }: any, props: any) => {
       rounded-lg w-full mb-8
       ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-stone-100'}
       border border-stone-200
-      flex flex-col divide-y space-y divide-stone-300
+      flex flex-col space-y divide-stone-300
       `}
         {...props}
     >

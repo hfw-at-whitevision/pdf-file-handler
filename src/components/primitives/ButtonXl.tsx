@@ -4,7 +4,7 @@ export default function ButtonXl({ href = "", title = "", description = "", styl
     return <>
         <Link
             className={
-                `flex w-full flex-col gap-4 rounded-xl p-4 text-stone-600
+                `flex w-full flex-col gap-4 rounded-lg p-4 text-stone-600
                 ${style === "flat" ? "bg-stone-100 hover:bg-white/20 shadow-xl" : "border-2 border-dotted border-amber/20 hover:border-amber/40"}"}
                 ${className ? className : ''}`
             }
@@ -12,7 +12,7 @@ export default function ButtonXl({ href = "", title = "", description = "", styl
             onClick={onClick}
             {...props}
         >
-            <h3 className="text-2xl font-bold flex items-center gap-2 justify-between">
+            <h3 className="text-lg font-bold flex items-center gap-2 justify-between">
                 <span>{children ?? title}</span> {icon}
             </h3>
         </Link>

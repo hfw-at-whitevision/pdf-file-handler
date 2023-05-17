@@ -95,11 +95,11 @@ const Thumbnail = (
             id={`thumbnail-${pdfIndex}-${pageIndex}`}
             ref={ref}
             className={
-                `relative group flex items-center justify-center rounded-md overflow-hidden
-                box-border border-4 pdf-thumbnail-container w-full
-          before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
-                    before:z-[-1] border-stone-200/20
-          opacity-${isDragging ? '10' : '100'}`
+                `relative group flex items-center justify-center rounded-lg overflow-hidden
+                box-border border-4 pdf-thumbnail-container
+                before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
+                before:z-[-1] border-stone-200/20
+                opacity-${isDragging ? '10' : '100'}`
             }
             onClick={() => setCurrent({
                 pdfIndex: pdfIndex,
@@ -118,7 +118,7 @@ const Thumbnail = (
                 renderAnnotationLayer={false}
                 renderTextLayer={false}
                 renderMode="canvas"
-                width={200}
+                width={100}
             />
             <div
                 id={`thumbnail-${pdfIndex}-${pageIndex}-inset`}
@@ -126,7 +126,7 @@ const Thumbnail = (
                 data-page-index={pageIndex}
                 className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75"
             >
-                <div className="grid grid-cols-2 gap-1 pb-4" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
+                <div className="grid grid-cols-2 gap-1 pb-2" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
                     <Button
                         title={<><GrRotateRight /></>}
                         onClick={async () => await handleRotatePage({ pdfIndex, pageIndex })}

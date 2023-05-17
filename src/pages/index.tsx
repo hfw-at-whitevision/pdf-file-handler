@@ -703,11 +703,13 @@ const Home: NextPage = () => {
                 />
             }
 
-            <main className={`min-h-screen flex gap-8 p-8 w-full h-full first-letter:${pdfs ? "flex-row" : "flex-col items-center justify-center"}`}>
-                <header className={`flex flex-col w-full max-w-[200px]`}>
+            <main className={`flex gap-8 p-8 w-full first-letter:${pdfs ? "flex-row" : "flex-col items-center justify-center"}`}>
+                <header className={`flex flex-1 flex-col w-full max-w-[200px]`}>
                     <nav className="sticky top-8">
                         <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg" />
-                        <h3 className="font-black mt-2 tracking-widest uppercase mb-8 text-xs text-stone-700">File Handler</h3>
+                        <h3 className="font-black mt-2 tracking-widest uppercase mb-8 text-[9px] text-stone-700">
+                            File Handler {process.env.VERCEL_GIT_COMMIT_MESSAGE ?? ''}
+                        </h3>
 
                         <div className={`grid gap-4 mt-6 w-full ${!pdfs ? "grid-cols-1" : "grid-cols-1"}`}>
                             <Drop
@@ -735,7 +737,7 @@ const Home: NextPage = () => {
                     minSize={[150, 0, 150]}
                     gutterSize={8}
                     gutterAlign="center"
-                    className="flex flex-row w-full h-full flex-1"
+                    className="flex flex-row w-full h-auto flex-1"
                     onDragEnd={persistFileHandlerPanelSizes}
                     cursor="col-resize"
                 >
@@ -750,6 +752,7 @@ const Home: NextPage = () => {
                                 handleRotatePage={handleRotatePage}
                                 handleDeletePage={handleDeletePage}
                                 handleRotateDocument={handleRotateDocument}
+                                handleDeleteDocument={handleDeleteDocument}
                             />
                         )}
                     </section>
