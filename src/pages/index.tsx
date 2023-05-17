@@ -708,7 +708,7 @@ const Home: NextPage = () => {
                     <nav className="sticky top-8">
                         <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg" />
                         <h3 className="font-black mt-2 tracking-widest uppercase mb-8 text-[9px] text-stone-700">
-                            File Handler {process.env.VERCEL_GIT_COMMIT_MESSAGE ?? ''}
+                            File Handler {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_MESSAGE ?? ''}
                         </h3>
 
                         <div className={`grid gap-4 mt-6 w-full ${!pdfs ? "grid-cols-1" : "grid-cols-1"}`}>
