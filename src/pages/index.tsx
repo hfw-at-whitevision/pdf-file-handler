@@ -335,7 +335,6 @@ const Home: NextPage = () => {
             !pdfs?.length
             || current?.skipScrollIntoView
         ) return;
-
         let timer: any = null;
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
@@ -672,16 +671,20 @@ const Home: NextPage = () => {
             return undefined;
     };
 
-    useEffect(() => {
-        const currentThumbnail = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
-        if (currentThumbnail) currentThumbnail.classList.add('!border-amber-300', '!before:z-10');
-        else return;
+    const highlightCurrentThumbnail = () => {
+        const currentThumbnail: any = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
+
+        if (!currentThumbnail) return;
+        currentThumbnail.classList.add('!border-amber-300', '!before:z-10');
 
         const otherThumbnails = document.querySelectorAll('[id*="thumbnail-"]:not([id*="thumbnail-' + current.pdfIndex + '-' + current.pageIndex + '"])');
         otherThumbnails.forEach((thumbnail: any) => {
             thumbnail.classList.remove('!border-amber-300', '!before:z-10');
         });
-    }, [current.pdfIndex, current.pageIndex]);
+    }
+    useEffect(() => {
+        highlightCurrentThumbnail();
+    }, [current]);
 
     return (
         <>
@@ -708,7 +711,7 @@ const Home: NextPage = () => {
                     <nav className="sticky top-8">
                         <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg" />
                         <h3 className="font-black mt-2 tracking-widest uppercase mb-8 text-[9px] text-stone-700">
-                            File Handler {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_MESSAGE ?? ''}
+                            File Handler {process.env.NEXT_PUBLIC_BUILD_VERSION ?? ''}
                         </h3>
 
                         <div className={`grid gap-4 mt-6 w-full ${!pdfs ? "grid-cols-1" : "grid-cols-1"}`}>
@@ -745,8 +748,8 @@ const Home: NextPage = () => {
                     <section className={`flex-col text-stone-900 items-start`}>
                         {new Array(totalPages?.length).fill(1).map((_: any, pdfIndex: number) =>
                             <PdfRow
+                                stateChanged={stateChanged}
                                 key={`pdf-${pdfIndex}`}
-                                pdf={pdfs[pdfIndex]}
                                 pdfIndex={pdfIndex}
                                 handleMovePage={handleMovePage}
                                 handleRotatePage={handleRotatePage}

@@ -98,7 +98,7 @@ const Thumbnail = (
                 `relative group flex items-center justify-center rounded-lg overflow-hidden
                 box-border border-4 pdf-thumbnail-container
                 before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
-                before:z-[-1] border-stone-200/20
+                before:z-[-1] border-stone-200/40
                 opacity-${isDragging ? '10' : '100'}`
             }
             onClick={() => setCurrent({
@@ -117,6 +117,7 @@ const Thumbnail = (
                 pageIndex={pageIndex}
                 renderAnnotationLayer={false}
                 renderTextLayer={false}
+                canvasBackground='white'
                 renderMode="canvas"
                 width={100}
             />
@@ -124,7 +125,7 @@ const Thumbnail = (
                 id={`thumbnail-${pdfIndex}-${pageIndex}-inset`}
                 data-pdf-index={pdfIndex}
                 data-page-index={pageIndex}
-                className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/75"
+                className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/20"
             >
                 <div className="grid grid-cols-2 gap-1 pb-2" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
                     <Button

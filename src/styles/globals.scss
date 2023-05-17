@@ -80,7 +80,7 @@ pre {
 }
 
 /* PdfPreview */
-.pdf-preview-container {
+.react-pdf.pdf-preview-container {
     .react-pdf__Page {
         @apply flex flex-1 h-full justify-center;
 
