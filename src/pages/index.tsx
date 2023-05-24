@@ -55,11 +55,25 @@ const Home: NextPage = () => {
 
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
-    const handleDuplicateDocument = async (pdfIndex: number) => {
-        const duplicateState = (oldValue: any) => {
-            let updatedValue = oldValue;
-            updatedValue.splice(pdfIndex, 0, oldValue[pdfIndex]);
-            return updatedValue;
+    const handleDuplicateDocument = async ({ pdfIndex, startPageIndex = 0 }: any) => {
+        const startIndex = findIndex({ pdfIndex, pageIndex: startPageIndex });
+        if (startIndex === 0) return;
+        const duplicateState = (oldState: Array<any>) => {
+            let updatedState = oldState;
+            let originalRecord = oldState[pdfIndex];
+            let duplicatedRecord = originalRecord;
+
+            // slice the records
+            if (Array.isArray(originalRecord)) {
+                duplicatedRecord = originalRecord.slice(startIndex);
+                originalRecord = originalRecord.slice(0, startIndex);
+            }
+
+            // insert / duplicate the record
+            updatedState.splice(pdfIndex, 0, duplicatedRecord);
+            updatedState[pdfIndex] = originalRecord;
+            updatedState[pdfIndex + 1] = duplicatedRecord;
+            return updatedState;
         }
         setPdfs((oldValue: any) => duplicateState(oldValue));
         setPdfFilenames((oldValue: any) => duplicateState(oldValue));
@@ -68,7 +82,7 @@ const Home: NextPage = () => {
         setPages((oldValue: any) => duplicateState(oldValue));
         setCurrent({
             pdfIndex: pdfIndex + 1,
-            pageIndex: 0,
+            pageIndex: startPageIndex,
         })
         setStateChanged((oldState: number) => oldState + 1);
     }

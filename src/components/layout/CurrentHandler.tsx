@@ -15,12 +15,12 @@ const CurrentHandler = () => {
         });
     }
     useEffect(() => {
-        let timer = null;
+        let timer1 = null;
         const currentThumbnail: any = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
         if (currentThumbnail) highlightCurrentThumbnail();
         else {
-            timer = null;
-            timer = setTimeout(() => {
+            timer1 = null;
+            timer1 = setTimeout(() => {
                 highlightCurrentThumbnail();
             }, 400);
         }

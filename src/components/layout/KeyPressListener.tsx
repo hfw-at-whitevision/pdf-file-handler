@@ -55,7 +55,7 @@ const KeyPressListener = ({ handleSplitDocument, handleDeleteDocument, handleDup
                     break;
                 case ' ':
                     event.preventDefault();
-                    await handleDuplicateDocument(current.pdfIndex);
+                    await handleDuplicateDocument({ pdfIndex: current.pdfIndex, startPageIndex: current.pageIndex });
                     break;
                 case 'Delete':
                     await handleDeletePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex, skipScrollIntoView: true });
