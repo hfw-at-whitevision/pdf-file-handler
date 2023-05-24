@@ -493,7 +493,7 @@ const Home: NextPage = () => {
                     </section>
 
                     {/* PDF preview */}
-                    <LegacyPdfPreview />
+                    <LegacyPdfPreview rotations={rotations[current.pdfIndex]} />
 
                     {/* administration tiles */}
                     <AdministrationTiles />

@@ -3,7 +3,7 @@ import { currentAtom, pdfsAtom } from "./store/atoms"
 import { Document, Page } from "react-pdf"
 import Loading from "./layout/Loading"
 
-export default function LegacyPdfPreview() {
+export default function LegacyPdfPreview({ rotations }: any) {
     const [pdfs] = useAtom(pdfsAtom)
     const [current] = useAtom(currentAtom)
     return <>
@@ -22,6 +22,7 @@ export default function LegacyPdfPreview() {
                                 width={1600}
                                 renderAnnotationLayer={false}
                                 renderTextLayer={false}
+                                rotate={rotations[current?.pageIndex]}
                             />
                         </Document>
                     </>
