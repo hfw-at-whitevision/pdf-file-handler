@@ -1,4 +1,10 @@
+import { useRouter } from "next/router";
+
 export default function Debug(props: any) {
+    const router = useRouter();
+    let { debug }: any = router.query;
+    if (!debug) return null;
+
     const pdfsSize = props?.pdfs?.length
         ? Buffer.from(JSON.stringify(props?.pdfs)).length / 1000
         : 0
@@ -6,6 +12,7 @@ export default function Debug(props: any) {
         {propKey}: {JSON.stringify(Object.values(props)?.[i])}
         <br />
     </>))
+
     return <pre>
         build: {process.env.NEXT_PUBLIC_BUILD_VERSION}
         <br />
