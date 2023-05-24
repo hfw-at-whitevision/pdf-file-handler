@@ -36,6 +36,7 @@ const Home: NextPage = () => {
     const [, setStateChanged] = useAtom(setStateChangedAtom);
 
     const findIndex = ({ pdfIndex, pageIndex }: any) => {
+        if (typeof pages?.[pdfIndex]?.[pageIndex] === 'undefined') return;
         return pages[pdfIndex].findIndex((value: any) => value === pageIndex);
     }
     const handleReset = useCallback(async () => {
@@ -65,17 +66,28 @@ const Home: NextPage = () => {
         setPdfs((oldPdfs: any) => oldPdfs.filter((_: any, index: number) => index !== inputPdfIndex));
         setTotalPages((oldTotalPages: any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
         setPdfFileNames((oldPdfFileNames: any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
-
+        setPages((oldPages: any) => {
+            if (oldPages?.length === 1) return [];
+            let updatedPages = oldPages;
+            updatedPages = updatedPages.filter((_: any, index: any) => index === inputPdfIndex);
+            return updatedPages;
+        });
+        setRotations((oldValue: any) => {
+            if (oldValue?.length === 1) return [];
+            let updatedValue = oldValue;
+            updatedValue = updatedValue.filter((_: any, index: any) => index === inputPdfIndex);
+            return updatedValue;
+        });
         setCurrent({
             pdfIndex: (inputPdfIndex === pdfs?.length - 1 && inputPdfIndex > 0)
                 ? inputPdfIndex - 1
                 : inputPdfIndex,
             pageIndex: 0
-        })
+        });
 
         setIsLoading(false);
         setStateChanged((oldValue: number) => oldValue + 1);
-    }, []);
+    }, [pages]);
 
     const handleDeletePage = ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
         if (typeof index === 'undefined') index = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
