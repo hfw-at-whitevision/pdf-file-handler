@@ -31,6 +31,20 @@ export const setStateChangedAtom = atom(
         set(stateChangedAtom, input);
     }
 );
+export const rotationsAtom = atom([]);
+export const setRotationsAtom = atom(
+    null,
+    (get, set, input: any) => {
+        set(rotationsAtom, input);
+    }
+);
+export const pagesAtom = atom([]);
+export const setPagesAtom = atom(
+    null,
+    (get, set, input: any) => {
+        set(pagesAtom, input);
+    }
+);
 
 // UI
 

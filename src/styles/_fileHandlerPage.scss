@@ -5,11 +5,11 @@
 body {
     @apply bg-white;
 }
-
+/*
 .react-pdf__message {
     @apply hidden;
 }
-
+*/
 .pdf-thumbnail canvas {
     @apply object-contain rounded-md overflow-hidden;
 }

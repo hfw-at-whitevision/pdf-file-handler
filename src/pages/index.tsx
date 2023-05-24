@@ -4,7 +4,6 @@ import { get, set, del } from 'idb-keyval';
 
 import { useCallback, useEffect, useState } from "react";
 import Drop from "@/components/layout/Drop";
-import { pdfjs } from "react-pdf";
 import { PDFDocument, degrees } from "pdf-lib";
 import ButtonXl from "@/components/primitives/ButtonXl";
 import { BsSave, BsArrowRepeat } from "react-icons/bs";
@@ -12,18 +11,17 @@ import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom } from "jotai";
-import { currentAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, setCurrentAtom, setPdfsAtom, setStateChangedAtom, stateChangedAtom, totalPagesAtom, userIsDraggingAtom } from "@/components/store/atoms";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, setCurrentAtom, setPdfsAtom, setStateChangedAtom, stateChangedAtom, totalPagesAtom, userIsDraggingAtom } from "@/components/store/atoms";
 import { useRouter } from "next/router";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
 import PdfRow from "@/components/PdfRow";
 import LegacyPdfPreview from "@/components/LegacyPdfPreview";
-
-pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
+import React from "react";
 
 const Home: NextPage = () => {
-    const [pdfFileNames, setPdfFileNames]: [Array<string>, any] = useAtom(pdfFilenamesAtom);
+    const [pdfFilenames, setPdfFileNames]: [Array<string>, any] = useAtom(pdfFilenamesAtom);
     const [pdfs]: any = useAtom(pdfsAtom);
     const [, setPdfs] = useAtom(setPdfsAtom);
     const [current]: any = useAtom(currentAtom);
@@ -31,16 +29,58 @@ const Home: NextPage = () => {
     const [totalPages, setTotalPages]: [any, any] = useAtom(totalPagesAtom);
     const [isLoading, setIsLoading]: [boolean, any] = useAtom(isLoadingAtom);
     const [loadingMessage]: any = useAtom(loadingMessageAtom);
+    const [rotations, setRotations]: any = useAtom(rotationsAtom);
+    const [pages, setPages]: any = useAtom(pagesAtom);
+
+    // state save
+    const [stateChanged] = useAtom(stateChangedAtom);
+    const [, setStateChanged] = useAtom(setStateChangedAtom);
+    const saveState = async () => {
+        await set('totalPages', totalPages);
+        await set('pdfFilenames', pdfFilenames);
+        await set('pdfs', pdfs);
+        await set('rotations', rotations);
+        await set('pages', pages);
+        console.log(`PDF's saved.`)
+    }
+    useEffect(() => {
+        if (!pdfs) return;
+        saveState();
+    }, [stateChanged]);
+    // state fetch
+    const fetchState = async () => {
+        const pdfs = await get('pdfs');
+        if (!pdfs?.length) return;
+
+        get('pdfFilenames').then((pdfFilenames) => {
+            get('totalPages').then((totalPages) => {
+                get('pages').then((pages) => {
+                    setPdfFileNames(pdfFilenames);
+                    setTotalPages(totalPages);
+                    setPages(pages);
+                    setPdfs(pdfs);
+                    console.log(`PDF's fetched.`)
+                });
+            });
+        });
+    }
+    useEffect(() => {
+        fetchState();
+    }, []);
 
     const handleReset = useCallback(async () => {
         setPdfs([]);
         setTotalPages([]);
         setPdfFileNames([]);
+        setRotations([]);
         setCurrent({ pdfIndex: 0, pageIndex: 0 });
+        setPages([]);
 
         await del('totalPages');
-        await del('pdfFileNames');
+        await del('pdfFilenames');
         await del('pdfs');
+        await del('rotations');
+        await del('pages');
 
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
@@ -65,12 +105,30 @@ const Home: NextPage = () => {
 
         setIsLoading(false);
         setStateChanged((oldValue: number) => oldValue + 1);
-    }, [current]);
+    }, []);
 
-    const handleDeletePage = useCallback(async (pdfIndex: number, pageIndex: number) => {
+    const handleDeletePage = (pdfIndex: number, pageIndex: number) => {
+        setPages((oldValue: any) => {
+            let updatedArray = oldValue;
+            updatedArray[pdfIndex].splice(pageIndex, 1);
+            return updatedArray;
+        });
+        setRotations((oldValue: any) => {
+            let updatedArray = oldValue;
+            updatedArray[pdfIndex].splice(pageIndex, 1);
+            return updatedArray;
+        });
+        setTotalPages((oldValue: any) => {
+            let updatedArray = oldValue;
+            updatedArray[pdfIndex] = updatedArray[pdfIndex] - 1;
+            return updatedArray;
+        });
+    };
+    const handleDeletePage0 = useCallback(async (pdfIndex: number, pageIndex: number) => {
         setIsLoading(true);
         const totalPages = await get('totalPages');
         const pdfs = await get('pdfs');
+        const rotations = await get('rotations');
         // if we are deleting the last page in PDF = delete the PDF
         if (totalPages[pdfIndex] === 1) {
             handleDeleteDocument(pdfIndex);
@@ -78,7 +136,6 @@ const Home: NextPage = () => {
         }
 
         console.log(`Deleting page ${pageIndex} from document ${pdfIndex}`);
-        console.log(pdfs);
 
         const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
             ignoreEncryption: true, parseSpeed: 1500
@@ -101,7 +158,9 @@ const Home: NextPage = () => {
                 ? pageIndex - 1
                 : pageIndex
         });
-
+        let updatedRotations = rotations;
+        updatedRotations[pdfIndex] = updatedRotations[pdfIndex].splice(pageIndex, 1);
+        setRotations(updatedRotations);
         setIsLoading(false);
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
@@ -115,11 +174,15 @@ const Home: NextPage = () => {
             ignoreEncryption: true, parseSpeed: 1500
         });
         const pages = pdfDoc.getPages();
+        let pdfRotations = rotations[inputPdfIndex];
 
-        pages.forEach((page) => {
+        pages.forEach((page, pageIndex) => {
             const currentPageRotation = page.getRotation().angle;
-            const newDegrees = currentPageRotation + 90;
+            const newDegrees = (currentPageRotation + 90 === 360)
+                ? 0
+                : currentPageRotation + 90;
             page.setRotation(degrees(newDegrees));
+            pdfRotations[pageIndex] = newDegrees;
         });
 
         const URL = await pdfDoc.saveAsBase64({ dataUri: true });
@@ -129,36 +192,54 @@ const Home: NextPage = () => {
             newPdfs[inputPdfIndex] = URL
             return newPdfs
         });
+        setRotations((oldValues: any) => oldValues.splice(inputPdfIndex, 1, pdfRotations));
         setIsLoading(false);
         setStateChanged((oldValue: number) => oldValue + 1);
         console.log('finished')
-    }, []);
+    }, [rotations]);
 
     const handleRotatePage = useCallback(async ({ pdfIndex, pageIndex }: any) => {
+        let newRotations = rotations;
+        const currentRotation = rotations[pdfIndex][pageIndex];
+        const newDegrees = currentRotation + 90 === 360
+            ? 0
+            : currentRotation + 90;
+
+        newRotations[pdfIndex][pageIndex] = newDegrees;
+        setRotations(newRotations);
+        setStateChanged((oldState: number) => oldState + 1)
+    }, [rotations]);
+    const handleRotatePage0 = useCallback(async ({ pdfIndex, pageIndex }: any) => {
         setIsLoading(true);
         const pdfs = await get('pdfs');
-        console.log(`Rotating page ${pageIndex} from document ${pdfIndex}`)
         const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
             ignoreEncryption: true, parseSpeed: 1500
         });
         const pages = pdfDoc.getPages();
         const currentPage = pages[pageIndex];
-        const currentPageRotation = currentPage?.getRotation().angle ?? 0;
-        const newDegrees = currentPageRotation + 90
+        if (!currentPage) return;
+        console.log(`Rotating page ${pageIndex} from document ${pdfIndex}`)
 
-        if (currentPage) currentPage.setRotation(degrees(newDegrees));
+        const currentPageRotation = currentPage?.getRotation().angle ?? 0;
+        const newDegrees = currentPageRotation + 90 === 360
+            ? 0
+            : currentPageRotation + 90;
+        let newRotations = rotations;
+
+        currentPage.setRotation(degrees(newDegrees));
+        newRotations[pdfIndex][pageIndex] = newDegrees;
 
         const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-
         setPdfs((oldPdfs: any) => {
             let newPdfs = oldPdfs
             newPdfs[pdfIndex] = URL
             return newPdfs
         });
-        setCurrent({ pdfIndex, pageIndex });
+        setRotations(newRotations);
+        setCurrent({ pdfIndex, pageIndex, skipScrollIntoView: true });
         setIsLoading(false);
         setStateChanged((oldValue: number) => oldValue + 1);
-    }, []);
+    }, [rotations]);
 
     const handleMovePage = useCallback(async ({
         fromPdfIndex,
@@ -239,14 +320,14 @@ const Home: NextPage = () => {
 
         // if source document is empty, remove it
         if (fromPdfDoc.getPageCount() === 1) {
-            pdfFileNames.splice(fromPdfIndex, 1);
+            pdfFilenames.splice(fromPdfIndex, 1);
             newTotalPages.splice(fromPdfIndex, 1);
             newPdfs.splice(fromPdfIndex, 1);
         }
 
         // if moving to placeholder row, add a new placeholder row
         if (toPlaceholderRow) {
-            pdfFileNames.splice(toPdfIndex, 0, 'Nieuw document')
+            pdfFilenames.splice(toPdfIndex, 0, 'Nieuw document')
             newTotalPages.splice(toPdfIndex, 0, 1);
             newPdfs.splice(toPdfIndex, 0, URL2);
         }
@@ -291,13 +372,13 @@ const Home: NextPage = () => {
 
         // if source document is empty, remove it
         if (fromPdfDoc.getPageCount() === 1) {
-            pdfFileNames.splice(pdfIndex, 1);
+            pdfFilenames.splice(pdfIndex, 1);
             newTotalPages.splice(pdfIndex, 1);
             newPdfs.splice(pdfIndex, 1);
         }
 
         // add a new document right below the current document
-        pdfFileNames.splice(pdfIndex + 1, 0, 'Nieuw document')
+        pdfFilenames.splice(pdfIndex + 1, 0, 'Nieuw document')
         newTotalPages.splice(pdfIndex + 1, 0, pagesToMove.length);
         newPdfs.splice(pdfIndex + 1, 0, URL2);
 
@@ -324,7 +405,6 @@ const Home: NextPage = () => {
         return () => clearTimeout(timer);
     }, [current]);
 
-
     const handleSaveDocument = useCallback(async (pdfIndex: number) => {
         setIsLoading(true);
         const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
@@ -338,7 +418,7 @@ const Home: NextPage = () => {
             body: JSON.stringify({
                 administrationCode: "1",
                 pdfBase64: base64,
-                fileName: pdfFileNames[pdfIndex],
+                fileName: pdfFilenames[pdfIndex],
                 creationDate: new Date().toISOString(),
                 pageCount: totalPages[pdfIndex],
             })
@@ -430,37 +510,6 @@ const Home: NextPage = () => {
         return () => window.removeEventListener('keydown', eventListener);
     }, [current?.pdfIndex, current?.pageIndex, totalPages]);
 
-    // state save
-    const [stateChanged] = useAtom(stateChangedAtom);
-    const [, setStateChanged] = useAtom(setStateChangedAtom);
-    const saveState = async () => {
-        await set('totalPages', totalPages);
-        await set('pdfFileNames', pdfFileNames);
-        await set('pdfs', pdfs);
-        console.log(`PDF's saved.`)
-    }
-    useEffect(() => {
-        if (!pdfs) return;
-        saveState();
-    }, [stateChanged]);
-    // state fetch
-    const fetchState = async () => {
-        const pdfs = await get('pdfs');
-        if (!pdfs?.length) return;
-
-        get('pdfFileNames').then((pdfFileNames) => {
-            get('totalPages').then((totalPages) => {
-                setPdfFileNames(pdfFileNames);
-                setTotalPages(totalPages);
-                setPdfs(pdfs);
-                console.log(`PDF's fetched.`)
-            });
-        });
-    }
-    useEffect(() => {
-        fetchState();
-    }, []);
-
     const router = useRouter();
     let { debug }: any = router.query;
     if (!debug) debug = false;
@@ -469,13 +518,15 @@ const Home: NextPage = () => {
     // react-split
     // ********************************************************
     const [sizes, setSizes]: [any, any] = useState([35, 40, 25]);
-    const persistFileHandlerPanelSizes = (sizes: number[]) => {
+    const persistFileHandlerPanelSizes = useCallback((sizes: number[]) => {
+        if (!sizes) return;
+        const roundedSizes = sizes.map((size: number) => Math.round(size));
         setSizes(sizes);
-    }
+    }, [sizes]);
     const getPersistedFileHandlerPanelSizes = () => {
         if (sizes) {
             const roundedSizes = sizes.map((size: number) => Math.round(size));
-            return roundedSizes;
+            return sizes;
         }
         else
             return undefined;
@@ -509,13 +560,14 @@ const Home: NextPage = () => {
             {debug &&
                 <Debug
                     sizes={sizes}
-                    pdfs={pdfs}
                     totalPages={totalPages}
                     current={current}
+                    rotations={rotations}
+                    pages={pages}
                 />
             }
 
-            <main className={`flex gap-8 p-8 w-full first-letter:${pdfs ? "flex-row" : "flex-col items-center justify-center"}`}>
+            <main className={`flex flex-1 gap-8 p-8 w-full first-letter:${pdfs ? "flex-row" : "flex-col items-center justify-center"}`}>
                 <header className={`flex flex-1 flex-col w-full max-w-[200px]`}>
                     <nav className="sticky top-8">
                         <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg" />
@@ -547,16 +599,21 @@ const Home: NextPage = () => {
                     minSize={[150, 0, 150]}
                     gutterSize={8}
                     gutterAlign="center"
-                    className="flex flex-row w-full h-auto flex-1"
+                    className="flex flex-row w-full h-full flex-1"
                     onDragEnd={persistFileHandlerPanelSizes}
                     cursor="col-resize"
                 >
                     {/* PDF row */}
-                    <section className={`flex flex-col text-stone-900 items-start max-h-screen overflow-y-scroll gap-y-8 w-full`}>
+                    <section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full`}>
                         {new Array(totalPages?.length).fill(1).map((_: any, pdfIndex: number) =>
                             <PdfRow
                                 key={`pdf-${pdfIndex}`}
                                 pdfIndex={pdfIndex}
+                                pdf={pdfs[pdfIndex]}
+                                filename={pdfFilenames[pdfIndex]}
+                                pages={pages[pdfIndex]}
+                                rotations={rotations[pdfIndex]}
+                                totalPages={totalPages[pdfIndex]}
                                 handleMovePage={handleMovePage}
                                 handleSaveDocument={handleSaveDocument}
                                 handleRotatePage={handleRotatePage}

@@ -4,10 +4,9 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { pdfjs } from "react-pdf";
 
 import "~/styles/globals.scss";
-pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
+//pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
 const MyApp: AppType = ({ Component, pageProps }) => {
-
   return <>
     <DndProvider backend={HTML5Backend}>
       <Component {...pageProps} />

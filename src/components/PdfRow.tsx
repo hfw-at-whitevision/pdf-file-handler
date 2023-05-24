@@ -6,29 +6,18 @@ import PlaceholderThumbnail from "./layout/PlaceholderThumbnail";
 import Row from "./layout/Row";
 import Button from "./primitives/Button";
 import { useAtom } from "jotai";
-import { isLoadingAtom, isRotatingAtom, pdfFilenamesAtom, pdfsAtom, totalPagesAtom } from "./store/atoms";
+import { isLoadingAtom } from "./store/atoms";
 import { Document } from 'react-pdf'
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import React from "react";
-import Loading from "./layout/Loading";
 
-const PdfRow = ({ pdfIndex, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
-    const [pdfFileNames] = useAtom(pdfFilenamesAtom);
-    const [totalPages]: any = useAtom(totalPagesAtom);
+const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const [isLoading] = useAtom(isLoadingAtom);
-    const [isRotating] = useAtom(isRotatingAtom);
     const [open, setOpen] = useState(true);
 
-    const [pdfs] = useAtom(pdfsAtom);
-    const [pdf, setPdf] = useState(pdfs?.[pdfIndex]);
-
-    useEffect(() => {
-        setPdf(pdfs?.[pdfIndex]);
-    }, [pdfs?.[pdfIndex]])
-
+    if (!pages?.length) return null;
     return <>
         <div className="flex flex-col w-full">
-
             {pdfIndex === 0
                 ? <PlaceholderRow pdfIndex={0} />
                 : null
@@ -36,7 +25,7 @@ const PdfRow = ({ pdfIndex, handleMovePage, handleRotatePage, handleDeletePage, 
 
             <Row pdfIndex={pdfIndex}>
                 <span className="text-xs mr-auto p-4 pb-0">
-                    <h3 className="mr-2 inline break-all">{pdfFileNames[pdfIndex]}</h3>
+                    <h3 className="mr-2 inline break-all">{filename}</h3>
                     ({totalPages?.[pdfIndex]} {totalPages?.[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
                 </span>
                 <div className={`flex items-center justify-between p-4`}>
@@ -63,12 +52,12 @@ const PdfRow = ({ pdfIndex, handleMovePage, handleRotatePage, handleDeletePage, 
                         <Button
                             title={<><BiRotateRight className="rotate-[180deg]" /></>}
                             onClick={() => handleRotateDocument(pdfIndex)}
-                            disabled={isRotating}
+                            disabled={isLoading}
                         />
                         <Button
                             title={<><BsTrash /></>}
                             onClick={() => handleDeleteDocument(pdfIndex)}
-                            disabled={isRotating}
+                            disabled={isLoading}
                         />
                     </nav>
                 </div>
@@ -80,37 +69,42 @@ const PdfRow = ({ pdfIndex, handleMovePage, handleRotatePage, handleDeletePage, 
                         ${open ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
                         flex flex-row flex-wrap
                         `}
-                    loading={<Loading />}
+                    loading={undefined}
                     renderMode='none'
                 >
                     {/* thumbnails of current PDF */}
-                    {new Array(totalPages?.[pdfIndex]).fill(1)?.map((item: any, pageIndex: number) => <>
-                        <div
+                    {pages.map((pageIndex: number, index: number) => {
+                        return <div
                             className={`flex flex-row ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
                             key={`thumbnail-${pdfIndex}-${pageIndex}`}
                         >
                             {
                                 /* first placeholder thumbnail in row */
-                                pageIndex % 4 === 0 &&
-                                <PlaceholderThumbnail pdfIndex={pdfIndex}
+                                pageIndex % 4 === 0
+                                && <PlaceholderThumbnail
+                                    pdfIndex={pdfIndex}
                                     pageIndex={pageIndex - 0.5}
-                                    margin='mr-2' />
+                                    margin='mr-2'
+                                />
                             }
                             <Thumbnail
-                                index={pageIndex}
+                                index={index}
+                                pages={pages}
                                 pageIndex={pageIndex}
                                 pdfIndex={pdfIndex}
+                                rotation={rotations?.[index]}
                                 handleDeletePage={handleDeletePage}
                                 handleRotatePage={handleRotatePage}
                                 handleMovePage={handleMovePage}
                                 handleDeleteDocument={handleDeleteDocument}
                             />
-                            <PlaceholderThumbnail pdfIndex={pdfIndex}
+                            <PlaceholderThumbnail
+                                pdfIndex={pdfIndex}
                                 pageIndex={pageIndex + 0.5}
-                                key={`thumbnail-${pdfIndex}-${pageIndex + 0.5}-placeholder`}
-                                margin='ml-2' />
+                                margin='ml-2'
+                            />
                         </div>
-                    </>
+                    }
                     )}
                 </Document>
             </Row>
@@ -121,7 +115,15 @@ const PdfRow = ({ pdfIndex, handleMovePage, handleRotatePage, handleDeletePage, 
     </>
 }
 const skipRerender = (prevProps: any, nextProps: any) => {
-    return JSON.stringify(prevProps) === JSON.stringify(nextProps);
+    if (
+        // total number of pages hasnt changed
+        prevProps.totalPages === nextProps.totalPages
+        &&
+        JSON.stringify(prevProps.pages) === JSON.stringify(nextProps.pages)
+        &&
+        JSON.stringify(prevProps.rotations) === JSON.stringify(nextProps.rotations)
+    ) return true;
+    else return false;
 }
-export default React.memo(PdfRow, skipRerender);
-//export default PdfRow;
+//export default React.memo(PdfRow, skipRerender);
+export default PdfRow;

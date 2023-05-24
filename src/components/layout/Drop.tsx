@@ -1,9 +1,9 @@
-import React, { useCallback } from "react";
+import React from "react";
 import Dropzone from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
 import ButtonXl from "../primitives/ButtonXl";
 import { useAtom } from "jotai";
-import { pdfsAtom, setIsLoadingAtom, setLoadingMessageAtom, setPdfFilenamesAtom, setPdfsAtom, setRotationsAtom, setStateChangedAtom, setTotalPagesAtom } from "../store/atoms";
+import { pagesAtom, pdfsAtom, setIsLoadingAtom, setLoadingMessageAtom, setPdfFilenamesAtom, setRotationsAtom, setStateChangedAtom, setTotalPagesAtom } from "../store/atoms";
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
 
@@ -15,6 +15,7 @@ const Drop = ({ className = '' }: any) => {
   const [, setPdfFileNames] = useAtom(setPdfFilenamesAtom)
   const [, setStateChanged] = useAtom(setStateChangedAtom)
   const [, setRotations] = useAtom(setRotationsAtom)
+  const [, setPages]: any = useAtom(pagesAtom)
 
   const handleDropzoneLoaded = async (files: any) => {
     if (!files || !files?.length) return;
@@ -119,12 +120,15 @@ const Drop = ({ className = '' }: any) => {
           return page.getRotation().angle;
         }
         const pdfRotations: any = [];
+        const pdfPages: any = [];
+        // populate page rotations array + populate pages array
         for (let i = 0; i < pages; i++) {
           const rotation = await getPageRotation(i);
           pdfRotations.push(rotation);
+          pdfPages.push(i);
         }
         setRotations((oldValues: any) => [...oldValues, pdfRotations]);
-
+        setPages((oldValues: any) => [...oldValues, pdfPages]);
         setPdfs((oldPdfs: any) => {
           const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
           return result;

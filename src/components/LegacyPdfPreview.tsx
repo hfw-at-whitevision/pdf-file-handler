@@ -7,7 +7,7 @@ export default function LegacyPdfPreview() {
     const [pdfs] = useAtom(pdfsAtom)
     const [current] = useAtom(currentAtom)
     return <>
-        <div className="pdf-preview-container">
+        <div className="pdf-preview-container text-center">
             {
                 pdfs?.length
                     ? <>
@@ -25,7 +25,9 @@ export default function LegacyPdfPreview() {
                             />
                         </Document>
                     </>
-                    : null
+                    : <div className="h-full flex items-center justify-center text-sm">
+                        Upload een document om deze te verwerken.
+                    </div>
             }
         </div>
     </>

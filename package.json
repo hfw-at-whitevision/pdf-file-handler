@@ -24,7 +24,7 @@
     "react-draggable": "^4.4.5",
     "react-dropzone": "^14.2.3",
     "react-icons": "^4.8.0",
-    "react-pdf": "^6.2.2",
+    "react-pdf": "^7.0.0-beta.4",
     "react-split": "^2.0.14",
     "react-window": "^1.8.9",
     "sass": "^1.62.1",

@@ -27,4 +27,5 @@ const Row = (props: any) => {
         {props?.children}
     </div>
 }
-export default React.memo(Row);
+//export default React.memo(Row);
+export default Row;

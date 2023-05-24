@@ -1,30 +1,15 @@
-export default function Debug({
-    pdfs,
-    numberOfThumbnails,
-    totalPages,
-    current,
-    userIsDragging,
-    sizes,
-}: any) {
-    const pdfsSize = pdfs?.length
-        ? Buffer.from(JSON.stringify(pdfs)).length / 1000
+export default function Debug(props: any) {
+    const pdfsSize = props?.pdfs?.length
+        ? Buffer.from(JSON.stringify(props?.pdfs)).length / 1000
         : 0
-
+    const data = Object.keys(props)?.map((propKey, i) => (<>
+        {propKey}: {JSON.stringify(Object.values(props)?.[i])}
+        <br />
+    </>))
     return <pre>
         build: {process.env.NEXT_PUBLIC_BUILD_VERSION}
         <br />
-        sizes: {JSON.stringify(sizes)}
-        <br />
-        pdfs.length: {JSON.stringify(pdfs?.length)}
-        <br />
-        numberOfThumbnails: {JSON.stringify(numberOfThumbnails.map(pdf => pdf?.length))}
-        <br />
-        totalPages: {JSON.stringify(totalPages)}
-        <br />
-        current: {JSON.stringify(current, 2, 2)}
-        <br />
-        userIsDragging: {JSON.stringify(userIsDragging)}
-        <br />
+        {data}
         size: {pdfsSize} KB
     </pre>
 }
