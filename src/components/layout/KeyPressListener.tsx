@@ -58,13 +58,13 @@ const KeyPressListener = ({ handleSplitDocument, handleDeleteDocument, handleDel
                     await handleSplitDocument(current);
                     break;
                 case 'Delete':
-                    await handleDeletePage(current.pdfIndex, current.pageIndex);
+                    await handleDeletePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex });
                     break;
                 case 'Backspace':
                     await handleDeleteDocument(current?.pdfIndex);
                     break;
                 case 'r':
-                    await handleRotatePage(current);
+                    await handleRotatePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex });
                     break;
                 case 'R':
                     await handleRotateDocument(current?.pdfIndex);

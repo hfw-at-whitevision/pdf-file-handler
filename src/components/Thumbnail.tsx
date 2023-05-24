@@ -136,14 +136,14 @@ const Thumbnail = (
             <div className="absolute opacity-0 group-hover:opacity-100 z-10 bottom-2 grid grid-cols-2 gap-1" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
                 <Button
                     title={<><GrRotateRight /></>}
-                    onClick={() => handleRotatePage({ pdfIndex, pageIndex: index })}
+                    onClick={() => handleRotatePage({ pdfIndex, index, skipScrollIntoView: true })}
                     disabled={isRotating}
                     transparent={false}
                     id={`thumbnail-${pdfIndex}-${pageIndex}-rotate`}
                 />
                 <Button
                     title={<><BsTrash /></>}
-                    onClick={() => handleDeletePage(pdfIndex, index)}
+                    onClick={() => handleDeletePage({ pdfIndex, index, skipScrollIntoView: true })}
                     transparent={false}
                     id={`thumbnail-${pdfIndex}-${pageIndex}-delete`}
                 />

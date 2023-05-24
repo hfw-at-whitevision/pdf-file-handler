@@ -74,15 +74,16 @@ const Home: NextPage = () => {
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
 
-    const handleDeletePage = (pdfIndex: number, pageIndex: number) => {
+    const handleDeletePage = ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
+        if (typeof index === 'undefined') index = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
         setPages((oldValue: any) => {
             let updatedArray = oldValue;
-            updatedArray[pdfIndex].splice(pageIndex, 1);
+            updatedArray[pdfIndex].splice(index, 1);
             return updatedArray;
         });
         setRotations((oldValue: any) => {
             let updatedArray = oldValue;
-            updatedArray[pdfIndex].splice(pageIndex, 1);
+            updatedArray[pdfIndex].splice(index, 1);
             return updatedArray;
         });
         setTotalPages((oldValue: any) => {
@@ -90,10 +91,11 @@ const Home: NextPage = () => {
             updatedArray[pdfIndex] = updatedArray[pdfIndex] - 1;
             return updatedArray;
         });
-        const nextPageIndex = pages[pdfIndex][pageIndex];
+        const nextPageIndex = pages[pdfIndex][index];
         setCurrent({
             pdfIndex,
             pageIndex: nextPageIndex,
+            ...skipScrollIntoView && { skipScrollIntoView },
         });
     };
     const handleDeletePage0 = useCallback(async (pdfIndex: number, pageIndex: number) => {
@@ -170,18 +172,20 @@ const Home: NextPage = () => {
         console.log('finished')
     }, [rotations]);
 
-    const handleRotatePage = async ({ pdfIndex, pageIndex }: any) => {
+    const handleRotatePage = async ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
+        if (typeof index === 'undefined') index = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
         let newRotations = rotations;
-        const currentRotation = rotations[pdfIndex][pageIndex];
+        const currentRotation = rotations[pdfIndex][index];
         const newDegrees = currentRotation + 90 === 360
             ? 0
             : currentRotation + 90;
-        newRotations[pdfIndex][pageIndex] = newDegrees;
+        newRotations[pdfIndex][index] = newDegrees;
         setRotations(newRotations);
-        const nextPageIndex = pages[pdfIndex][pageIndex];
+        const nextPageIndex = pages[pdfIndex][index];
         setCurrent({
             pdfIndex,
             pageIndex: nextPageIndex,
+            ...skipScrollIntoView && { skipScrollIntoView },
         });
         setStateChanged((oldState: number) => oldState + 1);
     };
