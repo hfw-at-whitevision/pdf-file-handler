@@ -35,6 +35,9 @@ const Home: NextPage = () => {
     const [pages, setPages]: any = useAtom(pagesAtom);
     const [, setStateChanged] = useAtom(setStateChangedAtom);
 
+    const findIndex = ({ pdfIndex, pageIndex }: any) => {
+        return pages[pdfIndex].findIndex((value: any) => value === pageIndex);
+    }
     const handleReset = useCallback(async () => {
         setPdfs([]);
         setTotalPages([]);
@@ -506,7 +509,7 @@ const Home: NextPage = () => {
                     </section>
 
                     {/* PDF preview */}
-                    <LegacyPdfPreview rotations={rotations[current.pdfIndex]} />
+                    <LegacyPdfPreview rotation={rotations[current.pdfIndex]?.[findIndex({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex })]} />
 
                     {/* administration tiles */}
                     <AdministrationTiles />
