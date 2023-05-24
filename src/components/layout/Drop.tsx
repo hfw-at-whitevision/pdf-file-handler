@@ -3,7 +3,7 @@ import Dropzone from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
 import ButtonXl from "../primitives/ButtonXl";
 import { useAtom } from "jotai";
-import { pdfsAtom, setIsLoadingAtom, setLoadingMessageAtom, setPdfFilenamesAtom, setPdfsAtom, setStateChangedAtom, setTotalPagesAtom } from "../store/atoms";
+import { pdfsAtom, setIsLoadingAtom, setLoadingMessageAtom, setPdfFilenamesAtom, setPdfsAtom, setRotationsAtom, setStateChangedAtom, setTotalPagesAtom } from "../store/atoms";
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
 
@@ -14,6 +14,7 @@ const Drop = ({ className = '' }: any) => {
   const [, setTotalPages] = useAtom(setTotalPagesAtom)
   const [, setPdfFileNames] = useAtom(setPdfFilenamesAtom)
   const [, setStateChanged] = useAtom(setStateChangedAtom)
+  const [, setRotations] = useAtom(setRotationsAtom)
 
   const handleDropzoneLoaded = async (files: any) => {
     if (!files || !files?.length) return;
@@ -107,60 +108,71 @@ const Drop = ({ className = '' }: any) => {
         continue;
       }
       // JPG / PNG / PDF files: further process it
-      await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
-        .then(newPdfDoc => {
-          const pages = newPdfDoc?.getPageCount()
-          setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
-          setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i]['name']]);
+      const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 });
+      try {
+        const pages = newPdfDoc?.getPageCount()
+        setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
+        setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i]['name']]);
 
-          setPdfs((oldPdfs: any) => {
-            const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
-            return result;
-          });
-        })
-        .catch(err => {
-          // on error: as a last resort, send to Serge API to try repair
-          try {
-            const theDoc = newPdf.replace(`data:application/pdf;base64,`, '')
-            console.log(`Sending document to API to attempt repair for ${files[i]['name']}.`)
-            fetch('/api/converttopdf', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                msgFileBase64: theDoc,
-                fileName: files[i]['name']
-              })
+        const getPageRotation = async (pageNumber: number) => {
+          const page = await newPdfDoc.getPage(pageNumber);
+          return page.getRotation().angle;
+        }
+        const pdfRotations: any = [];
+        for (let i = 0; i < pages; i++) {
+          const rotation = await getPageRotation(i);
+          pdfRotations.push(rotation);
+        }
+        setRotations((oldValues: any) => [...oldValues, pdfRotations]);
+
+        setPdfs((oldPdfs: any) => {
+          const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
+          return result;
+        });
+      }
+      catch (err) {
+        // on error: as a last resort, send to Serge API to try repair
+        try {
+          const theDoc = newPdf.replace(`data:application/pdf;base64,`, '')
+          console.log(`Sending document to API to attempt repair for ${files[i]['name']}.`)
+          fetch('/api/converttopdf', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              msgFileBase64: theDoc,
+              fileName: files[i]['name']
             })
-              .then(res => res.json())
-              .then(async (res2) => {
-                const repairedPdf = 'data:application/pdf;base64,' + res2.pdfFiles[0].pdfFileBase64;
-                console.log('PDF repair attempt successful. ')
+          })
+            .then(res => res.json())
+            .then(async (res2) => {
+              const repairedPdf = 'data:application/pdf;base64,' + res2.pdfFiles[0].pdfFileBase64;
+              console.log('PDF repair attempt successful. ')
 
-                await PDFDocument.load(repairedPdf, { ignoreEncryption: true, parseSpeed: 1500 })
-                  .then(newPdfDoc => {
-                    const pages = newPdfDoc?.getPageCount();
-                    setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
-                    setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i].name]);
+              await PDFDocument.load(repairedPdf, { ignoreEncryption: true, parseSpeed: 1500 })
+                .then(newPdfDoc => {
+                  const pages = newPdfDoc?.getPageCount();
+                  setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
+                  setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i].name]);
 
-                    let pagesOfUploadedPdf: Array<number> = []
-                    for (let x = 0; x < pages; x++) {
-                      pagesOfUploadedPdf.push(x)
-                    }
-                    setPdfs((oldPdfs: any) => {
-                      const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
-                      return result;
-                    });
-                  })
-              })
-          } catch {
-            alert(`Fout bij het laden van ${files[i]['name']}. Het document wordt overgeslagen.`);
-            console.log(err);
-            console.log(newPdf)
-            return;
-          }
-        })
+                  let pagesOfUploadedPdf: Array<number> = []
+                  for (let x = 0; x < pages; x++) {
+                    pagesOfUploadedPdf.push(x)
+                  }
+                  setPdfs((oldPdfs: any) => {
+                    const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
+                    return result;
+                  });
+                })
+            })
+        } catch {
+          alert(`Fout bij het laden van ${files[i]['name']}. Het document wordt overgeslagen.`);
+          console.log(err);
+          console.log(newPdf)
+          return;
+        }
+      }
     }
 
     setStateChanged((oldValue: number) => oldValue + 1)
@@ -173,7 +185,6 @@ const Drop = ({ className = '' }: any) => {
       {({ getRootProps, getInputProps }) => (
 
         <ButtonXl
-          {...getRootProps()}
           className={
             `flex w-full flex-col gap-4 rounded-md text-stone-600 text-sm cursor-pointer bg-stone-100
         ring-2 ring-dashed hover:ring-amber/40 p-4 ring-offset-4 ring-amber-300/50 relative
@@ -182,7 +193,12 @@ const Drop = ({ className = '' }: any) => {
           icon={<BsUpload className="text-base" />}
           title="Upload"
         >
-          <input {...getInputProps()} />
+          <div
+            className="absolute inset-0"
+            {...getRootProps()}
+          >
+            <input {...getInputProps()} />
+          </div>
         </ButtonXl>
 
       )}
