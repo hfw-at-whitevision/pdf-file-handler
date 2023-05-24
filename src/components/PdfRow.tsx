@@ -6,14 +6,14 @@ import PlaceholderThumbnail from "./layout/PlaceholderThumbnail";
 import Row from "./layout/Row";
 import Button from "./primitives/Button";
 import { useAtom } from "jotai";
-import { isLoadingAtom, isRotatingAtom, numberOfThumbnailsAtom, pdfFileNamesAtom, pdfsAtom, totalPagesAtom, userIsDraggingAtom } from "./store/atoms";
+import { isLoadingAtom, isRotatingAtom, numberOfThumbnailsAtom, pdfFilenamesAtom, pdfsAtom, totalPagesAtom, userIsDraggingAtom } from "./store/atoms";
 import { Document } from 'react-pdf'
 import { useEffect, useRef, useState } from "react";
 import React from "react";
 import Loading from "./layout/Loading";
 
-const PdfRow = ({ pdfIndex = 0, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument, stateChanged }: any, props: any) => {
-    const [pdfFileNames] = useAtom(pdfFileNamesAtom);
+const PdfRow = ({ pdfIndex = 0, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any, props: any) => {
+    const [pdfFileNames] = useAtom(pdfFilenamesAtom);
     const [totalPages]: any = useAtom(totalPagesAtom);
     const [isLoading] = useAtom(isLoadingAtom);
     const [isRotating] = useAtom(isRotatingAtom);
@@ -135,5 +135,5 @@ const PdfRow = ({ pdfIndex = 0, handleMovePage, handleRotatePage, handleDeletePa
 const skipRerender = (prevProps: any, nextProps: any) => {
     return prevProps.stateChanged === nextProps.stateChanged
 }
-export default React.memo(PdfRow, skipRerender);
-//export default PdfRow;
+//export default React.memo(PdfRow, skipRerender);
+export default PdfRow;

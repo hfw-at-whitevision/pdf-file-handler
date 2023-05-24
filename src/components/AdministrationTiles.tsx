@@ -1,17 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { BsCurrencyEuro } from "react-icons/bs"
 
-export default function AdministrationTiles(props) {
-    const ref = useRef(null);
-    const [width, setWidth]: any = useState();
-    useEffect(() => {
-        setWidth(ref?.current?.getBoundingClientRect()?.width);
-    }, [props])
-
+export default function AdministrationTiles(props: any) {
     return <>
-        <div ref={ref} style={{
-            width: Math.round(width),
-        }} {...props}>
+        <div {...props}>
             <div className={
                 `bg-stone-100 w-full rounded-lg p-4 gap-2 sticky top-8 border border-stone-200 flex flex-wrap flex-row grid-flow-col auto-cols-fr`
             }>

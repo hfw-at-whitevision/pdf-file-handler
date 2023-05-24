@@ -13,7 +13,9 @@ export default function ButtonXl({ href = "", title = "", description = "", styl
             {...props}
         >
             <h3 className="text-lg font-bold flex items-center gap-2 justify-between">
-                <span>{children ?? title}</span> {icon}
+                <span>{title}</span>
+                {children}
+                {icon}
             </h3>
         </Link>
     </>
