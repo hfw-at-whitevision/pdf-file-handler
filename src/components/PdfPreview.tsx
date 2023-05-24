@@ -10,7 +10,7 @@ import { disableScrollPlugin } from "./disableScrollPlugin";
 
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
-import { pageThumbnailPlugin } from "./PageThumbnailPlugin";
+import { pageThumbnailPlugin } from "./pageThumbnailPlugin";
 
 export default function PdfPreview() {
     const [pdfs]: any = useAtom(pdfsAtom)

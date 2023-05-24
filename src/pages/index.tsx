@@ -20,6 +20,7 @@ import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
 import PdfPreview from "@/components/PdfPreview";
 import PdfRow from "@/components/PdfRow";
+import LegacyPdfPreview from "@/components/LegacyPdfPreview";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
 
@@ -279,6 +280,7 @@ const Home: NextPage = () => {
 
         setIsLoading(true);
 
+        const pdfs = await get('pdfs')
         const toPdfDoc = await PDFDocument.create()
         const fromPdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
 
@@ -761,7 +763,7 @@ const Home: NextPage = () => {
                     </section>
 
                     {/* PDF preview */}
-                    <PdfPreview />
+                    <LegacyPdfPreview />
 
                     {/* administration tiles */}
                     <AdministrationTiles />
