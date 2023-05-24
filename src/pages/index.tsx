@@ -90,6 +90,11 @@ const Home: NextPage = () => {
             updatedArray[pdfIndex] = updatedArray[pdfIndex] - 1;
             return updatedArray;
         });
+        const nextPageIndex = pages[pdfIndex][pageIndex];
+        setCurrent({
+            pdfIndex,
+            pageIndex: nextPageIndex,
+        });
     };
     const handleDeletePage0 = useCallback(async (pdfIndex: number, pageIndex: number) => {
         setIsLoading(true);
@@ -165,17 +170,21 @@ const Home: NextPage = () => {
         console.log('finished')
     }, [rotations]);
 
-    const handleRotatePage = useCallback(async ({ pdfIndex, pageIndex }: any) => {
+    const handleRotatePage = async ({ pdfIndex, pageIndex }: any) => {
         let newRotations = rotations;
         const currentRotation = rotations[pdfIndex][pageIndex];
         const newDegrees = currentRotation + 90 === 360
             ? 0
             : currentRotation + 90;
-
         newRotations[pdfIndex][pageIndex] = newDegrees;
         setRotations(newRotations);
-        setStateChanged((oldState: number) => oldState + 1)
-    }, [rotations]);
+        const nextPageIndex = pages[pdfIndex][pageIndex];
+        setCurrent({
+            pdfIndex,
+            pageIndex: nextPageIndex,
+        });
+        setStateChanged((oldState: number) => oldState + 1);
+    };
     const handleRotatePage0 = useCallback(async ({ pdfIndex, pageIndex }: any) => {
         setIsLoading(true);
         const pdfs = await get('pdfs');

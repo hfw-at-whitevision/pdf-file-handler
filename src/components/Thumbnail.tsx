@@ -103,11 +103,6 @@ const Thumbnail = (
                 before:z-[-1] border-stone-200/40
                 opacity-${isDragging ? '10' : '100'}`
             }
-            onClick={() => setCurrent({
-                pdfIndex: pdfIndex,
-                pageIndex: pageIndex,
-                skipScrollIntoView: true,
-            })}
             data-pdf-index={pdfIndex}
             data-page-index={pageIndex}
         >
@@ -125,27 +120,33 @@ const Thumbnail = (
                 canvasBackground='white'
                 rotate={rotation}
             />
+            {/* inset */}
             <div
                 id={`thumbnail-${pdfIndex}-${pageIndex}-inset`}
                 data-pdf-index={pdfIndex}
                 data-page-index={pageIndex}
                 className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/20"
-            >
-                <div className="grid grid-cols-2 gap-1 pb-2" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
-                    <Button
-                        title={<><GrRotateRight /></>}
-                        onClick={() => handleRotatePage({ pdfIndex, pageIndex: index })}
-                        disabled={isRotating}
-                        transparent={false}
-                        id={`thumbnail-${pdfIndex}-${pageIndex}-rotate`}
-                    />
-                    <Button
-                        title={<><BsTrash /></>}
-                        onClick={() => handleDeletePage(pdfIndex, index)}
-                        transparent={false}
-                        id={`thumbnail-${pdfIndex}-${pageIndex}-delete`}
-                    />
-                </div>
+                onClick={() => setCurrent({
+                    pdfIndex: pdfIndex,
+                    pageIndex: pageIndex,
+                    skipScrollIntoView: true,
+                })}
+            />
+            {/* buttons */}
+            <div className="absolute opacity-0 group-hover:opacity-100 z-10 bottom-2 grid grid-cols-2 gap-1" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
+                <Button
+                    title={<><GrRotateRight /></>}
+                    onClick={() => handleRotatePage({ pdfIndex, pageIndex: index })}
+                    disabled={isRotating}
+                    transparent={false}
+                    id={`thumbnail-${pdfIndex}-${pageIndex}-rotate`}
+                />
+                <Button
+                    title={<><BsTrash /></>}
+                    onClick={() => handleDeletePage(pdfIndex, index)}
+                    transparent={false}
+                    id={`thumbnail-${pdfIndex}-${pageIndex}-delete`}
+                />
             </div>
         </div>
     </>

@@ -3,21 +3,27 @@ import { useEffect } from "react";
 import { currentAtom } from "../store/atoms";
 
 const CurrentHandler = () => {
-    const [current, setCurrent]: any = useAtom(currentAtom);
+    const [current]: any = useAtom(currentAtom);
     // highlight current thumbnail
     const highlightCurrentThumbnail = () => {
         const currentThumbnail: any = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
-
         if (!currentThumbnail) return;
         currentThumbnail.classList.add('!border-amber-300', '!before:z-10');
-
         const otherThumbnails = document.querySelectorAll('[id*="thumbnail-"]:not([id*="thumbnail-' + current.pdfIndex + '-' + current.pageIndex + '"])');
         otherThumbnails.forEach((thumbnail: any) => {
             thumbnail.classList.remove('!border-amber-300', '!before:z-10');
         });
     }
     useEffect(() => {
-        highlightCurrentThumbnail();
+        let timer = null;
+        const currentThumbnail: any = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
+        if (currentThumbnail) highlightCurrentThumbnail();
+        else {
+            timer = null;
+            timer = setTimeout(() => {
+                highlightCurrentThumbnail();
+            }, 400);
+        }
     }, [current]);
     // scroll thumbnail into view
     useEffect(() => {

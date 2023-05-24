@@ -2,12 +2,12 @@ import React from "react";
 
 export default function Button({
   title = '' as any,
-  onClick = () => { },
+  onClick,
   id = '',
   disabled = false,
   className = '',
   transparent = true,
-}, props: any) {
+}: any, props: any) {
   return (
     <div
       id={id}
@@ -18,11 +18,7 @@ export default function Button({
          border-none ring-stone-400/30 hover:ring-stone-600/30
          ${disabled ? 'disabled' : ''} ${className}`
       }
-      onClick={() => {
-        if (!disabled) {
-          onClick();
-        }
-      }}
+      onClick={onClick}
       {...props}
     >
       {title}
