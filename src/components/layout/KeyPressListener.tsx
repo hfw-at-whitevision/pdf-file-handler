@@ -2,7 +2,7 @@ import { useAtom } from "jotai";
 import { useEffect } from "react";
 import { currentAtom, pdfsAtom, totalPagesAtom } from "../store/atoms";
 
-const KeyPressListener = ({ handleSplitDocument, handleDeleteDocument, handleDeletePage, handleRotateDocument, handleRotatePage }: any) => {
+const KeyPressListener = ({ handleSplitDocument, handleDeleteDocument, handleDuplicateDocument, handleDeletePage, handleRotateDocument, handleRotatePage }: any) => {
     const [current, setCurrent]: any = useAtom(currentAtom);
     const [totalPages]: any = useAtom(totalPagesAtom);
     const [pdfs] = useAtom(pdfsAtom);
@@ -55,16 +55,16 @@ const KeyPressListener = ({ handleSplitDocument, handleDeleteDocument, handleDel
                     break;
                 case ' ':
                     event.preventDefault();
-                    await handleSplitDocument(current);
+                    await handleDuplicateDocument(current.pdfIndex);
                     break;
                 case 'Delete':
-                    await handleDeletePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex });
+                    await handleDeletePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex, skipScrollIntoView: true });
                     break;
                 case 'Backspace':
                     await handleDeleteDocument(current?.pdfIndex);
                     break;
                 case 'r':
-                    await handleRotatePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex });
+                    await handleRotatePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex, skipScrollIntoView: true });
                     break;
                 case 'R':
                     await handleRotateDocument(current?.pdfIndex);

@@ -23,7 +23,7 @@ import LocalStateHandler from "@/components/layout/LocalStateHandler";
 import CurrentHandler from "@/components/layout/CurrentHandler";
 
 const Home: NextPage = () => {
-    const [pdfFilenames, setPdfFileNames]: [Array<string>, any] = useAtom(pdfFilenamesAtom);
+    const [pdfFilenames, setPdfFilenames]: [Array<string>, any] = useAtom(pdfFilenamesAtom);
     const [pdfs]: any = useAtom(pdfsAtom);
     const [, setPdfs] = useAtom(setPdfsAtom);
     const [current]: any = useAtom(currentAtom);
@@ -42,7 +42,7 @@ const Home: NextPage = () => {
     const handleReset = useCallback(async () => {
         setPdfs([]);
         setTotalPages([]);
-        setPdfFileNames([]);
+        setPdfFilenames([]);
         setRotations([]);
         setCurrent({ pdfIndex: 0, pageIndex: 0 });
         setPages([]);
@@ -55,7 +55,23 @@ const Home: NextPage = () => {
 
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
-
+    const handleDuplicateDocument = async (pdfIndex: number) => {
+        const duplicateState = (oldValue: any) => {
+            let updatedValue = oldValue;
+            updatedValue.splice(pdfIndex, 0, oldValue[pdfIndex]);
+            return updatedValue;
+        }
+        setPdfs((oldValue: any) => duplicateState(oldValue));
+        setPdfFilenames((oldValue: any) => duplicateState(oldValue));
+        setTotalPages((oldValue: any) => duplicateState(oldValue));
+        setRotations((oldValue: any) => duplicateState(oldValue));
+        setPages((oldValue: any) => duplicateState(oldValue));
+        setCurrent({
+            pdfIndex: pdfIndex + 1,
+            pageIndex: 0,
+        })
+        setStateChanged((oldState: number) => oldState + 1);
+    }
     const handleDeleteDocument = useCallback((inputPdfIndex: number) => {
         setIsLoading(true);
 
@@ -65,7 +81,7 @@ const Home: NextPage = () => {
 
         setPdfs((oldPdfs: any) => oldPdfs.filter((_: any, index: number) => index !== inputPdfIndex));
         setTotalPages((oldTotalPages: any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
-        setPdfFileNames((oldPdfFileNames: any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
+        setPdfFilenames((oldPdfFileNames: any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
         setPages((oldPages: any) => {
             if (oldPages?.length === 1) return [];
             let updatedPages = oldPages;
@@ -449,6 +465,7 @@ const Home: NextPage = () => {
                 handleRotateDocument={handleRotateDocument}
                 handleRotatePage={handleRotatePage}
                 handleSplitDocument={handleSplitDocument}
+                handleDuplicateDocument={handleDuplicateDocument}
             />
 
             <Loading inset={true} loading={isLoading} message={loadingMessage} />
