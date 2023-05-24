@@ -3,7 +3,7 @@ import { useDrop } from "react-dnd";
 import { BsPlus } from "react-icons/bs";
 import { userIsDraggingAtom, isLoadingAtom } from "../store/atoms";
 
-export default function PlaceholderRow({ pdfIndex }) {
+export default function PlaceholderRow({ pdfIndex = 0 }) {
     const [{ canDrop, isOver }, drop] = useDrop({
         accept: "pdfThumbnail",
         drop: () => ({ pdfIndex: Math.ceil(pdfIndex), type: 'placeholderRow' }),

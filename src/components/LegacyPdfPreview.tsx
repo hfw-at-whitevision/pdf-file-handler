@@ -2,18 +2,12 @@ import { useAtom } from "jotai"
 import { currentAtom, pdfsAtom } from "./store/atoms"
 import { Document, Page } from "react-pdf"
 import Loading from "./layout/Loading"
-import { useEffect, useRef, useState } from "react"
 
 export default function LegacyPdfPreview() {
-    const [pdfs, setPdfs] = useAtom(pdfsAtom)
+    const [pdfs] = useAtom(pdfsAtom)
     const [current] = useAtom(currentAtom)
-    const ref = useRef(null);
-    const [width, setWidth] = useState(0);
-    useEffect(() => {
-        setWidth(ref?.current?.getBoundingClientRect()?.width);
-    }, [])
     return <>
-        <div ref={ref} className="pdf-preview-container">
+        <div className="pdf-preview-container">
             {
                 pdfs?.length
                     ? <>
@@ -25,7 +19,7 @@ export default function LegacyPdfPreview() {
                             <Page
                                 pageIndex={current?.pageIndex}
                                 loading={<Loading />}
-                                width={800}
+                                width={1600}
                                 renderAnnotationLayer={false}
                                 renderTextLayer={false}
                             />

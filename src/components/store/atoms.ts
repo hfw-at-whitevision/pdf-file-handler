@@ -10,13 +10,6 @@ export const setPdfsAtom = atom(
     }
 );
 
-export const numberOfThumbnailsAtom = atom([]);
-export const setNumberOfThumbnailsAtom = atom(
-    null,
-    (get, set, input: any) => {
-        set(numberOfThumbnailsAtom, input);
-    }
-);
 export const totalPagesAtom = atom([]);
 export const setTotalPagesAtom = atom(
     null,

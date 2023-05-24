@@ -17,21 +17,22 @@
     @apply pointer-events-none opacity-40;
 }
 
-*::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+    border-radius: 25px;
+    margin: 1rem;
+    background-color: transparent;
 }
 
-*::-webkit-scrollbar-track {
-    @apply bg-amber-200;
-}
+::-webkit-scrollbar-thumb {
+    border-radius: 25px;
+    background-color: rgba(46, 48, 55, 0.3);
+    cursor: grab;
 
-*::-webkit-scrollbar-thumb {
-    @apply bg-black border-amber-200;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-    @apply bg-amber-200;
+    &:hover {
+        background-color: rgba(46, 48, 55, 0.4);
+    }
 }
 
 pre {

@@ -5,7 +5,7 @@ export default function Debug({
     current,
     userIsDragging,
     sizes,
-}) {
+}: any) {
     const pdfsSize = pdfs?.length
         ? Buffer.from(JSON.stringify(pdfs)).length / 1000
         : 0

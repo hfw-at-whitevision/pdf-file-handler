@@ -3,20 +3,20 @@ import Dropzone from "react-dropzone";
 import { BsUpload } from "react-icons/bs";
 import ButtonXl from "../primitives/ButtonXl";
 import { useAtom } from "jotai";
-import { setIsLoadingAtom, setLoadingMessageAtom, setNumberOfThumbnailsAtom, setPdfFilenamesAtom, setPdfsAtom, setStateChangedAtom, setTotalPagesAtom } from "../store/atoms";
+import { pdfsAtom, setIsLoadingAtom, setLoadingMessageAtom, setPdfFilenamesAtom, setPdfsAtom, setStateChangedAtom, setTotalPagesAtom } from "../store/atoms";
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
 
 const Drop = ({ className = '' }: any) => {
   const [, setIsLoading] = useAtom(setIsLoadingAtom)
   const [, setLoadingMessage] = useAtom(setLoadingMessageAtom)
-  const [, setPdfs] = useAtom(setPdfsAtom)
+  const [, setPdfs]: any = useAtom(pdfsAtom)
   const [, setTotalPages] = useAtom(setTotalPagesAtom)
   const [, setPdfFileNames] = useAtom(setPdfFilenamesAtom)
-  const [, setNumberOfThumbnails] = useAtom(setNumberOfThumbnailsAtom)
   const [, setStateChanged] = useAtom(setStateChangedAtom)
 
-  const handleDropzoneLoaded = useCallback(async (files: any) => {
+  const handleDropzoneLoaded = async (files: any) => {
+    if (!files || !files?.length) return;
     setIsLoading(true)
 
     for (let i = 0; i < files.length; i++) {
@@ -70,20 +70,18 @@ const Drop = ({ className = '' }: any) => {
           console.log(`${filename}: \n ${newPdf}`)
 
           setPdfs((oldPdfs: any) => {
-            const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+            const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
             return result;
           });
           const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
           const pages = newPdfDoc.getPageCount();
           setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
           setPdfFileNames((oldFileNames: any) => [...oldFileNames, filename]);
-          console.log('Updating numberOfThumbnails')
 
           let pagesOfUploadedPdf: Array<number> = []
           for (let x = 0; x < pages; x++) {
             pagesOfUploadedPdf.push(x)
           }
-          setNumberOfThumbnails((oldValue: any) => [...oldValue, pagesOfUploadedPdf])
         }
         continue;
       }
@@ -112,17 +110,11 @@ const Drop = ({ className = '' }: any) => {
       await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
         .then(newPdfDoc => {
           const pages = newPdfDoc?.getPageCount()
-          setTotalPages((oldTotalPages: any) => [pages, ...oldTotalPages]);
-          setPdfFileNames((oldFileNames: any) => [files[i]['name'], ...oldFileNames]);
-          console.log('Updating numberOfThumbnails')
+          setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
+          setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i]['name']]);
 
-          let pagesOfUploadedPdf: Array<number> = []
-          for (let x = 0; x < pages; x++) {
-            pagesOfUploadedPdf.push(x)
-          }
-          setNumberOfThumbnails((oldValue: any) => [pagesOfUploadedPdf, ...oldValue]);
           setPdfs((oldPdfs: any) => {
-            const result = oldPdfs ? [newPdf].concat(oldPdfs) : [newPdf];
+            const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
             return result;
           });
         })
@@ -151,15 +143,13 @@ const Drop = ({ className = '' }: any) => {
                     const pages = newPdfDoc?.getPageCount();
                     setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
                     setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i].name]);
-                    console.log('Updating numberOfThumbnails')
 
                     let pagesOfUploadedPdf: Array<number> = []
                     for (let x = 0; x < pages; x++) {
                       pagesOfUploadedPdf.push(x)
                     }
-                    setNumberOfThumbnails((oldValue: any) => [...oldValue, pagesOfUploadedPdf]);
                     setPdfs((oldPdfs: any) => {
-                      const result = oldPdfs ? oldPdfs.concat(newPdf) : [newPdf];
+                      const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
                       return result;
                     });
                   })
@@ -173,10 +163,10 @@ const Drop = ({ className = '' }: any) => {
         })
     }
 
-    setStateChanged((oldValue: number) => oldValue++)
+    setStateChanged((oldValue: number) => oldValue + 1)
     setLoadingMessage('')
     setIsLoading(false)
-  }, []);
+  }
 
   return (
     <Dropzone onDrop={handleDropzoneLoaded}>
@@ -209,5 +199,5 @@ const skipRerender = (prevProps: any, nextProps: any) => {
   else return true;
 }
 
-export default React.memo(Drop, () => true);
-//export default Drop;
+//export default React.memo(Drop, () => true);
+export default Drop;
