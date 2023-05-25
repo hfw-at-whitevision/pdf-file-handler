@@ -24,21 +24,21 @@ const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleM
             }
 
             <Row pdfIndex={pdfIndex}>
-                <span className="text-xs mr-auto p-4 pb-0">
-                    <h3 className="mr-2 inline break-all">{filename}</h3>
-                    ({totalPages?.[pdfIndex]} {totalPages?.[pdfIndex] > 1 ? ' pagina\'s' : ' pagina'})
-                </span>
                 <div className={`flex items-center justify-between p-4`}>
                     <BiChevronDown
                         className={`
-                            cursor-pointer text-lg
+                            cursor-pointer text-lg hidden
                             ${open ? 'rotate-180' : ''}
                         `}
                         onClick={() => setOpen(oldValue => !oldValue)}
                     />
+                    <span className="text-xs mr-auto">
+                        <h3 className="mr-2 inline break-all">{filename}</h3>
+                        ({totalPages} {totalPages > 1 ? ' pagina\'s' : ' pagina'})
+                    </span>
                     <nav
                         className={
-                            `${isLoading ? "disabled" : ""} flex gap-1 justify-end
+                            `${isLoading ? "disabled" : ""} flex gap-1 justify-end ml-auto
                             flex-row min-w-[280px]`
                         }
                     >

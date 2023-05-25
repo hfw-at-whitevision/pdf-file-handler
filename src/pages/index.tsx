@@ -90,7 +90,7 @@ const Home: NextPage = () => {
         timer = setTimeout(() => setCurrent({
             pdfIndex: pdfIndex + 1,
             pageIndex: startPageIndex,
-        }), 400);
+        }), 500);
     }
     const handleDeleteDocument = async (inputPdfIndex: number) => {
         setIsLoading(true);
