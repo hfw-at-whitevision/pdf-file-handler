@@ -1,61 +1,78 @@
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { currentAtom, pdfsAtom, totalPagesAtom } from "../store/atoms";
+import { currentAtom, pagesAtom, pdfsAtom, totalPagesAtom } from "../store/atoms";
 
-const KeyPressListener = ({ handleSplitDocument, handleDeleteDocument, handleDuplicateDocument, handleDeletePage, handleRotateDocument, handleRotatePage }: any) => {
+const thumbnailsPerRow = 4;
+const defaultSteps = 1;
+
+const KeyPressListener = ({ findArrayIndex, findPageIndex, handleSplitDocument, handleDeleteDocument, handleDeletePage, handleRotateDocument, handleRotatePage }: any) => {
     const [current, setCurrent]: any = useAtom(currentAtom);
     const [totalPages]: any = useAtom(totalPagesAtom);
     const [pdfs] = useAtom(pdfsAtom);
+    const [pages]: any = useAtom(pagesAtom);
+    const currentIndex = findArrayIndex(current);
+
+    const getFirstPageIndex = (pdfIndex: number) => {
+        return pages[pdfIndex][0];
+    }
+    const getLastPageIndex = (pdfIndex: number) => {
+        return pages[pdfIndex][pages[pdfIndex].length - 1];
+    }
+
+    const moveLeft = (steps: number = defaultSteps) => {
+        // if we are able to move left (not in first thumbnail)
+        if (currentIndex >= steps) {
+            setCurrent((oldValue: any) => {
+                const prevPageIndex = findPageIndex({ pdfIndex: oldValue?.pdfIndex, index: currentIndex - steps });
+                return ({ pdfIndex: oldValue?.pdfIndex, pageIndex: prevPageIndex });
+            });
+        }
+        // if we are in first thumbnail -> go to next PDF if possible
+        else if (current.pdfIndex < pdfs?.length - 1) {
+            setCurrent((oldValue: any) => {
+                const newPdfIndex = oldValue?.pdfIndex + 1;
+                return ({ pdfIndex: newPdfIndex, pageIndex: getLastPageIndex(newPdfIndex) });
+            });
+        }
+    }
+    const moveRight = (steps: number = defaultSteps) => {
+        // if we are able to move right
+        if (currentIndex < totalPages[current?.pdfIndex] - steps) {
+            setCurrent((oldValue: any) => {
+                const nextPageIndex = findPageIndex({ pdfIndex: oldValue?.pdfIndex, index: currentIndex + steps });
+                return ({ pdfIndex: oldValue?.pdfIndex, pageIndex: nextPageIndex });
+            });
+        }
+        // if we are in last thumbnail -> go to previous PDF if possible
+        else if (current?.pdfIndex > 0) {
+            setCurrent((oldValue: any) => {
+                const newPdfIndex = oldValue.pdfIndex - 1
+                return ({ pdfIndex: newPdfIndex, pageIndex: getFirstPageIndex(newPdfIndex) });
+            });
+        }
+    }
 
     // keypress listener
     useEffect(() => {
         const eventListener = async (event: any) => {
             switch (event.key) {
                 case 'ArrowLeft':
-                    if (current?.pageIndex > 0) setCurrent((oldValue: any) => ({ pdfIndex: oldValue?.pdfIndex, pageIndex: oldValue?.pageIndex - 1 }));
-                    else if (current?.pdfIndex > 0) setCurrent((oldValue: any) => ({ pdfIndex: oldValue?.pdfIndex - 1, pageIndex: totalPages[oldValue?.pdfIndex - 1] - 1 }));
+                    moveLeft();
                     break;
                 case 'ArrowRight':
-                    if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) {
-                        setCurrent((oldValue: any) => ({ pdfIndex: oldValue?.pdfIndex, pageIndex: oldValue?.pageIndex + 1 }));
-                    } else if (current?.pdfIndex < pdfs?.length - 1) {
-                        setCurrent((oldValue: any) => ({ pdfIndex: oldValue?.pdfIndex + 1, pageIndex: 0 }));
-                    }
+                    moveRight();
                     break;
                 case 'ArrowUp':
                     event.preventDefault();
-                    if (current?.pageIndex > 3) setCurrent((oldValue: any) => {
-                        const newPdfIndex = oldValue?.pdfIndex;
-                        const newPageIndex = oldValue?.pageIndex - 4;
-                        return ({ pdfIndex: newPdfIndex, pageIndex: newPageIndex });
-                    });
-                    else if (current?.pdfIndex > 0) setCurrent((oldValue: any) => {
-                        const newPdfIndex = oldValue?.pdfIndex - 1;
-                        const newPageIndex = totalPages[oldValue?.pdfIndex - 1] - 1;
-                        return ({ pdfIndex: newPdfIndex, pageIndex: newPageIndex });
-                    });
+                    moveLeft(thumbnailsPerRow);
                     break;
                 case 'ArrowDown':
                     event.preventDefault();
-                    if (current?.pageIndex < totalPages[current?.pdfIndex] - 4) setCurrent((oldValue: any) => {
-                        const newPdfIndex = oldValue?.pdfIndex;
-                        const newPageIndex = oldValue?.pageIndex + 4;
-                        return ({ pdfIndex: newPdfIndex, pageIndex: newPageIndex });
-                    });
-                    else if (current?.pdfIndex < pdfs?.length - 1) setCurrent((oldValue: any) => {
-                        const newPdfIndex = oldValue?.pdfIndex + 1;
-                        const newPageIndex = 0;
-                        return ({ pdfIndex: newPdfIndex, pageIndex: newPageIndex });
-                    });
-                    else if (current?.pageIndex < totalPages[current?.pdfIndex] - 1) setCurrent((oldValue: any) => {
-                        const newPdfIndex = oldValue?.pdfIndex;
-                        const newPageIndex = totalPages[oldValue?.pdfIndex] - 1;
-                        return ({ pdfIndex: newPdfIndex, pageIndex: newPageIndex });
-                    });
+                    moveRight(thumbnailsPerRow);
                     break;
                 case ' ':
                     event.preventDefault();
-                    await handleDuplicateDocument({ pdfIndex: current.pdfIndex, startPageIndex: current.pageIndex });
+                    await handleSplitDocument({ pdfIndex: current.pdfIndex, startPageIndex: current.pageIndex });
                     break;
                 case 'Delete':
                     await handleDeletePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex, skipScrollIntoView: true });
@@ -77,7 +94,7 @@ const KeyPressListener = ({ handleSplitDocument, handleDeleteDocument, handleDup
         window.addEventListener('keydown', eventListener);
 
         return () => window.removeEventListener('keydown', eventListener);
-    }, [current?.pdfIndex, current?.pageIndex, totalPages]);
+    }, [current?.pdfIndex, current?.pageIndex, totalPages, pages, pages[current.pdfIndex]]);
 
     return <></>
 }

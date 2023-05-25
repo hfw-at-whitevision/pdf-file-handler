@@ -34,11 +34,16 @@ const Home: NextPage = () => {
     const [rotations, setRotations]: any = useAtom(rotationsAtom);
     const [pages, setPages]: any = useAtom(pagesAtom);
     const [, setStateChanged] = useAtom(setStateChangedAtom);
+    let timer: any = null;
 
-    const findIndex = ({ pdfIndex, pageIndex }: any) => {
+    const findArrayIndex = ({ pdfIndex, pageIndex }: any) => {
         if (typeof pages?.[pdfIndex]?.[pageIndex] === 'undefined') return;
         return pages[pdfIndex].findIndex((value: any) => value === pageIndex);
     }
+    const findPageIndex = ({ pdfIndex, index }: any) => {
+        return pages[pdfIndex][index];
+    }
+
     const handleReset = useCallback(async () => {
         setPdfs([]);
         setTotalPages([]);
@@ -55,8 +60,9 @@ const Home: NextPage = () => {
 
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
-    const handleDuplicateDocument = async ({ pdfIndex, startPageIndex = 0 }: any) => {
-        const startIndex = findIndex({ pdfIndex, pageIndex: startPageIndex });
+    const handleSplitDocument = async ({ pdfIndex, startPageIndex = 0 }: any) => {
+        if (timer) clearTimeout(timer);
+        const startIndex = findArrayIndex({ pdfIndex, pageIndex: startPageIndex });
         if (startIndex === 0) return;
         const duplicateState = (oldState: Array<any>) => {
             let updatedState = oldState;
@@ -80,18 +86,15 @@ const Home: NextPage = () => {
         setTotalPages((oldValue: any) => duplicateState(oldValue));
         setRotations((oldValue: any) => duplicateState(oldValue));
         setPages((oldValue: any) => duplicateState(oldValue));
-        setCurrent({
+        setStateChanged((oldState: number) => oldState + 1);
+        timer = setTimeout(() => setCurrent({
             pdfIndex: pdfIndex + 1,
             pageIndex: startPageIndex,
-        })
-        setStateChanged((oldState: number) => oldState + 1);
+        }), 400);
     }
-    const handleDeleteDocument = useCallback((inputPdfIndex: number) => {
+    const handleDeleteDocument = async (inputPdfIndex: number) => {
         setIsLoading(true);
-
-        if (current.pdfIndex === inputPdfIndex && current.pdfIndex === pdfs?.length - 1 && current.pdfIndex > 0) {
-            setCurrent({ pdfIndex: current.pdfIndex - 1, pageIndex: 0 });
-        }
+        if (timer) clearTimeout(timer);
 
         setPdfs((oldPdfs: any) => oldPdfs.filter((_: any, index: number) => index !== inputPdfIndex));
         setTotalPages((oldTotalPages: any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
@@ -99,28 +102,28 @@ const Home: NextPage = () => {
         setPages((oldPages: any) => {
             if (oldPages?.length === 1) return [];
             let updatedPages = oldPages;
-            updatedPages = updatedPages.filter((_: any, index: any) => index === inputPdfIndex);
+            updatedPages.splice(inputPdfIndex, 1);
             return updatedPages;
         });
         setRotations((oldValue: any) => {
             if (oldValue?.length === 1) return [];
             let updatedValue = oldValue;
-            updatedValue = updatedValue.filter((_: any, index: any) => index === inputPdfIndex);
+            updatedValue.splice(inputPdfIndex, 1);
             return updatedValue;
         });
-        setCurrent({
-            pdfIndex: (inputPdfIndex === pdfs?.length - 1 && inputPdfIndex > 0)
-                ? inputPdfIndex - 1
-                : inputPdfIndex,
-            pageIndex: 0
-        });
+        timer = setTimeout(() => setCurrent({
+            pdfIndex: (inputPdfIndex > 0) ? inputPdfIndex - 1 : 0,
+            pageIndex: 0,
+        }), 400);
 
         setIsLoading(false);
         setStateChanged((oldValue: number) => oldValue + 1);
-    }, [pages]);
-
-    const handleDeletePage = ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
+    }
+    const handleDeletePage = async ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
+        if (timer) clearTimeout(timer);
+        const pages = await get('pages');
         if (typeof index === 'undefined') index = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
+        const nextPageIndex = pages[pdfIndex][index + 1];
         setPages((oldValue: any) => {
             let updatedArray = oldValue;
             updatedArray[pdfIndex].splice(index, 1);
@@ -136,88 +139,28 @@ const Home: NextPage = () => {
             updatedArray[pdfIndex] = updatedArray[pdfIndex] - 1;
             return updatedArray;
         });
-        const nextPageIndex = pages[pdfIndex][index];
-        setCurrent({
+        setStateChanged((oldState: number) => oldState + 1)
+        timer = setTimeout(() => setCurrent({
             pdfIndex,
             pageIndex: nextPageIndex,
             ...skipScrollIntoView && { skipScrollIntoView },
-        });
-    };
-    const handleDeletePage0 = useCallback(async (pdfIndex: number, pageIndex: number) => {
-        setIsLoading(true);
-        const totalPages = await get('totalPages');
-        const pdfs = await get('pdfs');
-        const rotations = await get('rotations');
-        // if we are deleting the last page in PDF = delete the PDF
-        if (totalPages[pdfIndex] === 1) {
-            handleDeleteDocument(pdfIndex);
-            return;
-        }
-
-        console.log(`Deleting page ${pageIndex} from document ${pdfIndex}`);
-
-        const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
-            ignoreEncryption: true, parseSpeed: 1500
-        });
-        pdfDoc.removePage(pageIndex);
-        const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-        setPdfs((oldPdfs: Array<string>) => {
-            let newPdfs = oldPdfs
-            newPdfs[pdfIndex] = URL
-            return newPdfs
-        });
-        setTotalPages((oldTotalPages: any) => {
-            let newTotalPages: Array<number> = oldTotalPages
-            newTotalPages[pdfIndex] = oldTotalPages[pdfIndex] - 1
-            return newTotalPages as any
-        });
-        setCurrent({
-            pdfIndex,
-            pageIndex: (pageIndex === totalPages[pdfIndex] - 1)
-                ? pageIndex - 1
-                : pageIndex
-        });
+        }), 400);
+    }
+    const handleRotateDocument = (inputPdfIndex: number) => {
         let updatedRotations = rotations;
-        updatedRotations[pdfIndex] = updatedRotations[pdfIndex].splice(pageIndex, 1);
-        setRotations(updatedRotations);
-        setIsLoading(false);
-        setStateChanged((oldValue: number) => oldValue + 1);
-    }, []);
-
-    const handleRotateDocument = useCallback(async (inputPdfIndex: number) => {
-        setIsLoading(true);
-        console.log(`Rotating document ${inputPdfIndex}`)
-
-        const pdfs = await get('pdfs');
-        const pdfDoc = await PDFDocument.load(pdfs[inputPdfIndex], {
-            ignoreEncryption: true, parseSpeed: 1500
-        });
-        const pages = pdfDoc.getPages();
-        let pdfRotations = rotations[inputPdfIndex];
-
-        pages.forEach((page, pageIndex) => {
-            const currentPageRotation = page.getRotation().angle;
-            const newDegrees = (currentPageRotation + 90 === 360)
+        let updatedPdfRotations = rotations[inputPdfIndex]?.map((rotation: number, index: number) => {
+            const newDegrees = (rotation + 90 === 360)
                 ? 0
-                : currentPageRotation + 90;
-            page.setRotation(degrees(newDegrees));
-            pdfRotations[pageIndex] = newDegrees;
+                : rotation + 90;
+            return newDegrees;
         });
-
-        const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-
-        setPdfs((oldPdfs: any) => {
-            let newPdfs = oldPdfs
-            newPdfs[inputPdfIndex] = URL
-            return newPdfs
-        });
-        setRotations((oldValues: any) => oldValues.splice(inputPdfIndex, 1, pdfRotations));
-        setIsLoading(false);
+        updatedRotations[inputPdfIndex] = updatedPdfRotations;
+        setRotations(updatedRotations);
         setStateChanged((oldValue: number) => oldValue + 1);
-        console.log('finished')
-    }, [rotations]);
-
+    };
     const handleRotatePage = async ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
+        const pages = await get('pages');
+        const rotations = await get('rotations');
         if (typeof index === 'undefined') index = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
         let newRotations = rotations;
         const currentRotation = rotations[pdfIndex][index];
@@ -233,38 +176,7 @@ const Home: NextPage = () => {
             ...skipScrollIntoView && { skipScrollIntoView },
         });
         setStateChanged((oldState: number) => oldState + 1);
-    };
-    const handleRotatePage0 = useCallback(async ({ pdfIndex, pageIndex }: any) => {
-        setIsLoading(true);
-        const pdfs = await get('pdfs');
-        const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], {
-            ignoreEncryption: true, parseSpeed: 1500
-        });
-        const pages = pdfDoc.getPages();
-        const currentPage = pages[pageIndex];
-        if (!currentPage) return;
-        console.log(`Rotating page ${pageIndex} from document ${pdfIndex}`)
-
-        const currentPageRotation = currentPage?.getRotation().angle ?? 0;
-        const newDegrees = currentPageRotation + 90 === 360
-            ? 0
-            : currentPageRotation + 90;
-        let newRotations = rotations;
-
-        currentPage.setRotation(degrees(newDegrees));
-        newRotations[pdfIndex][pageIndex] = newDegrees;
-
-        const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-        setPdfs((oldPdfs: any) => {
-            let newPdfs = oldPdfs
-            newPdfs[pdfIndex] = URL
-            return newPdfs
-        });
-        setRotations(newRotations);
-        setCurrent({ pdfIndex, pageIndex, skipScrollIntoView: true });
-        setIsLoading(false);
-        setStateChanged((oldValue: number) => oldValue + 1);
-    }, [rotations]);
+    }
 
     const handleMovePage = useCallback(async ({
         fromPdfIndex,
@@ -364,56 +276,6 @@ const Home: NextPage = () => {
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
 
-    const handleSplitDocument = useCallback(async ({ pdfIndex, pageIndex }: any) => {
-        if (pageIndex === 0) return;
-
-        setIsLoading(true);
-
-        const pdfs = await get('pdfs')
-        const toPdfDoc = await PDFDocument.create()
-        const fromPdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
-
-        const pagesToMove = fromPdfDoc.getPageIndices().slice(pageIndex)
-
-        // copy the moved page from PDF
-        const copiedPages = await toPdfDoc.copyPages(fromPdfDoc, pagesToMove);
-        pagesToMove.forEach((_, index) => toPdfDoc.addPage(copiedPages[index]));
-
-        // remove the moved pages from source PDF
-        for (let i = 0; i < pagesToMove.length; i++) {
-            fromPdfDoc.removePage(totalPages[pdfIndex] - i - 1);
-        }
-
-        // save the PDF files
-        const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
-
-        const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
-
-        let newTotalPages: any = totalPages
-        newTotalPages[pdfIndex] = totalPages[pdfIndex] - pagesToMove.length
-
-        let newPdfs = pdfs
-        newPdfs[pdfIndex] = URL
-
-        // if source document is empty, remove it
-        if (fromPdfDoc.getPageCount() === 1) {
-            pdfFilenames.splice(pdfIndex, 1);
-            newTotalPages.splice(pdfIndex, 1);
-            newPdfs.splice(pdfIndex, 1);
-        }
-
-        // add a new document right below the current document
-        pdfFilenames.splice(pdfIndex + 1, 0, 'Nieuw document')
-        newTotalPages.splice(pdfIndex + 1, 0, pagesToMove.length);
-        newPdfs.splice(pdfIndex + 1, 0, URL2);
-
-        setTotalPages(newTotalPages);
-        setPdfs(newPdfs)
-        setCurrent({ pdfIndex: pdfIndex + 1, pageIndex: 0 });
-        setIsLoading(false);
-        setStateChanged((oldValue: number) => oldValue + 1);
-    }, []);
-
     const handleSaveDocument = useCallback(async (pdfIndex: number) => {
         setIsLoading(true);
         const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
@@ -474,12 +336,13 @@ const Home: NextPage = () => {
             <CurrentHandler />
             <LocalStateHandler />
             <KeyPressListener
+                findArrayIndex={findArrayIndex}
+                findPageIndex={findPageIndex}
                 handleDeleteDocument={handleDeleteDocument}
                 handleDeletePage={handleDeletePage}
                 handleRotateDocument={handleRotateDocument}
                 handleRotatePage={handleRotatePage}
                 handleSplitDocument={handleSplitDocument}
-                handleDuplicateDocument={handleDuplicateDocument}
             />
 
             <Loading inset={true} loading={isLoading} message={loadingMessage} />
@@ -552,7 +415,7 @@ const Home: NextPage = () => {
                     </section>
 
                     {/* PDF preview */}
-                    <LegacyPdfPreview rotation={rotations[current.pdfIndex]?.[findIndex({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex })]} />
+                    <LegacyPdfPreview rotation={rotations[current.pdfIndex]?.[findArrayIndex({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex })]} />
 
                     {/* administration tiles */}
                     <AdministrationTiles />

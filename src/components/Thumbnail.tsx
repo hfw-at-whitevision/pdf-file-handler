@@ -105,6 +105,7 @@ const Thumbnail = (
             }
             data-pdf-index={pdfIndex}
             data-page-index={pageIndex}
+            data-index={index}
         >
             <Page
                 className={

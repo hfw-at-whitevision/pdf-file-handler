@@ -60,7 +60,7 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage }: any) => {
         switch (clickedContextMenuItem) {
             case 'delete':
                 console.log(`Deleting pdf-${clickedPdfIndex}-${clickedPageIndex}`);
-                await handleDeletePage(clickedPdfIndex, clickedPageIndex);
+                await handleDeletePage({ pdfIndex: clickedPdfIndex, pageIndex: clickedPageIndex });
                 break;
             case 'rotate':
                 console.log(`Rotating pdf-${clickedPdfIndex}-${clickedPageIndex}`);
