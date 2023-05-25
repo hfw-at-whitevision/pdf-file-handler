@@ -16,7 +16,7 @@ export default function AdministrationTiles(props: any) {
                         }
                         key={`administrationTile-${index}`}
                     >
-                        <div className="bg-body-bg-dark p-4 rounded-md inline-block mx-auto items-center justify-center mb-2 border-text-lighter">
+                        <div className="bg-body-bg p-4 rounded-md inline-block mx-auto items-center justify-center mb-2">
                             <BsCurrencyEuro />
                         </div>
 

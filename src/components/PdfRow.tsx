@@ -68,7 +68,7 @@ const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleM
                     className={
                         `relative p-4 gap-1 w-full overflow-hidden border-text-lighter opacity-100
                         ${open ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
-                        flex flex-row flex-wrap
+                        flex flex-row flex-wrap row-${pdfIndex}
                         `}
                     loading={undefined}
                     renderMode='none'
@@ -76,7 +76,7 @@ const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleM
                     {/* thumbnails of current PDF */}
                     {pages.map((pageIndex: number, index: number) => {
                         return <div
-                            className={`flex flex-row ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
+                            className={`flex flex-row w-[130px] ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
                             key={`thumbnail-${pdfIndex}-${pageIndex}`}
                         >
                             {

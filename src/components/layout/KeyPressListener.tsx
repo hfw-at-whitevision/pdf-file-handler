@@ -72,7 +72,7 @@ const KeyPressListener = ({ findArrayIndex, findPageIndex, handleSplitDocument, 
                     break;
                 case ' ':
                     event.preventDefault();
-                    await handleSplitDocument({ pdfIndex: current.pdfIndex, startPageIndex: current.pageIndex });
+                    await handleSplitDocument({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex });
                     break;
                 case 'Delete':
                     await handleDeletePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex, skipScrollIntoView: true });

@@ -60,9 +60,9 @@ const Home: NextPage = () => {
 
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
-    const handleSplitDocument = async ({ pdfIndex, startPageIndex = 0 }: any) => {
+    const handleSplitDocument = async ({ pdfIndex, pageIndex }: any) => {
         if (timer) clearTimeout(timer);
-        const startIndex = findArrayIndex({ pdfIndex, pageIndex: startPageIndex });
+        const startIndex = findArrayIndex({ pdfIndex, pageIndex });
         if (startIndex === 0) return;
         const duplicateState = (oldState: Array<any>) => {
             let updatedState = oldState;
@@ -89,7 +89,7 @@ const Home: NextPage = () => {
         setStateChanged((oldState: number) => oldState + 1);
         timer = setTimeout(() => setCurrent({
             pdfIndex: pdfIndex + 1,
-            pageIndex: startPageIndex,
+            pageIndex: pageIndex,
         }), 500);
     }
     const handleDeleteDocument = async (inputPdfIndex: number) => {
@@ -190,6 +190,7 @@ const Home: NextPage = () => {
         toPlaceholderRow = false,
         toPlaceholderThumbnail = false
     }: any) => {
+        if (timer) clearTimeout(timer);
         setIsLoading(true);
         const pdfs = await get('pdfs');
 
@@ -208,17 +209,15 @@ const Home: NextPage = () => {
                 newPdfs[fromPdfIndex] = URL
                 return newPdfs
             });
-            setCurrent({
+            setIsLoading(false);
+            setStateChanged((oldValue: number) => oldValue + 1);
+            timer = setTimeout(() => setCurrent({
                 pdfIndex: fromPdfIndex,
                 pageIndex:
                     (toPageIndex < fromPageIndex)
                         ? toPageIndex
                         : toPageIndex - 1
-            });
-
-            setIsLoading(false);
-            setStateChanged((oldValue: number) => oldValue + 1);
-
+            }), 1000);
             return;
         }
 
@@ -430,6 +429,7 @@ const Home: NextPage = () => {
             <ContextMenu
                 handleDeletePage={handleDeletePage}
                 handleRotatePage={handleRotatePage}
+                handleSplitDocument={handleSplitDocument}
             />
         </>
     );
