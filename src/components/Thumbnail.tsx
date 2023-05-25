@@ -100,7 +100,7 @@ const Thumbnail = (
                 `relative group flex items-center justify-center rounded-lg overflow-hidden
                 box-border border-4 pdf-thumbnail-container
                 before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
-                before:z-[-1] border-stone-200/40
+                before:z-[-1] border-transparent shadow-md
                 opacity-${isDragging ? '10' : '100'}`
             }
             data-pdf-index={pdfIndex}

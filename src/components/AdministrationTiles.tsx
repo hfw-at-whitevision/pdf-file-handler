@@ -1,21 +1,22 @@
-import { useEffect, useRef, useState } from "react"
 import { BsCurrencyEuro } from "react-icons/bs"
 
 export default function AdministrationTiles(props: any) {
     return <>
         <div {...props}>
             <div className={
-                `bg-stone-100 w-full rounded-lg p-4 gap-2 sticky top-8 border border-stone-200 flex flex-wrap flex-row grid-flow-col auto-cols-fr`
+                `bg-body-bg-dark w-full rounded-lg p-4 gap-2 sticky top-[132px] border border-text-lighter
+                grid grid-cols-[repeat(auto-fill,_minmax(max(100px,_120px),_1fr))]`
             }>
                 {administrationTiles.map((tile: any, index: number) =>
                     <div
                         className={
-                            `text-sm min-w-[120px] inline-flex flex-1 flex-col h-[150px] rounded-lg overflow-hidden
-                                bg-white border-stone-200 border p-4`
+                            `w-full h-[150px]
+                            text-sm flex-col rounded-md overflow-hidden
+                            bg-body-bg-light border-text-lighter p-4`
                         }
                         key={`administrationTile-${index}`}
                     >
-                        <div className="bg-stone-100 p-4 rounded-lg inline-block mx-auto items-center justify-center mb-2 border border-stone-200">
+                        <div className="bg-body-bg-dark p-4 rounded-md inline-block mx-auto items-center justify-center mb-2 border-text-lighter">
                             <BsCurrencyEuro />
                         </div>
 

@@ -14,7 +14,7 @@ export default function LegacyPdfPreview({ rotation }: any) {
                         <Document
                             file={pdfs[current?.pdfIndex]}
                             loading={<Loading />}
-                            className={`w-full h-screen sticky top-8`}
+                            className={`w-full h-full`}
                         >
                             <Page
                                 pageIndex={current?.pageIndex}
@@ -26,7 +26,7 @@ export default function LegacyPdfPreview({ rotation }: any) {
                             />
                         </Document>
                     </>
-                    : <div className="h-full flex items-center justify-center text-sm">
+                    : <div className="h-[calc(100vh-164px)] flex items-center justify-center text-sm">
                         Upload een document om deze te verwerken.
                     </div>
             }

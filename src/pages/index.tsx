@@ -157,6 +157,10 @@ const Home: NextPage = () => {
         updatedRotations[inputPdfIndex] = updatedPdfRotations;
         setRotations(updatedRotations);
         setStateChanged((oldValue: number) => oldValue + 1);
+        setCurrent((oldCurrent: any) => ({
+            pdfIndex: inputPdfIndex,
+            pageIndex: oldCurrent.pageIndex,
+        }));
     };
     const handleRotatePage = async ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
         const pages = await get('pages');
@@ -357,70 +361,69 @@ const Home: NextPage = () => {
                 pages={pages}
             />
 
-            <main className={`flex flex-1 gap-8 p-8 w-full first-letter:${pdfs ? "flex-row" : "flex-col items-center justify-center"}`}>
-                <header className={`flex flex-1 flex-col w-full max-w-[200px]`}>
-                    <nav className="sticky top-8">
-                        <img src="./whitevision.png" width={150} className="flex justify-center gap-2 text-lg" />
-                        <h3 className="font-black mt-2 tracking-widest uppercase mb-8 text-[9px] text-stone-700">
-                            File Handler {process.env.NEXT_PUBLIC_BUILD_VERSION ?? ''}
-                        </h3>
+            <header className={`fixed top-0 left-0 right-0 h-[100px] flex flex-row w-full bg-white shadow-sm border-body-bg-dark z-50 px-8 py-4 items-center gap-16`}>
+                <div>
+                    <img src="./whitevision.png" width={100} className="flex justify-center gap-2 text-lg" />
+                    <h3 className="font-black mt-2 tracking-widest uppercase text-[9px] text-stone-700">
+                        File Handler {process.env.NEXT_PUBLIC_BUILD_VERSION ?? ''}
+                    </h3>
+                </div>
 
-                        <div className={`grid gap-4 mt-6 w-full ${!pdfs ? "grid-cols-1" : "grid-cols-1"}`}>
-                            <Drop />
-                            <ButtonXl
-                                title={"Opslaan"}
-                                icon={<BsSave className="text-base" />}
-                                description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                                onClick={handleSaveAllDocuments}
-                                className={!pdfs?.length ? 'disabled' : ''}
-                            />
-                            <ButtonXl
-                                title={"Reset"}
-                                icon={<BsArrowRepeat className="text-base" />}
-                                description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
-                                onClick={handleReset}
-                                className={!pdfs?.length ? 'disabled' : ''}
-                            />
-                        </div>
-                    </nav>
-                </header>
-                <Split
-                    sizes={getPersistedFileHandlerPanelSizes()}
-                    minSize={[150, 0, 150]}
-                    gutterSize={8}
-                    gutterAlign="center"
-                    className="flex flex-row w-full h-full flex-1"
-                    onDragEnd={persistFileHandlerPanelSizes}
-                    cursor="col-resize"
-                >
-                    {/* PDF row */}
-                    <section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full`}>
-                        {new Array(totalPages?.length).fill(1).map((_: any, pdfIndex: number) =>
-                            <PdfRow
-                                key={`pdf-${pdfIndex}`}
-                                pdfIndex={pdfIndex}
-                                pdf={pdfs[pdfIndex]}
-                                filename={pdfFilenames[pdfIndex]}
-                                pages={pages[pdfIndex]}
-                                rotations={rotations[pdfIndex]}
-                                totalPages={totalPages[pdfIndex]}
-                                handleMovePage={handleMovePage}
-                                handleSaveDocument={handleSaveDocument}
-                                handleRotatePage={handleRotatePage}
-                                handleDeletePage={handleDeletePage}
-                                handleRotateDocument={handleRotateDocument}
-                                handleDeleteDocument={handleDeleteDocument}
-                            />
-                        ).reverse()}
-                    </section>
+                <div className={`grid gap-4 grid-cols-3 w-[600px]`}>
+                    <Drop />
+                    <ButtonXl
+                        title={"Opslaan"}
+                        icon={<BsSave className="text-base" />}
+                        description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                        onClick={handleSaveAllDocuments}
+                        className={!pdfs?.length ? 'disabled' : ''}
+                    />
+                    <ButtonXl
+                        title={"Reset"}
+                        icon={<BsArrowRepeat className="text-base" />}
+                        description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                        onClick={handleReset}
+                        className={!pdfs?.length ? 'disabled' : ''}
+                    />
+                </div>
+            </header>
 
-                    {/* PDF preview */}
-                    <LegacyPdfPreview rotation={rotations[current.pdfIndex]?.[findArrayIndex({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex })]} />
+            <Split
+                sizes={getPersistedFileHandlerPanelSizes()}
+                minSize={[150, 0, 150]}
+                gutterSize={8}
+                gutterAlign="center"
+                className="flex flex-row w-full h-full gap-4 p-8 pb-0 pt-[132px]"
+                onDragEnd={persistFileHandlerPanelSizes}
+                cursor="col-resize"
+            >
+                {/* PDF row */}
+                <section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full pb-8`}>
+                    {new Array(totalPages?.length).fill(1).map((_: any, pdfIndex: number) =>
+                        <PdfRow
+                            key={`pdf-${pdfIndex}`}
+                            pdfIndex={pdfIndex}
+                            pdf={pdfs[pdfIndex]}
+                            filename={pdfFilenames[pdfIndex]}
+                            pages={pages[pdfIndex]}
+                            rotations={rotations[pdfIndex]}
+                            totalPages={totalPages[pdfIndex]}
+                            handleMovePage={handleMovePage}
+                            handleSaveDocument={handleSaveDocument}
+                            handleRotatePage={handleRotatePage}
+                            handleDeletePage={handleDeletePage}
+                            handleRotateDocument={handleRotateDocument}
+                            handleDeleteDocument={handleDeleteDocument}
+                        />
+                    ).reverse()}
+                </section>
 
-                    {/* administration tiles */}
-                    <AdministrationTiles />
-                </Split>
-            </main>
+                {/* PDF preview */}
+                <LegacyPdfPreview rotation={rotations[current.pdfIndex]?.[findArrayIndex({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex })]} />
+
+                {/* administration tiles */}
+                <AdministrationTiles />
+            </Split>
 
             <ScrollDropTarget position='bottom' />
 

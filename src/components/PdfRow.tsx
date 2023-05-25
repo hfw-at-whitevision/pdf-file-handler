@@ -48,6 +48,7 @@ const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleM
                                 const base64 = await handleSaveDocument(pdfIndex);
                                 alert(base64)
                             }}
+                            padding='large'
                         />
                         <Button
                             title={<><BiRotateRight className="rotate-[180deg]" /></>}
@@ -65,7 +66,7 @@ const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleM
                 <Document
                     file={pdf}
                     className={
-                        `relative p-4 gap-1 w-full overflow-hidden border-stone-300 opacity-100
+                        `relative p-4 gap-1 w-full overflow-hidden border-text-lighter opacity-100
                         ${open ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
                         flex flex-row flex-wrap
                         `}

@@ -33,7 +33,7 @@ const CurrentHandler = () => {
         timer = setTimeout(() => {
             const thumbnailId = document.getElementById(`thumbnail-${current.pdfIndex}-${current.pageIndex}`);
             if (thumbnailId) thumbnailId.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 150);
+        }, 500);
 
         return () => clearTimeout(timer);
     }, [current]);

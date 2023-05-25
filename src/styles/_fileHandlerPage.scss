@@ -3,13 +3,17 @@
 @tailwind utilities;
 
 body {
-    @apply bg-white;
+    @apply bg-body-bg;
+
+    &::-webkit-scrollbar {
+        @apply w-2 h-2 m-4 bg-transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        @apply cursor-grab bg-text-mid hover:bg-text-mid/80 rounded-none;
+    }
 }
-/*
-.react-pdf__message {
-    @apply hidden;
-}
-*/
+
 .pdf-thumbnail canvas {
     @apply object-contain rounded-md overflow-hidden;
 }
@@ -28,16 +32,16 @@ body {
         position: fixed;
         top: 0;
 
-        @apply bg-stone-100 border-l-[1px] border-r-[1px] border-stone-200;
+        @apply bg-body-bg-dark border-text-lighter;
     }
 
     &::after {
         content: " ";
         position: fixed;
         background: url("data:image/svg+xml;charset=utf-8,%3Csvg fill='%238E929C' viewBox='0 0 4 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 8c0 1.018.828 1.847 1.846 1.847A1.848 1.848 0 0 0 3.692 8a1.848 1.848 0 0 0-1.846-1.846A1.848 1.848 0 0 0 0 8Zm0 6.154C0 15.172.828 16 1.846 16a1.848 1.848 0 0 0 1.846-1.846 1.848 1.848 0 0 0-1.846-1.846A1.848 1.848 0 0 0 0 14.154ZM0 1.846c0 1.018.828 1.846 1.846 1.846a1.848 1.848 0 0 0 1.846-1.846A1.848 1.848 0 0 0 1.846 0 1.848 1.848 0 0 0 0 1.846Z'/%3E%3C/svg%3E") no-repeat 50%/auto 1.2rem;
-        top: calc(50vh - 40px);
+        top: calc(50vh - 20px);
         z-index: 10;
-        width: 5px;
+        width: 6px;
         height: 40px;
     }
 }
@@ -45,15 +49,16 @@ body {
 /* PdfPreview */
 .pdf-preview-container {
     .react-pdf__Page {
+        background: none !important;
         @apply flex flex-1 h-full justify-center;
 
         .react-pdf__Page__canvas {
             width: auto !important;
             height: fit-content !important;
             max-width: 100%;
-            max-height: calc(100vh - 4rem);
+            max-height: calc(100vh - 164px);
 
-            @apply rounded-lg shadow-2xl overflow-hidden w-full object-contain;
+            @apply rounded-lg shadow-lg overflow-hidden w-full object-contain sticky top-[132px];
         }
     }
 }

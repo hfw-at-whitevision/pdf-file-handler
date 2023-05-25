@@ -17,11 +17,11 @@ const Row = (props: any) => {
     return <div
         ref={drop}
         className={`
-      rounded-lg w-full
-      ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-stone-100'}
-      border border-stone-200
-      flex flex-col space-y divide-stone-300
-      `}
+            rounded-lg w-full
+            ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-body-bg-dark'}
+            border border-text-lighter
+            flex flex-col space-y divide-text-light
+        `}
         {...props}
     >
         {props?.children}
