@@ -126,7 +126,7 @@ const Thumbnail = (
                 id={`thumbnail-${pdfIndex}-${pageIndex}-inset`}
                 data-pdf-index={pdfIndex}
                 data-page-index={pageIndex}
-                className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/20"
+                className="absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto cursor-move bg-black/20 backdrop-blur-sm duration-700"
                 onClick={() => setCurrent({
                     pdfIndex: pdfIndex,
                     pageIndex: pageIndex,
@@ -134,7 +134,7 @@ const Thumbnail = (
                 })}
             />
             {/* buttons */}
-            <div className="absolute opacity-0 group-hover:opacity-100 z-10 bottom-2 grid grid-cols-2 gap-1" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
+            <div className="absolute translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 z-10 bottom-2 grid grid-cols-2 gap-1" id={`thumbnail-${pdfIndex}-${pageIndex}-buttons`}>
                 <Button
                     title={<><GrRotateRight /></>}
                     onClick={() => handleRotatePage({ pdfIndex, index, skipScrollIntoView: true })}
