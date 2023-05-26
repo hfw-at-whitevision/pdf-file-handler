@@ -2,8 +2,8 @@ import { useRef, useEffect } from "react";
 import { useDrop, useDrag } from "react-dnd";
 import { Page } from "react-pdf";
 import React from "react";
-import { useAtom } from "jotai";
-import { isRotatingAtom, setCurrentAtom, userIsDraggingAtom } from "./store/atoms";
+import { useAtom, useSetAtom } from "jotai";
+import { currentAtom, isRotatingAtom, userIsDraggingAtom } from "./store/atoms";
 import { BsTrash } from "react-icons/bs";
 import { GrRotateRight } from "react-icons/gr";
 import Button from "./primitives/Button";
@@ -20,8 +20,8 @@ const Thumbnail = (
         index,
     }: any
 ) => {
-    const [, setCurrent] = useAtom(setCurrentAtom);
-    const [, setUserIsDragging] = useAtom(userIsDraggingAtom);
+    const setCurrent: any = useSetAtom(currentAtom);
+    const setUserIsDragging: any = useSetAtom(userIsDraggingAtom);
     const [isRotating] = useAtom(isRotatingAtom);
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
