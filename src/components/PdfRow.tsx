@@ -52,7 +52,7 @@ const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleM
                         />
                         <Button
                             title={<><BiRotateRight className="rotate-[180deg]" /></>}
-                            onClick={() => handleRotateDocument(pdfIndex)}
+                            onClick={() => handleRotateDocument({ pdfIndex })}
                             disabled={isLoading}
                         />
                         <Button

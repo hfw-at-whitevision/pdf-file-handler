@@ -84,7 +84,7 @@ const KeyPressListener = ({ findArrayIndex, findPageIndex, handleSplitDocument, 
                     await handleRotatePage({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex, skipScrollIntoView: true });
                     break;
                 case 'R':
-                    await handleRotateDocument(current?.pdfIndex);
+                    await handleRotateDocument({ pdfIndex: current?.pdfIndex });
                     break;
                 default:
                     break;

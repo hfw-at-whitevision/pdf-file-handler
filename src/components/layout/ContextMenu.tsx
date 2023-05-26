@@ -3,11 +3,10 @@ import { useState, useEffect } from "react";
 import { BsCheck2All, BsLayoutSplit, BsTrash } from "react-icons/bs";
 import { GrRotateRight } from "react-icons/gr";
 
-const ContextMenu = ({ handleDeletePage, handleRotatePage, handleSplitDocument }: any) => {
+const ContextMenu = ({ handleDeletePage, handleRotateDocument, handleRotatePage, handleSplitDocument, handleDeleteDocument }: any) => {
     const [isOpen, setIsOpen] = useState(false);
     const [top, setTop] = useState(0);
     const [left, setLeft] = useState(0);
-    const [clickedType, setClickedType] = useState('');
     const allowedClicks = ['thumbnail', 'row']
 
     const [pdfIndex, setPdfIndex] = useState(0);
@@ -24,8 +23,6 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage, handleSplitDocument }
 
         setPdfIndex(clickedPdfIndex);
         setPageIndex(clickedPageIndex);
-
-        console.log(`rmb clicked: ${clickedPdfIndex}-${clickedPageIndex}`)
 
         setIsOpen(true);
         setTop(e.clientY);
@@ -58,6 +55,12 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage, handleSplitDocument }
                     skipScrollIntoView: true,
                 });
                 break;
+            case 'rotateDocument':
+                await handleRotateDocument({ pdfIndex: clickedPdfIndex });
+                break;
+            case 'deleteDocument':
+                await handleDeleteDocument(clickedPdfIndex);
+                break;
             default:
                 break;
         }
@@ -73,48 +76,41 @@ const ContextMenu = ({ handleDeletePage, handleRotatePage, handleSplitDocument }
         };
     }, []);
 
-    return <>
-        {
-            isOpen
-                ? <>
-                    <div
-                        className={
-                            `fixed z-50 bg-white text-white text-lg font-bold w-[300px] shadow-md rounded-md border border-stone-200
-                            grid grid-cols-1 divide-y divide-stone-200`
-                        }
-                        style={{ top, left }}
-                    >
-                        {
-                            contextMenuItems.map((item, i) =>
-                                <div
-                                    id={item.action}
-                                    key={`context-menu-item-${i}`}
-                                    data-pdf-index={pdfIndex}
-                                    data-page-index={pageIndex}
-                                    className="flex items-center gap-4 text-text-dark text-base font-normal py-4 px-6 hover:bg-body-bg-dark cursor-pointer"
-                                >
-                                    {
-                                        item?.icon
-                                            ? <item.icon />
-                                            : null
-                                    }
-
-                                    {item.title}
-                                </div>
-                            )
-                        }
-                    </div>
-                </>
-                : null
+    if (!isOpen) return null;
+    return (<div
+        className={
+            `fixed z-50 bg-white text-white text-lg font-bold w-[300px] shadow-md rounded-md border border-stone-200
+                grid grid-cols-1 divide-y divide-stone-200`
         }
-    </>
+        style={{ top, left }}
+    >
+        {
+            contextMenuItems.map((item, i) =>
+                <div
+                    id={item.action}
+                    key={`context-menu-item-${i}`}
+                    data-pdf-index={pdfIndex}
+                    data-page-index={pageIndex}
+                    className="flex items-center gap-4 text-text-dark text-base font-normal py-4 px-6 hover:bg-body-bg-dark cursor-pointer"
+                >
+                    {
+                        item?.icon
+                            ? <item.icon />
+                            : null
+                    }
+
+                    {item.title}
+                </div>
+            )
+        }
+    </div>)
 }
 export default ContextMenu;
 
 const contextMenuItems = [
     {
         icon: BsLayoutSplit,
-        title: 'Split document vanaf deze pagina',
+        title: 'Splits document vanaf deze pagina',
         action: 'split',
         for: ['thumbnail', 'row'],
     },
@@ -125,15 +121,15 @@ const contextMenuItems = [
         for: ['thumbnail', 'row'],
     },
     {
-        icon: GrRotateRight,
-        title: 'Roteer geheel document',
-        action: 'rotateDocument',
-        for: ['thumbnail', 'row'],
-    },
-    {
         icon: BsTrash,
         title: 'Verwijder pagina',
         action: 'delete',
+        for: ['thumbnail', 'row'],
+    },
+    {
+        icon: GrRotateRight,
+        title: 'Roteer geheel document',
+        action: 'rotateDocument',
         for: ['thumbnail', 'row'],
     },
     {

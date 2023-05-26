@@ -1,17 +1,17 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import { get, set, del } from 'idb-keyval';
+import { get, del } from 'idb-keyval';
 
 import { useCallback, useState } from "react";
 import Drop from "@/components/layout/Drop";
-import { PDFDocument, degrees } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 import ButtonXl from "@/components/primitives/ButtonXl";
 import { BsSave, BsArrowRepeat } from "react-icons/bs";
 import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
-import { useAtom } from "jotai";
-import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, setCurrentAtom, setPdfsAtom, setStateChangedAtom, stateChangedAtom, totalPagesAtom, userIsDraggingAtom } from "@/components/store/atoms";
+import { useAtom, useSetAtom } from "jotai";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, totalPagesAtom } from "@/components/store/atoms";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
@@ -25,15 +25,15 @@ import CurrentHandler from "@/components/layout/CurrentHandler";
 const Home: NextPage = () => {
     const [pdfFilenames, setPdfFilenames]: [Array<string>, any] = useAtom(pdfFilenamesAtom);
     const [pdfs]: any = useAtom(pdfsAtom);
-    const [, setPdfs] = useAtom(setPdfsAtom);
+    const setPdfs: any = useSetAtom(pdfsAtom);
     const [current]: any = useAtom(currentAtom);
-    const [, setCurrent] = useAtom(setCurrentAtom);
+    const setCurrent = useSetAtom(currentAtom);
     const [totalPages, setTotalPages]: [any, any] = useAtom(totalPagesAtom);
     const [isLoading, setIsLoading]: [boolean, any] = useAtom(isLoadingAtom);
     const [loadingMessage]: any = useAtom(loadingMessageAtom);
     const [rotations, setRotations]: any = useAtom(rotationsAtom);
     const [pages, setPages]: any = useAtom(pagesAtom);
-    const [, setStateChanged] = useAtom(setStateChangedAtom);
+    const setStateChanged = useSetAtom(stateChangedAtom);
     let timer: any = null;
 
     const findArrayIndex = ({ pdfIndex, pageIndex }: any) => {
@@ -61,8 +61,9 @@ const Home: NextPage = () => {
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
     const handleSplitDocument = async ({ pdfIndex, pageIndex }: any) => {
-        if (timer) clearTimeout(timer);
-        const startIndex = findArrayIndex({ pdfIndex, pageIndex });
+        const pages = await get('pages');
+        const startIndex = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
+
         if (startIndex === 0) return;
         const duplicateState = (oldState: Array<any>) => {
             let updatedState = oldState;
@@ -87,12 +88,16 @@ const Home: NextPage = () => {
         setRotations((oldValue: any) => duplicateState(oldValue));
         setPages((oldValue: any) => duplicateState(oldValue));
         setStateChanged((oldState: number) => oldState + 1);
+        if (timer) clearTimeout(timer);
         timer = setTimeout(() => setCurrent({
             pdfIndex: pdfIndex + 1,
             pageIndex: pageIndex,
         }), 500);
     }
     const handleDeleteDocument = async (inputPdfIndex: number) => {
+        const confirmed = confirm('Dit document verwijderen? Bewerkingen zijn niet meer terug te halen.');
+        if (!confirmed) return;
+
         setIsLoading(true);
         if (timer) clearTimeout(timer);
 
@@ -146,22 +151,22 @@ const Home: NextPage = () => {
             ...skipScrollIntoView && { skipScrollIntoView },
         }), 400);
     }
-    const handleRotateDocument = (inputPdfIndex: number) => {
-        let updatedRotations = rotations;
-        let updatedPdfRotations = rotations[inputPdfIndex]?.map((rotation: number, index: number) => {
+    const handleRotateDocument = useCallback(async ({ pdfIndex }: any) => {
+        let updatedRotations = await get('rotations');
+        let updatedPdfRotations = updatedRotations[pdfIndex]?.map((rotation: number, index: number) => {
             const newDegrees = (rotation + 90 === 360)
                 ? 0
                 : rotation + 90;
             return newDegrees;
         });
-        updatedRotations[inputPdfIndex] = updatedPdfRotations;
+        updatedRotations[pdfIndex] = updatedPdfRotations;
         setRotations(updatedRotations);
         setStateChanged((oldValue: number) => oldValue + 1);
         setCurrent((oldCurrent: any) => ({
-            pdfIndex: inputPdfIndex,
+            pdfIndex: pdfIndex,
             pageIndex: oldCurrent.pageIndex,
         }));
-    };
+    }, [rotations]);
     const handleRotatePage = async ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
         const pages = await get('pages');
         const rotations = await get('rotations');
@@ -430,6 +435,8 @@ const Home: NextPage = () => {
                 handleDeletePage={handleDeletePage}
                 handleRotatePage={handleRotatePage}
                 handleSplitDocument={handleSplitDocument}
+                handleRotateDocument={handleRotateDocument}
+                handleDeleteDocument={handleDeleteDocument}
             />
         </>
     );
