@@ -1,21 +1,20 @@
-import React from "react";
-import Dropzone from "react-dropzone";
-import { BsUpload } from "react-icons/bs";
-import ButtonXl from "../primitives/ButtonXl";
-import { useAtom } from "jotai";
-import { pagesAtom, pdfsAtom, setIsLoadingAtom, setLoadingMessageAtom, setPdfFilenamesAtom, setRotationsAtom, setStateChangedAtom, setTotalPagesAtom } from "../store/atoms";
+import React, { useEffect } from "react";
+import Dropzone, { useDropzone } from "react-dropzone";
+import { useAtom, useSetAtom } from "jotai";
+import { isDraggingFilesAtom, isLoadingAtom, loadingMessageAtom, pagesAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, totalPagesAtom } from "../store/atoms";
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
 
-const Drop = ({ className = '' }: any) => {
-  const [, setIsLoading] = useAtom(setIsLoadingAtom)
-  const [, setLoadingMessage] = useAtom(setLoadingMessageAtom)
-  const [, setPdfs]: any = useAtom(pdfsAtom)
-  const [, setTotalPages] = useAtom(setTotalPagesAtom)
-  const [, setPdfFileNames] = useAtom(setPdfFilenamesAtom)
-  const [, setStateChanged] = useAtom(setStateChangedAtom)
-  const [, setRotations] = useAtom(setRotationsAtom)
-  const [, setPages]: any = useAtom(pagesAtom)
+const Drop = ({ noClick = false }) => {
+  const setIsLoading: any = useSetAtom(isLoadingAtom)
+  const setLoadingMessage: any = useSetAtom(loadingMessageAtom)
+  const setPdfs: any = useSetAtom(pdfsAtom)
+  const setTotalPages: any = useSetAtom(totalPagesAtom)
+  const setPdfFileNames: any = useSetAtom(pdfFilenamesAtom)
+  const setStateChanged: any = useSetAtom(stateChangedAtom)
+  const setRotations: any = useSetAtom(rotationsAtom)
+  const setPages: any = useSetAtom(pagesAtom)
+  const [isDraggingFiles, setIsDraggingFiles] = useAtom(isDraggingFilesAtom)
 
   const handleDropzoneLoaded = async (files: any) => {
     if (!files || !files?.length) return;
@@ -184,40 +183,24 @@ const Drop = ({ className = '' }: any) => {
     setIsLoading(false)
   }
 
+  const { getRootProps, getInputProps, isDragAccept, isDragReject } = useDropzone({
+    onDrop: handleDropzoneLoaded,
+    accept: {
+      "image/*": [".png", ".jpeg", ".jpg", ".tif", ".tiff"],
+      "application/pdf": [".pdf"],
+      "message/rfc822": [".eml", ".msg"],
+    },
+    noClick,
+  });
+
+  useEffect(() => {
+    setIsDraggingFiles(isDragAccept)
+  }, [isDragAccept])
+
   return (
-    <Dropzone onDrop={handleDropzoneLoaded}>
-      {({ getRootProps, getInputProps }) => (
-
-        <ButtonXl
-          className={
-            `flex w-full flex-col gap-4 rounded-md text-stone-600 text-sm cursor-pointer bg-stone-100
-        ring-2 ring-dashed hover:ring-amber/40 p-4 ring-offset-4 ring-amber-300/50 relative
-        ${className}`
-          }
-          icon={<BsUpload className="text-base" />}
-          title="Upload"
-        >
-          <div
-            className="absolute inset-0"
-            {...getRootProps()}
-          >
-            <input {...getInputProps()} />
-          </div>
-        </ButtonXl>
-
-      )}
-    </Dropzone>
-  );
+    <div className="absolute inset-0" {...getRootProps()}>
+      <input {...getInputProps()} />
+    </div>
+  )
 }
-
-const skipRerender = (prevProps: any, nextProps: any) => {
-  if (
-    prevProps.onLoaded === nextProps.onloaded
-    ||
-    prevProps.className !== nextProps.className
-  ) return false;
-  else return true;
-}
-
-//export default React.memo(Drop, () => true);
 export default Drop;

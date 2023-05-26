@@ -2,10 +2,12 @@ import { useAtom } from "jotai"
 import { currentAtom, pdfsAtom } from "./store/atoms"
 import { Document, Page } from "react-pdf"
 import Loading from "./layout/Loading"
+import DragDropzone from "./layout/DragDropzone"
 
 export default function LegacyPdfPreview({ rotation }: any) {
     const [pdfs] = useAtom(pdfsAtom)
     const [current] = useAtom(currentAtom)
+
     return <>
         <div className="pdf-preview-container text-center">
             {
@@ -25,10 +27,9 @@ export default function LegacyPdfPreview({ rotation }: any) {
                                 rotate={rotation}
                             />
                         </Document>
+
                     </>
-                    : <div className="h-[calc(100vh-164px)] flex items-center justify-center text-sm">
-                        Upload een document om deze te verwerken.
-                    </div>
+                    : <DragDropzone className="h-[calc(100vh-164px)]" />
             }
         </div>
     </>
