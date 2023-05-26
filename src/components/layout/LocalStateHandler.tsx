@@ -17,10 +17,10 @@ const LocalStateHandler = () => {
         await set('pdfs', pdfs);
         await set('rotations', rotations);
         await set('pages', pages);
-        console.log(`PDF's saved.`)
+        console.log(`State saved.`)
     }
     useEffect(() => {
-        if (!pdfs) return;
+        if (!pdfs || !stateChanged) return;
         saveState();
     }, [stateChanged]);
     // state fetch
@@ -37,7 +37,7 @@ const LocalStateHandler = () => {
                         setPages(pages);
                         setRotations(rotations);
                         setPdfs(pdfs);
-                        console.log(`PDF's fetched.`)
+                        console.log(`State fetched.`)
                     });
                 });
             });
