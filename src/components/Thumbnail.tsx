@@ -13,6 +13,7 @@ const Thumbnail = (
     {
         pdfIndex,
         pageIndex,
+        rowIndex,
         rotation,
         handleDeletePage,
         handleRotatePage,
@@ -52,7 +53,7 @@ const Thumbnail = (
 
     const [{ isDragging }, drag]: any = useDrag({
         type: "pdfThumbnail",
-        item: { index, pdfIndex, pageIndex, type: "pdfThumbnail" },
+        item: { index, pdfIndex, pageIndex, rowIndex, type: "pdfThumbnail" },
         end: async (item, monitor) => {
             const dropResult: dropResultType = monitor.getDropResult();
             const toPdfIndex = dropResult?.pdfIndex;
@@ -63,8 +64,10 @@ const Thumbnail = (
                 await handleMovePage({
                     fromPdfIndex: pdfIndex,
                     fromPageIndex: pageIndex,
-                    toPdfIndex: toPdfIndex,
-                    toPageIndex: toPageIndex,
+                    fromRowIndex: rowIndex,
+                    toPdfIndex,
+                    toPageIndex,
+                    toRowIndex: dropResult?.rowIndex,
                     toPlaceholderThumbnail: true,
                 })
             } else if (
@@ -93,7 +96,6 @@ const Thumbnail = (
 
     return <>
         <div
-            key={`thumbnail-${pdfIndex}-${pageIndex}`}
             id={`thumbnail-${pdfIndex}-${pageIndex}`}
             ref={ref}
             className={
@@ -166,5 +168,6 @@ export default Thumbnail;
 export type dropResultType = {
     pdfIndex?: number,
     pageIndex?: number,
+    rowIndex?: number,
     type?: string
 } | null;

@@ -3,17 +3,19 @@ import React from "react";
 import { useDrop } from "react-dnd";
 import { userIsDraggingAtom } from "../store/atoms";
 
-const PlaceholderThumbnail = ({ pdfIndex, pageIndex, margin }) => {
-    // hide placeholders if only 1 page in PDF
-    //if (totalPages[pdfIndex] === 1) return null;
-
+const PlaceholderThumbnail = ({ pdfIndex, pageIndex, rowIndex, margin }: any) => {
     const [userIsDragging] = useAtom(userIsDraggingAtom);
 
     const [{ canDrop, isOver }, drop] = useDrop({
         accept: "pdfThumbnail",
         drop: () => {
-            console.log(`toPageIndex: ${pageIndex}. toPdfIndex: ${pdfIndex}`)
-            return { pdfIndex, pageIndex: Math.ceil(pageIndex), type: 'placeholderThumbnail' }
+            console.log(`toRowIndex: ${rowIndex}. toPageIndex: ${pageIndex}. toPdfIndex: ${pdfIndex}`)
+            return {
+                pdfIndex,
+                pageIndex: Math.ceil(pageIndex),
+                rowIndex: Math.ceil(rowIndex),
+                type: 'placeholderThumbnail'
+            }
         },
         collect: (monitor) => ({
             canDrop: monitor.canDrop(),
@@ -25,7 +27,7 @@ const PlaceholderThumbnail = ({ pdfIndex, pageIndex, margin }) => {
         <div
             ref={drop}
             className={
-                `h-auto relative rounded-lg bg-gradient-to-b from-lime-50/0 via-lime-200 to lime-50/0 group
+                `h-auto relative rounded-lg bg-lime-200 from-lime-50/0 via-lime-200 to lime-50/0 group
           before:content-[''] before:absolute before:w-[60px] before:h-full before:z-20 before:bg-blue-3000 before:translate-x-[-100%]
           ${isOver ? 'w-[10px]' : 'w-[0]'}
           after:content-[''] after:absolute after:left-[100%] after:w-[60px] after:h-full after:z-20 after:bg-red-3000 after:translate-x-[0]
@@ -35,5 +37,4 @@ const PlaceholderThumbnail = ({ pdfIndex, pageIndex, margin }) => {
         />
     </>
 }
-
-export default React.memo(PlaceholderThumbnail)
+export default PlaceholderThumbnail;

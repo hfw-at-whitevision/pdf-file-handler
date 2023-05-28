@@ -4,7 +4,7 @@ export default function AdministrationTiles(props: any) {
     return <>
         <div {...props}>
             <div className={
-                `bg-body-bg-dark w-full rounded-lg p-4 gap-2 sticky top-[132px] border border-text-lighter
+                `bg-body-bg-dark w-full rounded-lg p-4 gap-4 sticky top-[132px] border border-text-lighter
                 grid grid-cols-[repeat(auto-fill,_minmax(max(100px,_120px),_1fr))]`
             }>
                 {administrationTiles.map((tile: any, index: number) =>

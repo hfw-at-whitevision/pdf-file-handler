@@ -6,12 +6,12 @@ import { useCallback, useState } from "react";
 import Drop from "@/components/layout/Drop";
 import { PDFDocument } from "pdf-lib";
 import ButtonXl from "@/components/primitives/ButtonXl";
-import { BsSave, BsArrowRepeat } from "react-icons/bs";
+import { BsSave, BsArrowRepeat, BsUpload } from "react-icons/bs";
 import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom, useSetAtom } from "jotai";
-import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, totalPagesAtom } from "@/components/store/atoms";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, totalPagesAtom, isDraggingFilesAtom } from "@/components/store/atoms";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
@@ -27,7 +27,7 @@ const Home: NextPage = () => {
     const [pdfs]: any = useAtom(pdfsAtom);
     const setPdfs: any = useSetAtom(pdfsAtom);
     const [current]: any = useAtom(currentAtom);
-    const setCurrent = useSetAtom(currentAtom);
+    const setCurrent: any = useSetAtom(currentAtom);
     const [totalPages, setTotalPages]: [any, any] = useAtom(totalPagesAtom);
     const [isLoading, setIsLoading]: [boolean, any] = useAtom(isLoadingAtom);
     const [loadingMessage]: any = useAtom(loadingMessageAtom);
@@ -45,6 +45,7 @@ const Home: NextPage = () => {
     }
 
     const handleReset = useCallback(async () => {
+        if (!confirm('Verwijder alle documenten en bewerkingen?')) return;
         setPdfs([]);
         setTotalPages([]);
         setPdfFilenames([]);
@@ -151,7 +152,7 @@ const Home: NextPage = () => {
             ...skipScrollIntoView && { skipScrollIntoView },
         }), 400);
     }
-    const handleRotateDocument = useCallback(async ({ pdfIndex }: any) => {
+    const handleRotateDocument = useCallback(async ({ pdfIndex, skipScrollIntoView }: any) => {
         let updatedRotations = await get('rotations');
         let updatedPdfRotations = updatedRotations[pdfIndex]?.map((rotation: number, index: number) => {
             const newDegrees = (rotation + 90 === 360)
@@ -165,6 +166,7 @@ const Home: NextPage = () => {
         setCurrent((oldCurrent: any) => ({
             pdfIndex: pdfIndex,
             pageIndex: oldCurrent.pageIndex,
+            ...skipScrollIntoView && { skipScrollIntoView },
         }));
     }, [rotations]);
     const handleRotatePage = async ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
@@ -190,99 +192,113 @@ const Home: NextPage = () => {
     const handleMovePage = useCallback(async ({
         fromPdfIndex,
         fromPageIndex,
+        fromRowIndex,
         toPdfIndex,
         toPageIndex,
+        toRowIndex,
         toPlaceholderRow = false,
         toPlaceholderThumbnail = false
     }: any) => {
         if (timer) clearTimeout(timer);
-        setIsLoading(true);
         const pdfs = await get('pdfs');
 
         if (typeof toPdfIndex === 'undefined' && typeof toPageIndex === 'undefined') return;
 
+        // if moving page inside the same pdfRow
         if (toPlaceholderThumbnail && fromPdfIndex === toPdfIndex) {
-            const pdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500, });
-            const [currentPage]: any = await pdfDoc.copyPages(pdfDoc, [fromPageIndex]);
-            pdfDoc.insertPage(toPageIndex, currentPage);
-            await pdfDoc.save();
-            // if moving up, we need to account for the fact that the page will be removed from the original PDF
-            pdfDoc.removePage(toPageIndex < fromPageIndex ? fromPageIndex + 1 : fromPageIndex);
-            const URL = await pdfDoc.saveAsBase64({ dataUri: true });
-            setPdfs((oldPdfs: any) => {
-                let newPdfs = oldPdfs
-                newPdfs[fromPdfIndex] = URL
-                return newPdfs
-            });
-            setIsLoading(false);
+            const pages = await get('pages');
+            const rotations = await get('rotations');
+            let updatedPages = pages.slice();
+            let updatedRotations = rotations.slice();
+            const originalPage = pages[fromPdfIndex][fromRowIndex];
+            const originalRotation = rotations[fromPdfIndex][fromRowIndex];
+
+            console.log(`Moving from rowIndex ${fromRowIndex} to rowIndex ${toRowIndex}`);
+
+            updatedPages[toPdfIndex].splice(fromRowIndex, 0, null);
+            updatedPages[toPdfIndex].splice(toRowIndex, 0, originalPage);
+            const updatedPdfPages = updatedPages[toPdfIndex].slice();
+            updatedPages[toPdfIndex] = [...new Set(updatedPdfPages)];
+
+            updatedRotations[toPdfIndex].splice(fromRowIndex, 0, null);
+            updatedRotations[toPdfIndex].splice(toRowIndex, 0, originalRotation);
+            const updatedPdfRotations = updatedRotations[toPdfIndex].slice();
+            updatedRotations[toPdfIndex] = [...new Set(updatedPdfRotations)];
+
+            setPages(updatedPages);
+            setRotations(updatedRotations);
+
             setStateChanged((oldValue: number) => oldValue + 1);
             timer = setTimeout(() => setCurrent({
-                pdfIndex: fromPdfIndex,
-                pageIndex:
-                    (toPageIndex < fromPageIndex)
-                        ? toPageIndex
-                        : toPageIndex - 1
-            }), 1000);
+                pdfIndex: toPdfIndex,
+                pageIndex: (toRowIndex < fromRowIndex)
+                    ? fromPageIndex
+                    : toPageIndex,
+                skipScrollIntoView: true,
+            }), 150);
             return;
         }
+        // if moving page to another pdfRow
+        else {
+            setIsLoading(true);
+            console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
+            // if moving down, we need to account for the fact that the page will be removed from the original PDF
+            if (toPlaceholderRow && toPdfIndex > fromPdfIndex) toPdfIndex -= 1;
 
-        console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
-        // if moving down, we need to account for the fact that the page will be removed from the original PDF
-        if (toPlaceholderRow && toPdfIndex > fromPdfIndex) toPdfIndex -= 1;
+            const toPdfDoc = toPlaceholderRow
+                ? await PDFDocument.create()
+                : await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
+            const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
 
-        const toPdfDoc = toPlaceholderRow
-            ? await PDFDocument.create()
-            : await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
-        const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
+            // copy the moved page from PDF
+            const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromPageIndex]);
 
-        // copy the moved page from PDF
-        const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromPageIndex]);
+            // insert the copied page to target PDF
+            if (toPageIndex) toPdfDoc.insertPage(toPageIndex, copiedPage);
+            else toPdfDoc.addPage(copiedPage);
 
-        // insert the copied page to target PDF
-        if (toPageIndex) toPdfDoc.insertPage(toPageIndex, copiedPage);
-        else toPdfDoc.addPage(copiedPage);
+            // remove the moved page from source PDF
+            fromPdfDoc.removePage(fromPageIndex);
 
-        // remove the moved page from source PDF
-        fromPdfDoc.removePage(fromPageIndex);
+            // save the PDF files
+            const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
 
-        // save the PDF files
-        const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
+            const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
 
-        const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
-
-        let newTotalPages: any = totalPages
-        newTotalPages[fromPdfIndex] = totalPages[fromPdfIndex] - 1
-        newTotalPages[toPdfIndex] = toPlaceholderRow
-            ? newTotalPages[toPdfIndex]
-            : totalPages[toPdfIndex] + 1
+            let newTotalPages: any = totalPages
+            newTotalPages[fromPdfIndex] = totalPages[fromPdfIndex] - 1
+            newTotalPages[toPdfIndex] = toPlaceholderRow
+                ? newTotalPages[toPdfIndex]
+                : totalPages[toPdfIndex] + 1
 
 
-        let newPdfs = pdfs
-        newPdfs[fromPdfIndex] = URL
-        newPdfs[toPdfIndex] = toPlaceholderRow
-            ? newPdfs[toPdfIndex]
-            : URL2
+            let newPdfs = pdfs
+            newPdfs[fromPdfIndex] = URL
+            newPdfs[toPdfIndex] = toPlaceholderRow
+                ? newPdfs[toPdfIndex]
+                : URL2
 
-        // if source document is empty, remove it
-        if (fromPdfDoc.getPageCount() === 1) {
-            pdfFilenames.splice(fromPdfIndex, 1);
-            newTotalPages.splice(fromPdfIndex, 1);
-            newPdfs.splice(fromPdfIndex, 1);
+            // if source document is empty, remove it
+            if (fromPdfDoc.getPageCount() === 1) {
+                pdfFilenames.splice(fromPdfIndex, 1);
+                newTotalPages.splice(fromPdfIndex, 1);
+                newPdfs.splice(fromPdfIndex, 1);
+            }
+
+            // if moving to placeholder row, add a new placeholder row
+            if (toPlaceholderRow) {
+                pdfFilenames.splice(toPdfIndex, 0, 'Nieuw document')
+                newTotalPages.splice(toPdfIndex, 0, 1);
+                newPdfs.splice(toPdfIndex, 0, URL2);
+            }
+
+            setTotalPages(newTotalPages);
+            setPdfs(newPdfs)
+            setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPageCount() - 1 });
+            setIsLoading(false);
+            setStateChanged((oldValue: number) => oldValue + 1);
         }
-
-        // if moving to placeholder row, add a new placeholder row
-        if (toPlaceholderRow) {
-            pdfFilenames.splice(toPdfIndex, 0, 'Nieuw document')
-            newTotalPages.splice(toPdfIndex, 0, 1);
-            newPdfs.splice(toPdfIndex, 0, URL2);
-        }
-
-        setTotalPages(newTotalPages);
-        setPdfs(newPdfs)
-        setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPageCount() - 1 });
-        setIsLoading(false);
-        setStateChanged((oldValue: number) => oldValue + 1);
-    }, []);
+    }, [pages]);
 
     const handleSaveDocument = useCallback(async (pdfIndex: number) => {
         setIsLoading(true);
@@ -321,6 +337,7 @@ const Home: NextPage = () => {
     // react-split
     // ********************************************************
     const [sizes, setSizes]: [any, any] = useState([35, 40, 25]);
+    const [minSizes, setMinSizes] = useState([470, 480, 150]);
     const persistFileHandlerPanelSizes = useCallback((sizes: number[]) => {
         if (!sizes) return;
         const roundedSizes = sizes.map((size: number) => Math.round(size));
@@ -374,42 +391,56 @@ const Home: NextPage = () => {
                 </div>
 
                 <div className={`grid gap-4 grid-cols-3 w-[600px]`}>
-                    <Drop />
+                    <ButtonXl
+                        className={
+                            `flex w-full flex-col gap-4 rounded-md text-stone-600 text-sm cursor-pointer bg-stone-100
+                            ring-2 ring-dashed hover:ring-amber/40 p-4 ring-offset-4 ring-amber-300/50 relative`}
+                        icon={<BsUpload className="text-base" />}
+                        title="Upload"
+                    >
+                        <Drop />
+                    </ButtonXl>
                     <ButtonXl
                         title={"Opslaan"}
                         icon={<BsSave className="text-base" />}
-                        description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                        description="Download als PDF."
                         onClick={handleSaveAllDocuments}
                         className={!pdfs?.length ? 'disabled' : ''}
                     />
                     <ButtonXl
                         title={"Reset"}
                         icon={<BsArrowRepeat className="text-base" />}
-                        description="Maak alle wijzigingen ongedaan en reset naar de oorspronkelijke PDF."
+                        description="Begin opnieuw."
                         onClick={handleReset}
                         className={!pdfs?.length ? 'disabled' : ''}
                     />
+                </div>
+
+                <div className="w-[200px] ml-auto text-right">
+                    <label htmlFor="default-range" className="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
+                        Thumbnails grootte
+                    </label>
+                    <input id="default-range" type="range" value="50" step={1} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" />
                 </div>
             </header>
 
             <Split
                 sizes={getPersistedFileHandlerPanelSizes()}
-                minSize={[150, 0, 150]}
+                minSize={minSizes}
                 gutterSize={8}
                 gutterAlign="center"
                 className="flex flex-row w-full h-full gap-4 p-8 pb-0 pt-[132px]"
                 onDragEnd={persistFileHandlerPanelSizes}
                 cursor="col-resize"
             >
-                {/* PDF row */}
-                <section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full pb-8`}>
-                    {new Array(totalPages?.length).fill(1).map((_: any, pdfIndex: number) =>
+                {/* PDF row */}<section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full pb-8`}>
+                    {pages.map((pdfIndices: Array<number>, pdfIndex: number) =>
                         <PdfRow
                             key={`pdf-${pdfIndex}`}
                             pdfIndex={pdfIndex}
                             pdf={pdfs[pdfIndex]}
                             filename={pdfFilenames[pdfIndex]}
-                            pages={pages[pdfIndex]}
+                            pages={pdfIndices}
                             rotations={rotations[pdfIndex]}
                             totalPages={totalPages[pdfIndex]}
                             handleMovePage={handleMovePage}

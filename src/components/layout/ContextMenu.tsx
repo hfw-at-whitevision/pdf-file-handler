@@ -56,7 +56,7 @@ const ContextMenu = ({ handleDeletePage, handleRotateDocument, handleRotatePage,
                 });
                 break;
             case 'rotateDocument':
-                await handleRotateDocument({ pdfIndex: clickedPdfIndex });
+                await handleRotateDocument({ pdfIndex: clickedPdfIndex, skipScrollIntoView: true });
                 break;
             case 'deleteDocument':
                 await handleDeleteDocument(clickedPdfIndex);

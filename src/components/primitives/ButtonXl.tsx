@@ -2,7 +2,7 @@ export default function ButtonXl({ href = "", title = "", description = "", styl
     return <>
         <button
             className={
-                `flex w-full flex-col gap-4 rounded-lg p-4 text-text-dark
+                `flex w-full flex-col gap-0 rounded-lg p-4 text-text-dark text-left justify-center
                 ${style === "flat" ? "bg-body-bg-light hover:bg-body-bg-dark shadow-xl" : "border-2 border-dotted border-amber/20 hover:border-amber/40"}"}
                 ${className ? className : ''}`
             }
@@ -15,6 +15,11 @@ export default function ButtonXl({ href = "", title = "", description = "", styl
                 {children}
                 {icon}
             </span>
+
+            {description
+                ? <span className="text-xs">{description}</span>
+                : null
+            }
         </button>
     </>
 }
