@@ -215,15 +215,13 @@ const Home: NextPage = () => {
 
             console.log(`Moving from rowIndex ${fromRowIndex} to rowIndex ${toRowIndex}`);
 
-            updatedPages[toPdfIndex].splice(fromRowIndex, 0, null);
+            updatedPages[toPdfIndex].splice(fromRowIndex, 1, null);
             updatedPages[toPdfIndex].splice(toRowIndex, 0, originalPage);
-            const updatedPdfPages = updatedPages[toPdfIndex].slice();
-            updatedPages[toPdfIndex] = [...new Set(updatedPdfPages)];
+            updatedPages[toPdfIndex] = updatedPages[toPdfIndex].filter((n: any) => n !== null);
 
-            updatedRotations[toPdfIndex].splice(fromRowIndex, 0, null);
+            updatedRotations[toPdfIndex].splice(fromRowIndex, 1, null);
             updatedRotations[toPdfIndex].splice(toRowIndex, 0, originalRotation);
-            const updatedPdfRotations = updatedRotations[toPdfIndex].slice();
-            updatedRotations[toPdfIndex] = [...new Set(updatedPdfRotations)];
+            updatedRotations[toPdfIndex] = updatedRotations[toPdfIndex].filter((n: any) => n !== null);
 
             setPages(updatedPages);
             setRotations(updatedRotations);
@@ -231,9 +229,7 @@ const Home: NextPage = () => {
             setStateChanged((oldValue: number) => oldValue + 1);
             timer = setTimeout(() => setCurrent({
                 pdfIndex: toPdfIndex,
-                pageIndex: (toRowIndex < fromRowIndex)
-                    ? fromPageIndex
-                    : toPageIndex,
+                pageIndex: fromPageIndex,
                 skipScrollIntoView: true,
             }), 150);
             return;
