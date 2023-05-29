@@ -2,7 +2,7 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import { get, del } from 'idb-keyval';
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Drop from "@/components/layout/Drop";
 import { PDFDocument } from "pdf-lib";
 import ButtonXl from "@/components/primitives/ButtonXl";
@@ -21,6 +21,8 @@ import React from "react";
 import KeyPressListener from "@/components/layout/KeyPressListener";
 import LocalStateHandler from "@/components/layout/LocalStateHandler";
 import CurrentHandler from "@/components/layout/CurrentHandler";
+import { Document } from "react-pdf";
+import DragDropzone from "@/components/layout/DragDropzone";
 
 const Home: NextPage = () => {
     const [pdfFilenames, setPdfFilenames]: [Array<string>, any] = useAtom(pdfFilenamesAtom);
@@ -33,10 +35,10 @@ const Home: NextPage = () => {
     const [loadingMessage]: any = useAtom(loadingMessageAtom);
     const [rotations, setRotations]: any = useAtom(rotationsAtom);
     const [pages, setPages]: any = useAtom(pagesAtom);
-    const setStateChanged = useSetAtom(stateChangedAtom);
+    const [, setStateChanged] = useAtom(stateChangedAtom);
     let timer: any = null;
 
-    const findArrayIndex = ({ pdfIndex, pageIndex }: any) => {
+    const findRowIndex = ({ pdfIndex, pageIndex }: any) => {
         if (typeof pages?.[pdfIndex]?.[pageIndex] === 'undefined') return;
         return pages[pdfIndex].findIndex((value: any) => value === pageIndex);
     }
@@ -63,9 +65,9 @@ const Home: NextPage = () => {
     }, []);
     const handleSplitDocument = async ({ pdfIndex, pageIndex }: any) => {
         const pages = await get('pages');
-        const startIndex = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
+        const rowIndex = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
 
-        if (startIndex === 0) return;
+        if (rowIndex === 0) return;
         const duplicateState = (oldState: Array<any>) => {
             let updatedState = oldState;
             let originalRecord = oldState[pdfIndex];
@@ -73,8 +75,8 @@ const Home: NextPage = () => {
 
             // slice the records
             if (Array.isArray(originalRecord)) {
-                duplicatedRecord = originalRecord.slice(startIndex);
-                originalRecord = originalRecord.slice(0, startIndex);
+                duplicatedRecord = originalRecord.slice(rowIndex);
+                originalRecord = originalRecord.slice(0, rowIndex);
             }
 
             // insert / duplicate the record
@@ -83,7 +85,6 @@ const Home: NextPage = () => {
             updatedState[pdfIndex + 1] = duplicatedRecord;
             return updatedState;
         }
-        setPdfs((oldValue: any) => duplicateState(oldValue));
         setPdfFilenames((oldValue: any) => duplicateState(oldValue));
         setTotalPages((oldValue: any) => duplicateState(oldValue));
         setRotations((oldValue: any) => duplicateState(oldValue));
@@ -102,7 +103,6 @@ const Home: NextPage = () => {
         setIsLoading(true);
         if (timer) clearTimeout(timer);
 
-        setPdfs((oldPdfs: any) => oldPdfs.filter((_: any, index: number) => index !== inputPdfIndex));
         setTotalPages((oldTotalPages: any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
         setPdfFilenames((oldPdfFileNames: any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
         setPages((oldPages: any) => {
@@ -125,11 +125,21 @@ const Home: NextPage = () => {
         setIsLoading(false);
         setStateChanged((oldValue: number) => oldValue + 1);
     }
-    const handleDeletePage = async ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
+    const handleDeletePage = useCallback(async ({ pdfIndex, pageIndex, index, skipScrollIntoView }: any) => {
         if (timer) clearTimeout(timer);
         const pages = await get('pages');
         if (typeof index === 'undefined') index = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
         const nextPageIndex = pages[pdfIndex][index + 1];
+
+        // replace deleted page by an empty page in the PDF
+        /*
+        const pdfs = await get('pdfs');
+        const pdfDoc = await PDFDocument.load(pdfs[0], { ignoreEncryption: true, parseSpeed: 1500 });
+        pdfDoc.removePage(pageIndex);
+        pdfDoc.insertPage(pageIndex);
+        const newPdf = await pdfDoc.saveAsBase64({ dataUri: true });
+        setPdfs([newPdf]);
+*/
         setPages((oldValue: any) => {
             let updatedArray = oldValue;
             updatedArray[pdfIndex].splice(index, 1);
@@ -145,13 +155,16 @@ const Home: NextPage = () => {
             updatedArray[pdfIndex] = updatedArray[pdfIndex] - 1;
             return updatedArray;
         });
-        setStateChanged((oldState: number) => oldState + 1)
-        timer = setTimeout(() => setCurrent({
-            pdfIndex,
-            pageIndex: nextPageIndex,
-            ...skipScrollIntoView && { skipScrollIntoView },
-        }), 400);
-    }
+        setStateChanged((oldState: number) => oldState + 1);
+        // if deleted page = current page, update current
+        if (current.pdfIndex === pdfIndex && current.pageIndex === pageIndex) {
+            timer = setTimeout(() => setCurrent({
+                pdfIndex,
+                pageIndex: nextPageIndex,
+                ...skipScrollIntoView && { skipScrollIntoView },
+            }), 400);
+        }
+    }, [current.pdfIndex, current.pageIndex, pages, pdfs, rotations, totalPages]);
     const handleRotateDocument = useCallback(async ({ pdfIndex, skipScrollIntoView }: any) => {
         let updatedRotations = await get('rotations');
         let updatedPdfRotations = updatedRotations[pdfIndex]?.map((rotation: number, index: number) => {
@@ -200,100 +213,43 @@ const Home: NextPage = () => {
         toPlaceholderThumbnail = false
     }: any) => {
         if (timer) clearTimeout(timer);
-        const pdfs = await get('pdfs');
-
         if (typeof toPdfIndex === 'undefined' && typeof toPageIndex === 'undefined') return;
 
-        // if moving page inside the same pdfRow
-        if (toPlaceholderThumbnail && fromPdfIndex === toPdfIndex) {
-            const pages = await get('pages');
-            const rotations = await get('rotations');
-            let updatedPages = pages.slice();
-            let updatedRotations = rotations.slice();
-            const originalPage = pages[fromPdfIndex][fromRowIndex];
-            const originalRotation = rotations[fromPdfIndex][fromRowIndex];
+        const pages = await get('pages');
+        const rotations = await get('rotations');
+        let updatedPages = pages.slice();
+        let updatedRotations = rotations.slice();
+        const originalPage = pages[fromPdfIndex][fromRowIndex];
+        const originalRotation = rotations[fromPdfIndex][fromRowIndex];
 
-            console.log(`Moving from rowIndex ${fromRowIndex} to rowIndex ${toRowIndex}`);
+        console.log(`Moving from rowIndex ${fromRowIndex} to rowIndex ${toRowIndex}`);
 
-            updatedPages[toPdfIndex].splice(fromRowIndex, 1, null);
-            updatedPages[toPdfIndex].splice(toRowIndex, 0, originalPage);
-            updatedPages[toPdfIndex] = updatedPages[toPdfIndex].filter((n: any) => n !== null);
+        updatedPages[fromPdfIndex].splice(fromRowIndex, 1, null);
+        updatedPages[toPdfIndex].splice(toRowIndex, 0, originalPage);
+        updatedPages[fromPdfIndex] = updatedPages[fromPdfIndex].filter((n: any) => n !== null);
 
-            updatedRotations[toPdfIndex].splice(fromRowIndex, 1, null);
-            updatedRotations[toPdfIndex].splice(toRowIndex, 0, originalRotation);
-            updatedRotations[toPdfIndex] = updatedRotations[toPdfIndex].filter((n: any) => n !== null);
+        updatedRotations[fromPdfIndex].splice(fromRowIndex, 1, null);
+        updatedRotations[toPdfIndex].splice(toRowIndex, 0, originalRotation);
+        updatedRotations[fromPdfIndex] = updatedRotations[fromPdfIndex].filter((n: any) => n !== null);
 
-            setPages(updatedPages);
-            setRotations(updatedRotations);
-
-            setStateChanged((oldValue: number) => oldValue + 1);
-            timer = setTimeout(() => setCurrent({
-                pdfIndex: toPdfIndex,
-                pageIndex: fromPageIndex,
-                skipScrollIntoView: true,
-            }), 150);
-            return;
+        let focusPdfIndex = toPdfIndex;
+        // if donor document is empty, remove it
+        if (!updatedPages[fromPdfIndex].length) {
+            updatedPages.splice(fromPdfIndex, 1);
+            updatedRotations.splice(fromPdfIndex, 1);
+            focusPdfIndex = (fromPdfIndex > toPdfIndex)
+                ? toPdfIndex
+                : fromPdfIndex;
         }
-        // if moving page to another pdfRow
-        else {
-            setIsLoading(true);
-            console.log(`Moving page ${fromPageIndex} from pdf ${fromPdfIndex} to pdf ${toPdfIndex}`)
-            // if moving down, we need to account for the fact that the page will be removed from the original PDF
-            if (toPlaceholderRow && toPdfIndex > fromPdfIndex) toPdfIndex -= 1;
 
-            const toPdfDoc = toPlaceholderRow
-                ? await PDFDocument.create()
-                : await PDFDocument.load(pdfs[toPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
-            const fromPdfDoc = await PDFDocument.load(pdfs[fromPdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
-
-            // copy the moved page from PDF
-            const [copiedPage] = await toPdfDoc.copyPages(fromPdfDoc, [fromPageIndex]);
-
-            // insert the copied page to target PDF
-            if (toPageIndex) toPdfDoc.insertPage(toPageIndex, copiedPage);
-            else toPdfDoc.addPage(copiedPage);
-
-            // remove the moved page from source PDF
-            fromPdfDoc.removePage(fromPageIndex);
-
-            // save the PDF files
-            const URL = await fromPdfDoc.saveAsBase64({ dataUri: true });
-
-            const URL2 = await toPdfDoc.saveAsBase64({ dataUri: true });
-
-            let newTotalPages: any = totalPages
-            newTotalPages[fromPdfIndex] = totalPages[fromPdfIndex] - 1
-            newTotalPages[toPdfIndex] = toPlaceholderRow
-                ? newTotalPages[toPdfIndex]
-                : totalPages[toPdfIndex] + 1
-
-
-            let newPdfs = pdfs
-            newPdfs[fromPdfIndex] = URL
-            newPdfs[toPdfIndex] = toPlaceholderRow
-                ? newPdfs[toPdfIndex]
-                : URL2
-
-            // if source document is empty, remove it
-            if (fromPdfDoc.getPageCount() === 1) {
-                pdfFilenames.splice(fromPdfIndex, 1);
-                newTotalPages.splice(fromPdfIndex, 1);
-                newPdfs.splice(fromPdfIndex, 1);
-            }
-
-            // if moving to placeholder row, add a new placeholder row
-            if (toPlaceholderRow) {
-                pdfFilenames.splice(toPdfIndex, 0, 'Nieuw document')
-                newTotalPages.splice(toPdfIndex, 0, 1);
-                newPdfs.splice(toPdfIndex, 0, URL2);
-            }
-
-            setTotalPages(newTotalPages);
-            setPdfs(newPdfs)
-            setCurrent({ pdfIndex: toPdfIndex, pageIndex: toPageIndex ?? toPdfDoc.getPageCount() - 1 });
-            setIsLoading(false);
-            setStateChanged((oldValue: number) => oldValue + 1);
-        }
+        timer = setTimeout(() => setCurrent({
+            pdfIndex: focusPdfIndex,
+            pageIndex: fromPageIndex,
+            skipScrollIntoView: true,
+        }), 150);
+        setPages(updatedPages);
+        setRotations(updatedRotations);
+        setStateChanged((oldValue: number) => oldValue + 1);
     }, [pages]);
 
     const handleSaveDocument = useCallback(async (pdfIndex: number) => {
@@ -357,7 +313,7 @@ const Home: NextPage = () => {
             <CurrentHandler />
             <LocalStateHandler />
             <KeyPressListener
-                findArrayIndex={findArrayIndex}
+                findRowIndex={findRowIndex}
                 findPageIndex={findPageIndex}
                 handleDeleteDocument={handleDeleteDocument}
                 handleDeletePage={handleDeletePage}
@@ -429,12 +385,12 @@ const Home: NextPage = () => {
                 onDragEnd={persistFileHandlerPanelSizes}
                 cursor="col-resize"
             >
-                {/* PDF row */}<section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full pb-8`}>
+                {/* PDF row */}
+                <section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full pb-8`}>
                     {pages.map((pdfIndices: Array<number>, pdfIndex: number) =>
                         <PdfRow
                             key={`pdf-${pdfIndex}`}
                             pdfIndex={pdfIndex}
-                            pdf={pdfs[pdfIndex]}
                             filename={pdfFilenames[pdfIndex]}
                             pages={pdfIndices}
                             rotations={rotations[pdfIndex]}
@@ -445,12 +401,25 @@ const Home: NextPage = () => {
                             handleDeletePage={handleDeletePage}
                             handleRotateDocument={handleRotateDocument}
                             handleDeleteDocument={handleDeleteDocument}
+                            inputPdf={pdfs[0]}
                         />
                     ).reverse()}
                 </section>
 
                 {/* PDF preview */}
-                <LegacyPdfPreview rotation={rotations[current.pdfIndex]?.[findArrayIndex({ pdfIndex: current.pdfIndex, pageIndex: current.pageIndex })]} />
+                <section className="pdf-preview-container">
+                    {pdfs?.length
+                        ? <Document
+                            file={pdfs[0]}
+                            loading={<Loading />}
+                        >
+                            <LegacyPdfPreview
+                                rotation={rotations[current.pdfIndex]?.[pages[current.pdfIndex].findIndex((value: any) => value === current.pageIndex)]}
+                            />
+                        </Document>
+                        : <DragDropzone className="h-[calc(100vh-164px)]" />
+                    }
+                </section>
 
                 {/* administration tiles */}
                 <AdministrationTiles />

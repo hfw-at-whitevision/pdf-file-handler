@@ -5,15 +5,24 @@ import PlaceholderRow from "./layout/PlaceholderRow";
 import PlaceholderThumbnail from "./layout/PlaceholderThumbnail";
 import Row from "./layout/Row";
 import Button from "./primitives/Button";
-import { useAtom } from "jotai";
-import { isLoadingAtom } from "./store/atoms";
-import { Document } from 'react-pdf'
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import React from "react";
+import { Document } from "react-pdf";
+import { get } from "idb-keyval";
 
-const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
-    const [isLoading] = useAtom(isLoadingAtom);
+const PdfRow = ({ filename, inputPdf, pages, totalPages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const [open, setOpen] = useState(true);
+    const [pdf, setPdf]: any = useState();
+    const isLoading = false;
+
+    useEffect(() => {
+        if (!pdf) return;
+        get('pdfs').then(pdfs => {
+            if (!pdfs?.[0]?.length) return;
+            setPdf(pdfs[0]);
+        });
+    }, [pages.length]);
+    useEffect(() => setPdf(inputPdf), []);
 
     if (!pages?.length) return null;
     return <>
@@ -67,13 +76,13 @@ const PdfRow = ({ filename, pages, totalPages, pdfIndex, pdf, rotations, handleM
 
                 <Document
                     file={pdf}
+                    loading={undefined}
+                    renderMode='none'
                     className={
                         `relative p-4 gap-1 w-full overflow-hidden border-text-lighter opacity-100
                         ${open ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
                         flex flex-row flex-wrap row-${pdfIndex}
                         `}
-                    loading={undefined}
-                    renderMode='none'
                 >
                     {/* thumbnails of current PDF */}
                     {pages.map((pageIndex: number, rowIndex: number) => {
@@ -131,5 +140,5 @@ const skipRerender = (prevProps: any, nextProps: any) => {
     ) return true;
     else return false;
 }
-//export default React.memo(PdfRow, skipRerender);
-export default PdfRow;
+export default React.memo(PdfRow, skipRerender);
+//export default PdfRow;

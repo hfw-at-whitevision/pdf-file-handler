@@ -1,20 +1,21 @@
 import React, { useEffect } from "react";
-import Dropzone, { useDropzone } from "react-dropzone";
+import { useDropzone } from "react-dropzone";
 import { useAtom, useSetAtom } from "jotai";
 import { isDraggingFilesAtom, isLoadingAtom, loadingMessageAtom, pagesAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, totalPagesAtom } from "../store/atoms";
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
+import { get } from "idb-keyval";
 
 const Drop = ({ noClick = false }) => {
   const setIsLoading: any = useSetAtom(isLoadingAtom)
   const setLoadingMessage: any = useSetAtom(loadingMessageAtom)
-  const setPdfs: any = useSetAtom(pdfsAtom)
+  const [, setPdfs]: any = useAtom(pdfsAtom)
   const setTotalPages: any = useSetAtom(totalPagesAtom)
   const setPdfFileNames: any = useSetAtom(pdfFilenamesAtom)
-  const setStateChanged: any = useSetAtom(stateChangedAtom)
+  const [, setStateChanged]: any = useAtom(stateChangedAtom)
   const setRotations: any = useSetAtom(rotationsAtom)
   const setPages: any = useSetAtom(pagesAtom)
-  const [isDraggingFiles, setIsDraggingFiles] = useAtom(isDraggingFilesAtom)
+  const setIsDraggingFiles = useSetAtom(isDraggingFilesAtom)
 
   const handleDropzoneLoaded = async (files: any) => {
     if (!files || !files?.length) return;
@@ -22,7 +23,6 @@ const Drop = ({ noClick = false }) => {
 
     for (let i = 0; i < files.length; i++) {
       let newPdf: any = await blobToURL(files[i]);
-
       setLoadingMessage(`Document ${i + 1} van ${files.length} wordt geladen...`)
 
       // check file size
@@ -31,9 +31,13 @@ const Drop = ({ noClick = false }) => {
         alert(`${files[i]['name']} is groter dan 25MB. Gelieve het bestand te verkleinen.`)
         continue;
       }
-
+      // skip the file if its not an image or pdf
+      else if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
+        alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
+        continue;
+      }
       // MSG / EML / TIFF files: send to Serge API
-      if (
+      else if (
         files[i]['type'] === 'application/vnd.ms-outlook'
         || files[i]['type'] === 'message/rfc822'
         || files[i]['type'] === 'image/tiff'
@@ -86,7 +90,7 @@ const Drop = ({ noClick = false }) => {
         }
         continue;
       }
-      // JPG / PNG: process it
+      // JPG / PNG: convert to PDF
       else if (files[i]['type'] === 'image/jpeg' || files[i]['type'] === 'image/png') {
         const pdfDoc = await PDFDocument.create()
         const image = (files[i]['type'] === 'image/jpeg')
@@ -102,80 +106,44 @@ const Drop = ({ noClick = false }) => {
         });
         newPdf = await pdfDoc.saveAsBase64({ dataUri: true })
       }
-      // skip the file if its not an image or pdf
-      else if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
-        alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
-        continue;
-      }
-      // JPG / PNG / PDF files: further process it
-      const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 });
-      try {
-        const pages = newPdfDoc?.getPageCount()
-        setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
-        setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i]['name']]);
 
-        const getPageRotation = async (pageNumber: number) => {
-          const page = await newPdfDoc.getPage(pageNumber);
-          return page.getRotation().angle;
-        }
-        const pdfRotations: any = [];
-        const pdfPages: any = [];
-        // populate page rotations array + populate pages array
-        for (let i = 0; i < pages; i++) {
-          const rotation = await getPageRotation(i);
-          pdfRotations.push(rotation);
-          pdfPages.push(i);
-        }
-        setRotations((oldValues: any) => [...oldValues, pdfRotations]);
-        setPages((oldValues: any) => [...oldValues, pdfPages]);
-        setPdfs((oldPdfs: any) => {
-          const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
-          return result;
-        });
-      }
-      catch (err) {
-        // on error: as a last resort, send to Serge API to try repair
-        try {
-          const theDoc = newPdf.replace(`data:application/pdf;base64,`, '')
-          console.log(`Sending document to API to attempt repair for ${files[i]['name']}.`)
-          fetch('/api/converttopdf', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              msgFileBase64: theDoc,
-              fileName: files[i]['name']
-            })
-          })
-            .then(res => res.json())
-            .then(async (res2) => {
-              const repairedPdf = 'data:application/pdf;base64,' + res2.pdfFiles[0].pdfFileBase64;
-              console.log('PDF repair attempt successful. ')
+      // PDF / JPG / PNG files: further process it
+      const pdfs = await get('pdfs');
+      const pages = await get('pages');
+      const totalNumberOfPages = pages.reduce((prev: any, current: any) => current.length + prev, 0);
+      const pdfB = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 });
+      let mergedPdf = newPdf;
 
-              await PDFDocument.load(repairedPdf, { ignoreEncryption: true, parseSpeed: 1500 })
-                .then(newPdfDoc => {
-                  const pages = newPdfDoc?.getPageCount();
-                  setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
-                  setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i].name]);
-
-                  let pagesOfUploadedPdf: Array<number> = []
-                  for (let x = 0; x < pages; x++) {
-                    pagesOfUploadedPdf.push(x)
-                  }
-                  setPdfs((oldPdfs: any) => {
-                    const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
-                    return result;
-                  });
-                })
-            })
-        } catch {
-          alert(`Fout bij het laden van ${files[i]['name']}. Het document wordt overgeslagen.`);
-          console.log(err);
-          console.log(newPdf)
-          return;
-        }
+      if (pdfs?.[0]?.length) {
+        // merge PDFs if there is an existing PDF
+        const mergedPdfDoc = await PDFDocument.create();
+        const pdfA = await PDFDocument.load(pdfs[0], { ignoreEncryption: true, parseSpeed: 1500 });
+        const copiedPagesA = await mergedPdfDoc.copyPages(pdfA, pdfA.getPageIndices());
+        copiedPagesA.forEach((page) => mergedPdfDoc.addPage(page));
+        const copiedPagesB = await mergedPdfDoc.copyPages(pdfB, pdfB.getPageIndices());
+        copiedPagesB.forEach((page) => mergedPdfDoc.addPage(page));
+        mergedPdf = await mergedPdfDoc.saveAsBase64({ dataUri: true });
       }
+
+      const pdfBTotalPages = pdfB?.getPageCount();
+      setTotalPages((oldTotalPages: any) => [...oldTotalPages, pdfBTotalPages]);
+      setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i]['name']]);
+
+      const getPageRotation = async (pageNumber: number) => {
+        const page = await pdfB.getPage(pageNumber);
+        return page.getRotation().angle;
+      }
+      const pdfRotations: any = [];
+      const pdfPages: any = [];
+      // populate page rotations array + populate pages array
+      for (let i = 0; i < pdfBTotalPages; i++) {
+        const rotation = await getPageRotation(i);
+        pdfRotations.push(rotation);
+        pdfPages.push(totalNumberOfPages + i);
+      }
+      setRotations((oldValues: any) => [...oldValues, pdfRotations]);
+      setPages((oldValues: any) => [...oldValues, pdfPages]);
+      setPdfs([mergedPdf]);
     }
 
     setStateChanged((oldValue: number) => oldValue + 1)

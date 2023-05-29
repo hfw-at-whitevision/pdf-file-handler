@@ -5,12 +5,12 @@ import { currentAtom, pagesAtom, pdfsAtom, totalPagesAtom } from "../store/atoms
 const thumbnailsPerRow = 4;
 const defaultSteps = 1;
 
-const KeyPressListener = ({ findArrayIndex, findPageIndex, handleSplitDocument, handleDeleteDocument, handleDeletePage, handleRotateDocument, handleRotatePage }: any) => {
+const KeyPressListener = ({ findRowIndex, findPageIndex, handleSplitDocument, handleDeleteDocument, handleDeletePage, handleRotateDocument, handleRotatePage }: any) => {
     const [current, setCurrent]: any = useAtom(currentAtom);
     const [totalPages]: any = useAtom(totalPagesAtom);
     const [pdfs] = useAtom(pdfsAtom);
     const [pages]: any = useAtom(pagesAtom);
-    const currentIndex = findArrayIndex(current);
+    const currentIndex = findRowIndex(current);
 
     const getFirstPageIndex = (pdfIndex: number) => {
         return pages[pdfIndex][0];
