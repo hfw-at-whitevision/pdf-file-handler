@@ -5,24 +5,13 @@ import PlaceholderRow from "./layout/PlaceholderRow";
 import PlaceholderThumbnail from "./layout/PlaceholderThumbnail";
 import Row from "./layout/Row";
 import Button from "./primitives/Button";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import React from "react";
 import { Document } from "react-pdf";
-import { get } from "idb-keyval";
 
-const PdfRow = ({ filename, inputPdf, pages, totalPages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
+const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const [open, setOpen] = useState(true);
-    const [pdf, setPdf]: any = useState();
     const isLoading = false;
-
-    useEffect(() => {
-        if (!pdf) return;
-        get('pdfs').then(pdfs => {
-            if (!pdfs?.[0]?.length) return;
-            setPdf(pdfs[0]);
-        });
-    }, [pages.length]);
-    useEffect(() => setPdf(inputPdf), []);
 
     if (!pages?.length) return null;
     return <>
@@ -32,7 +21,7 @@ const PdfRow = ({ filename, inputPdf, pages, totalPages, pdfIndex, rotations, ha
                 : null
             }
 
-            <Row pdfIndex={pdfIndex}>
+            <Row pdfIndex={pdfIndex} className='group/pdfRow'>
                 <div className={`flex items-center justify-between p-4`}>
                     <BiChevronDown
                         className={`
@@ -43,31 +32,33 @@ const PdfRow = ({ filename, inputPdf, pages, totalPages, pdfIndex, rotations, ha
                     />
                     <span className="text-xs mr-auto relative w-full text-text-dark">
                         <h3 className="mr-2 inline break-all">{filename}</h3>
-                        ({totalPages} {totalPages > 1 ? ' pagina\'s' : ' pagina'})
+                        ({pages.length} {pages.length > 1 ? ' pagina\'s' : ' pagina'})
 
                         <div className="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-body-bg-dark" />
                     </span>
                     <nav
                         className={
                             `${isLoading ? "disabled" : ""} flex gap-1 justify-end ml-auto
+                            opacity-40
+                            group-hover/pdfRow:opacity-100
                             flex-row min-w-[280px]`
                         }
                     >
                         <Button
-                            title={<><BsCheck2Circle /><span className="text-xs">naar administratie</span></>}
-                            onClick={async () => {
-                                const base64 = await handleSaveDocument(pdfIndex);
-                                alert(base64)
-                            }}
+                            className='group overflow-hidden'
+                            title={<><BsCheck2Circle /><span className="group-hover:flex hidden text-xs">naar administratie</span></>}
+                            onClick={async () => await handleSaveDocument(pdfIndex)}
                             padding='large'
                         />
                         <Button
-                            title={<><BiRotateRight className="rotate-[180deg]" /></>}
+                            className='group overflow-hidden'
+                            title={<><BiRotateRight className="rotate-[180deg]" /><span className="group-hover:flex hidden text-xs">roteer alle pagina's</span></>}
                             onClick={() => handleRotateDocument({ pdfIndex })}
                             disabled={isLoading}
                         />
                         <Button
-                            title={<><BsTrash /></>}
+                            className='group overflow-hidden'
+                            title={<><BsTrash /><span className="group-hover:flex hidden text-xs">verwijder document</span></>}
                             onClick={() => handleDeleteDocument(pdfIndex)}
                             disabled={isLoading}
                         />
@@ -75,7 +66,7 @@ const PdfRow = ({ filename, inputPdf, pages, totalPages, pdfIndex, rotations, ha
                 </div>
 
                 <Document
-                    file={pdf}
+                    file={inputPdf}
                     loading={undefined}
                     renderMode='none'
                     className={
@@ -131,14 +122,11 @@ const PdfRow = ({ filename, inputPdf, pages, totalPages, pdfIndex, rotations, ha
 }
 const skipRerender = (prevProps: any, nextProps: any) => {
     if (
-        // total number of pages hasnt changed
-        prevProps.totalPages === nextProps.totalPages
-        &&
         JSON.stringify(prevProps.pages) === JSON.stringify(nextProps.pages)
         &&
         JSON.stringify(prevProps.rotations) === JSON.stringify(nextProps.rotations)
     ) return true;
     else return false;
 }
-export default React.memo(PdfRow, skipRerender);
-//export default PdfRow;
+//export default React.memo(PdfRow, skipRerender);
+export default PdfRow;

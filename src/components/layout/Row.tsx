@@ -1,11 +1,11 @@
 import React from "react";
 import { useDrop } from "react-dnd";
 
-const Row = (props: any) => {
+const Row = ({ className = '', children, pdfIndex }: any) => {
     const [{ isOver, isNotOverPlaceholderThumbnail, canDrop }, drop] = useDrop({
         accept: "pdfThumbnail",
         drop: () => {
-            if (isNotOverPlaceholderThumbnail) return { pdfIndex: props?.pdfIndex, type: 'row' }
+            if (isNotOverPlaceholderThumbnail) return { pdfIndex: pdfIndex, type: 'row' }
         },
         collect: (monitor) => ({
             isOver: monitor.isOver(),
@@ -21,10 +21,10 @@ const Row = (props: any) => {
             ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-body-bg-dark'}
             border border-text-lighter
             flex flex-col space-y divide-text-light
+            ${className}
         `}
-        {...props}
     >
-        {props?.children}
+        {children}
     </div>
 }
 //export default React.memo(Row);

@@ -11,7 +11,7 @@ import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom, useSetAtom } from "jotai";
-import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, totalPagesAtom, isDraggingFilesAtom } from "@/components/store/atoms";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, isDraggingFilesAtom } from "@/components/store/atoms";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
@@ -30,7 +30,6 @@ const Home: NextPage = () => {
     const setPdfs: any = useSetAtom(pdfsAtom);
     const [current]: any = useAtom(currentAtom);
     const setCurrent: any = useSetAtom(currentAtom);
-    const [totalPages, setTotalPages]: [any, any] = useAtom(totalPagesAtom);
     const [isLoading, setIsLoading]: [boolean, any] = useAtom(isLoadingAtom);
     const [loadingMessage]: any = useAtom(loadingMessageAtom);
     const [rotations, setRotations]: any = useAtom(rotationsAtom);
@@ -38,9 +37,9 @@ const Home: NextPage = () => {
     const [, setStateChanged] = useAtom(stateChangedAtom);
     let timer: any = null;
 
-    const findRowIndex = ({ pdfIndex, pageIndex }: any) => {
-        if (typeof pages?.[pdfIndex]?.[pageIndex] === 'undefined') return;
-        return pages[pdfIndex].findIndex((value: any) => value === pageIndex);
+    const findRowIndex = ({ pdfIndex, pageIndex, inputPages = pages }: any) => {
+        if (typeof inputPages?.[pdfIndex]?.[pageIndex] === 'undefined') return;
+        return inputPages[pdfIndex].findIndex((value: any) => value === pageIndex);
     }
     const findPageIndex = ({ pdfIndex, index }: any) => {
         return pages[pdfIndex][index];
@@ -49,7 +48,6 @@ const Home: NextPage = () => {
     const handleReset = useCallback(async () => {
         if (!confirm('Verwijder alle documenten en bewerkingen?')) return;
         setPdfs([]);
-        setTotalPages([]);
         setPdfFilenames([]);
         setRotations([]);
         setCurrent({ pdfIndex: 0, pageIndex: 0 });
@@ -86,7 +84,6 @@ const Home: NextPage = () => {
             return updatedState;
         }
         setPdfFilenames((oldValue: any) => duplicateState(oldValue));
-        setTotalPages((oldValue: any) => duplicateState(oldValue));
         setRotations((oldValue: any) => duplicateState(oldValue));
         setPages((oldValue: any) => duplicateState(oldValue));
         setStateChanged((oldState: number) => oldState + 1);
@@ -94,7 +91,7 @@ const Home: NextPage = () => {
         timer = setTimeout(() => setCurrent({
             pdfIndex: pdfIndex + 1,
             pageIndex: pageIndex,
-        }), 500);
+        }), 50);
     }
     const handleDeleteDocument = async (inputPdfIndex: number) => {
         const confirmed = confirm('Dit document verwijderen? Bewerkingen zijn niet meer terug te halen.');
@@ -103,7 +100,18 @@ const Home: NextPage = () => {
         setIsLoading(true);
         if (timer) clearTimeout(timer);
 
-        setTotalPages((oldTotalPages: any) => oldTotalPages.filter((_: any, index: number) => index !== inputPdfIndex));
+        // replace deleted page by an empty page in the PDF
+        /*const pdfs = await get('pdfs');
+                const pdfDoc = await PDFDocument.load(pdfs[0], { ignoreEncryption: true, parseSpeed: 1500 });
+                const pages = await get('pages');
+                for (let i = 0; i < pages[inputPdfIndex].length; i++) {
+                    const currentPageIndex = pages[inputPdfIndex][i];
+                    await pdfDoc.removePage(currentPageIndex);
+                    await pdfDoc.insertPage(currentPageIndex, [1, 1]);
+                };
+                const updatedPdf = await pdfDoc.saveAsBase64({ dataUri: true });
+                setPdfs([updatedPdf]);*/
+
         setPdfFilenames((oldPdfFileNames: any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
         setPages((oldPages: any) => {
             if (oldPages?.length === 1) return [];
@@ -150,11 +158,6 @@ const Home: NextPage = () => {
             updatedArray[pdfIndex].splice(index, 1);
             return updatedArray;
         });
-        setTotalPages((oldValue: any) => {
-            let updatedArray = oldValue;
-            updatedArray[pdfIndex] = updatedArray[pdfIndex] - 1;
-            return updatedArray;
-        });
         setStateChanged((oldState: number) => oldState + 1);
         // if deleted page = current page, update current
         if (current.pdfIndex === pdfIndex && current.pageIndex === pageIndex) {
@@ -164,7 +167,7 @@ const Home: NextPage = () => {
                 ...skipScrollIntoView && { skipScrollIntoView },
             }), 400);
         }
-    }, [current.pdfIndex, current.pageIndex, pages, pdfs, rotations, totalPages]);
+    }, [current.pdfIndex, current.pageIndex, pages, pdfs, rotations]);
     const handleRotateDocument = useCallback(async ({ pdfIndex, skipScrollIntoView }: any) => {
         let updatedRotations = await get('rotations');
         let updatedPdfRotations = updatedRotations[pdfIndex]?.map((rotation: number, index: number) => {
@@ -252,38 +255,38 @@ const Home: NextPage = () => {
         setStateChanged((oldValue: number) => oldValue + 1);
     }, [pages]);
 
-    const handleSaveDocument = useCallback(async (pdfIndex: number) => {
+    const handleSaveDocument = useCallback(async (pdfIndex: number = 0) => {
         setIsLoading(true);
         const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
-        const base64 = await pdfDoc.saveAsBase64({ dataUri: false });
-
-        const res = await fetch("https://devweb.docbaseweb.nl/api/files/uploadtodocbase", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                administrationCode: "1",
-                pdfBase64: base64,
-                fileName: pdfFilenames[pdfIndex],
-                creationDate: new Date().toISOString(),
-                pageCount: totalPages[pdfIndex],
-            })
-        });
-
-        alert(JSON.stringify(res))
-
+        const base64 = await pdfDoc.saveAsBase64({ dataUri: true });
+        /*
+                const res = await fetch("https://devweb.docbaseweb.nl/api/files/uploadtodocbase", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        administrationCode: "1",
+                        pdfBase64: base64,
+                        fileName: pdfFilenames[pdfIndex],
+                        creationDate: new Date().toISOString(),
+                        pageCount: totalPages[pdfIndex],
+                    })
+                });
+        */
         setIsLoading(false);
-        return base64
+        return base64;
     }, []);
 
-    const handleSaveAllDocuments = useCallback(async () => {
+    const handleSaveAllDocuments = async () => {
         setIsLoading(true);
-        const pdfDocs = await Promise.all(pdfs.map(async (pdf: any) => await PDFDocument.load(pdf, { ignoreEncryption: true, parseSpeed: 1500 })));
-        const base64s = await Promise.all(pdfDocs.map(async (pdfDoc: any) => await pdfDoc.saveAsBase64({ dataUri: false })));
-        alert(JSON.stringify(base64s));
+        const pdf = pdfs[0];
+        const newTab = window.open();
+        newTab?.document.write(
+            "<iframe width='100%' height='100%' src='" + pdf + "'></iframe>"
+        )
         setIsLoading(false);
-    }, []);
+    }
 
     // ********************************************************
     // react-split
@@ -328,7 +331,6 @@ const Home: NextPage = () => {
 
             <Debug
                 sizes={sizes}
-                totalPages={totalPages}
                 current={current}
                 rotations={rotations}
                 pages={pages}
@@ -387,14 +389,13 @@ const Home: NextPage = () => {
             >
                 {/* PDF row */}
                 <section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full pb-8`}>
-                    {pages.map((pdfIndices: Array<number>, pdfIndex: number) =>
+                    {pages.map((_: any, pdfIndex: number) =>
                         <PdfRow
                             key={`pdf-${pdfIndex}`}
                             pdfIndex={pdfIndex}
                             filename={pdfFilenames[pdfIndex]}
-                            pages={pdfIndices}
+                            pages={pages[pdfIndex]}
                             rotations={rotations[pdfIndex]}
-                            totalPages={totalPages[pdfIndex]}
                             handleMovePage={handleMovePage}
                             handleSaveDocument={handleSaveDocument}
                             handleRotatePage={handleRotatePage}

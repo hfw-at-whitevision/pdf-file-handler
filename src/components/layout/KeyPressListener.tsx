@@ -1,16 +1,14 @@
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { currentAtom, pagesAtom, pdfsAtom, totalPagesAtom } from "../store/atoms";
+import { currentAtom, pagesAtom } from "../store/atoms";
 
 const thumbnailsPerRow = 4;
 const defaultSteps = 1;
 
 const KeyPressListener = ({ findRowIndex, findPageIndex, handleSplitDocument, handleDeleteDocument, handleDeletePage, handleRotateDocument, handleRotatePage }: any) => {
     const [current, setCurrent]: any = useAtom(currentAtom);
-    const [totalPages]: any = useAtom(totalPagesAtom);
-    const [pdfs] = useAtom(pdfsAtom);
     const [pages]: any = useAtom(pagesAtom);
-    const currentIndex = findRowIndex(current);
+    const currentRowIndex = pages[current.pdfIndex]?.findIndex((value: any) => value === current.pageIndex);
 
     const getFirstPageIndex = (pdfIndex: number) => {
         return pages[pdfIndex][0];
@@ -21,14 +19,14 @@ const KeyPressListener = ({ findRowIndex, findPageIndex, handleSplitDocument, ha
 
     const moveLeft = (steps: number = defaultSteps) => {
         // if we are able to move left (not in first thumbnail)
-        if (currentIndex >= steps) {
+        if (currentRowIndex >= steps) {
             setCurrent((oldValue: any) => {
-                const prevPageIndex = findPageIndex({ pdfIndex: oldValue?.pdfIndex, index: currentIndex - steps });
+                const prevPageIndex = findPageIndex({ pdfIndex: oldValue?.pdfIndex, index: currentRowIndex - steps });
                 return ({ pdfIndex: oldValue?.pdfIndex, pageIndex: prevPageIndex });
             });
         }
         // if we are in first thumbnail -> go to next PDF if possible
-        else if (current.pdfIndex < pdfs?.length - 1) {
+        else if (current.pdfIndex < pages?.length - 1) {
             setCurrent((oldValue: any) => {
                 const newPdfIndex = oldValue?.pdfIndex + 1;
                 return ({ pdfIndex: newPdfIndex, pageIndex: getLastPageIndex(newPdfIndex) });
@@ -37,9 +35,9 @@ const KeyPressListener = ({ findRowIndex, findPageIndex, handleSplitDocument, ha
     }
     const moveRight = (steps: number = defaultSteps) => {
         // if we are able to move right
-        if (currentIndex < totalPages[current?.pdfIndex] - steps) {
+        if (currentRowIndex < pages[current.pdfIndex]?.length - steps) {
             setCurrent((oldValue: any) => {
-                const nextPageIndex = findPageIndex({ pdfIndex: oldValue?.pdfIndex, index: currentIndex + steps });
+                const nextPageIndex = findPageIndex({ pdfIndex: oldValue?.pdfIndex, index: currentRowIndex + steps });
                 return ({ pdfIndex: oldValue?.pdfIndex, pageIndex: nextPageIndex });
             });
         }
@@ -94,7 +92,7 @@ const KeyPressListener = ({ findRowIndex, findPageIndex, handleSplitDocument, ha
         window.addEventListener('keydown', eventListener);
 
         return () => window.removeEventListener('keydown', eventListener);
-    }, [current?.pdfIndex, current?.pageIndex, totalPages, pages, pages[current.pdfIndex]]);
+    }, [current?.pdfIndex, current?.pageIndex, pages, pages[current.pdfIndex]]);
 
     return <></>
 }

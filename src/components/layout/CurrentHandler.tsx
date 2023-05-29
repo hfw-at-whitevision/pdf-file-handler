@@ -22,7 +22,7 @@ const CurrentHandler = () => {
             timer1 = null;
             timer1 = setTimeout(() => {
                 highlightCurrentThumbnail();
-            }, 400);
+            }, 150);
         }
     }, [current]);
     // scroll thumbnail into view

@@ -158,7 +158,7 @@ function skipRerender(prevProps: any, nextProps: any) {
     if (
         prevProps.rotation === nextProps.rotation
         &&
-        prevProps.index === nextProps.pageIndex
+        prevProps.pageIndex === nextProps.pageIndex
     ) return true;
     else return false;
 }

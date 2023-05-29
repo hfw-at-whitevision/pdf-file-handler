@@ -145,8 +145,7 @@ const Drop = ({ noClick = false }) => {
       setPages((oldValues: any) => [...oldValues, pdfPages]);
       setPdfs([mergedPdf]);
     }
-
-    setStateChanged((oldValue: number) => oldValue + 1)
+    setStateChanged((oldValue: number) => oldValue + 1);
     setLoadingMessage('')
     setIsLoading(false)
   }
