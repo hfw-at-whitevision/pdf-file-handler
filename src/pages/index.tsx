@@ -2,7 +2,7 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import { get, del } from 'idb-keyval';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Drop from "@/components/layout/Drop";
 import { PDFDocument } from "pdf-lib";
 import ButtonXl from "@/components/primitives/ButtonXl";
@@ -11,7 +11,7 @@ import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom, useSetAtom } from "jotai";
-import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, isDraggingFilesAtom } from "@/components/store/atoms";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom } from "@/components/store/atoms";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
@@ -35,6 +35,7 @@ const Home: NextPage = () => {
     const [rotations, setRotations]: any = useAtom(rotationsAtom);
     const [pages, setPages]: any = useAtom(pagesAtom);
     const [, setStateChanged] = useAtom(stateChangedAtom);
+    const [newRowCounter, setNewRowCounter] = useState(1);
     let timer: any = null;
 
     const findRowIndex = ({ pdfIndex, pageIndex, inputPages = pages }: any) => {
@@ -224,8 +225,27 @@ const Home: NextPage = () => {
         let updatedRotations = rotations.slice();
         const originalPage = pages[fromPdfIndex][fromRowIndex];
         const originalRotation = rotations[fromPdfIndex][fromRowIndex];
+        let skipScrollIntoView = true;
 
         console.log(`Moving from rowIndex ${fromRowIndex} to rowIndex ${toRowIndex}`);
+
+        // insert a new pdf-row if we are moving to a placeholder row
+        if (toPlaceholderRow) {
+            updatedPages.splice(toPdfIndex, 0, []);
+            updatedRotations.splice(toPdfIndex, 0, []);
+            setPdfFilenames((oldValues: Array<string>) => {
+                let newValues = oldValues.slice();
+                newValues.splice(toPdfIndex, 0, `Nieuw document ${newRowCounter}.pdf`);
+                return newValues;
+            });
+            setNewRowCounter((oldValue: number) => oldValue + 1);
+        }
+
+        // rowIndex last
+        if (toRowIndex === 'last') {
+            toRowIndex = pages[toPdfIndex].length;
+            skipScrollIntoView = false;
+        }
 
         updatedPages[fromPdfIndex].splice(fromRowIndex, 1, null);
         updatedPages[toPdfIndex].splice(toRowIndex, 0, originalPage);
@@ -235,20 +255,21 @@ const Home: NextPage = () => {
         updatedRotations[toPdfIndex].splice(toRowIndex, 0, originalRotation);
         updatedRotations[fromPdfIndex] = updatedRotations[fromPdfIndex].filter((n: any) => n !== null);
 
-        let focusPdfIndex = toPdfIndex;
+        let newCurrentPdfIndex = toPdfIndex;
+
         // if donor document is empty, remove it
         if (!updatedPages[fromPdfIndex].length) {
             updatedPages.splice(fromPdfIndex, 1);
             updatedRotations.splice(fromPdfIndex, 1);
-            focusPdfIndex = (fromPdfIndex > toPdfIndex)
+            newCurrentPdfIndex = (fromPdfIndex > toPdfIndex)
                 ? toPdfIndex
                 : fromPdfIndex;
         }
 
         timer = setTimeout(() => setCurrent({
-            pdfIndex: focusPdfIndex,
+            pdfIndex: newCurrentPdfIndex,
             pageIndex: fromPageIndex,
-            skipScrollIntoView: true,
+            skipScrollIntoView,
         }), 150);
         setPages(updatedPages);
         setRotations(updatedRotations);
@@ -334,6 +355,7 @@ const Home: NextPage = () => {
                 current={current}
                 rotations={rotations}
                 pages={pages}
+                pdfFilenames={pdfFilenames}
             />
 
             <header className={`fixed top-0 left-0 right-0 h-[100px] flex flex-row w-full bg-white shadow-sm border-body-bg-dark z-50 px-8 py-4 items-center gap-16`}>
@@ -388,7 +410,7 @@ const Home: NextPage = () => {
                 cursor="col-resize"
             >
                 {/* PDF row */}
-                <section className={`flex flex-col text-stone-900 items-start overflow-y-scroll gap-y-8 w-full pb-8`}>
+                <section className={`flex flex-col text-stone-900 items-start gap-y-8 w-full pb-40`}>
                     {pages.map((_: any, pdfIndex: number) =>
                         <PdfRow
                             key={`pdf-${pdfIndex}`}

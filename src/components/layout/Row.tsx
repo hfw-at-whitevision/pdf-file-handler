@@ -4,8 +4,14 @@ import { useDrop } from "react-dnd";
 const Row = ({ className = '', children, pdfIndex }: any) => {
     const [{ isOver, isNotOverPlaceholderThumbnail, canDrop }, drop] = useDrop({
         accept: "pdfThumbnail",
-        drop: () => {
-            if (isNotOverPlaceholderThumbnail) return { pdfIndex: pdfIndex, type: 'row' }
+        drop: (item: any) => {
+            // do nothing if we are dropping the thumbnail in the same row
+            if (item.pdfIndex === pdfIndex) return;
+            // if we are dropping in a new row (not in a thumbnail placeholder)
+            if (isNotOverPlaceholderThumbnail) return {
+                pdfIndex,
+                type: 'row'
+            }
         },
         collect: (monitor) => ({
             isOver: monitor.isOver(),

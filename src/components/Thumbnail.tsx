@@ -60,6 +60,7 @@ const Thumbnail = (
             const toPageIndex = dropResult?.pageIndex;
             const type = dropResult?.type;
 
+            // dropping in a placeholder thumbnail
             if (dropResult && type === "placeholderThumbnail") {
                 await handleMovePage({
                     fromPdfIndex: pdfIndex,
@@ -70,16 +71,31 @@ const Thumbnail = (
                     toRowIndex: dropResult?.rowIndex,
                     toPlaceholderThumbnail: true,
                 })
-            } else if (
-                dropResult && pdfIndex !== toPdfIndex && type !== "scrollDropTarget"
-                || dropResult && pdfIndex === toPdfIndex && type === "placeholderRow"
+            }
+            // dropping in an existing row
+            else if (
+                dropResult && pdfIndex !== toPdfIndex && type !== 'scrollDropTarget' && type !== 'placeholderRow'
             ) {
-                // move the page to other PDF
                 await handleMovePage({
                     fromPdfIndex: pdfIndex,
                     fromPageIndex: pageIndex,
+                    fromRowIndex: rowIndex,
                     toPdfIndex: toPdfIndex,
-                    toPlaceholderRow: type === "placeholderRow" ? true : false,
+                    toRowIndex: 'last',
+                })
+            }
+            // dropping in a placeholder row (new row)
+            else if (
+                dropResult && pdfIndex !== toPdfIndex && type !== "scrollDropTarget"
+                || dropResult && pdfIndex === toPdfIndex && type === "placeholderRow"
+            ) {
+                await handleMovePage({
+                    fromPdfIndex: pdfIndex,
+                    fromPageIndex: pageIndex,
+                    fromRowIndex: rowIndex,
+                    toPdfIndex: toPdfIndex,
+                    toRowIndex: 0,
+                    toPlaceholderRow: type === "placeholderRow",
                 })
             }
         },

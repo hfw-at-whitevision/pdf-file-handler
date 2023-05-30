@@ -3,7 +3,7 @@ import { useDrop } from "react-dnd";
 import { userIsDraggingAtom } from "../store/atoms";
 import { useAtom } from "jotai";
 
-export default function ScrollDropTarget({ position }) {
+export default function ScrollDropTarget({ position }: any) {
     const [userIsDragging, setUserIsDragging] = useAtom(userIsDraggingAtom);
 
     const scrollBy =
@@ -43,7 +43,7 @@ export default function ScrollDropTarget({ position }) {
     return <div
         ref={scrollTopDropRef}
         className={
-            `fixed left-0 right-0 h-[80px] z-50
+            `fixed left-0 right-0 h-[80px] z-[60]
         ${position === 'top' ? 'top-0' : 'bottom-0'}
         ${userIsDragging ? 'pointer-events-auto' : 'pointer-events-none'}`
         }

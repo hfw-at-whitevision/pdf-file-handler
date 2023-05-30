@@ -19,11 +19,11 @@ export default function PlaceholderRow({ pdfIndex = 0 }) {
     return <div
         ref={drop}
         className={`
-        shadow-2xl rounded-lg w-full flex items-center justify-center
-        border-dashed border-lime-200 border
+        rounded-lg w-full items-center justify-center
+        border-dashed border-lime-200 border bg-lime-100/90
         ${isDragging && canDrop // && totalPages[pdfIndex] > 1
-                ? 'h-auto p-1 opacity-100 mb-4'
-                : 'h-0 p-0 opacity-0 border-0 mb-0'}
+                ? 'h-auto p-1 opacity-100 flex'
+                : 'h-0 p-0 opacity-0 border-0 hidden'}
         ${isOver && canDrop// && totalPages[pdfIndex] > 1
                 ? 'p-8 bg-lime-100/90 border-transparent'
                 : ''}
