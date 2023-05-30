@@ -1,7 +1,7 @@
 import React from "react";
 import { useDrop } from "react-dnd";
 
-const Row = ({ className = '', children, pdfIndex }: any) => {
+const Row = ({ className = '', children, pdfIndex }: any, props: any) => {
     const [{ isOver, isNotOverPlaceholderThumbnail, canDrop }, drop] = useDrop({
         accept: "pdfThumbnail",
         drop: (item: any) => {
@@ -22,6 +22,8 @@ const Row = ({ className = '', children, pdfIndex }: any) => {
 
     return <div
         ref={drop}
+        id={`row-${pdfIndex}`}
+        data-pdf-index={pdfIndex}
         className={`
             rounded-lg w-full
             ${isOver && canDrop && isNotOverPlaceholderThumbnail ? 'bg-amber-300 shadow-4xl' : 'bg-body-bg-dark'}

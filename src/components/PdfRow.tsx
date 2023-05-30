@@ -18,8 +18,8 @@ const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage
 
         <PlaceholderRow pdfIndex={pdfIndex + 0.5} />
 
-        <Row pdfIndex={pdfIndex} className='group/pdfRow flex flex-col w-full'>
-            <div className={`flex items-center justify-between p-4`}>
+        <Row pdfIndex={pdfIndex} className={`group/pdfRow flex flex-col w-full row-${pdfIndex}`}>
+            <div data-pdf-index={pdfIndex} className={`flex items-center justify-between p-4`}>
                 <BiChevronDown
                     className={`
                             cursor-pointer text-lg hidden
@@ -27,11 +27,12 @@ const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage
                         `}
                     onClick={() => setOpen(oldValue => !oldValue)}
                 />
-                <span className="text-xs mr-auto relative w-full text-text-dark">
-                    <h3 className="mr-2 inline break-all">{filename}</h3>
+                <span data-pdf-index={pdfIndex} className="text-xs mr-auto relative w-full text-text-dark">
+                    <h3 className={`mr-2 inline break-all row-${pdfIndex}`}>{filename}</h3>
                     ({pages.length} {pages.length > 1 ? ' pagina\'s' : ' pagina'})
                 </span>
                 <nav
+                    data-pdf-index={pdfIndex}
                     className={
                         `${isLoading ? "disabled" : ""} flex gap-1 justify-end ml-auto
                             opacity-40
@@ -64,49 +65,52 @@ const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage
                 file={inputPdf}
                 loading={undefined}
                 renderMode='none'
-                className={
-                    `relative p-4 gap-1 w-full overflow-hidden border-text-lighter opacity-100
-                        ${open ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
-                        flex flex-row flex-wrap row-${pdfIndex}
-                        `}
             >
-                {/* thumbnails of current PDF */}
-                {pages.map((pageIndex: number, rowIndex: number) => {
-                    return <div
-                        className={`flex flex-row w-[130px] ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
-                        key={`thumbnail-${pdfIndex}-${pageIndex}`}
-                    >
-                        {
-                            /* first placeholder thumbnail in row */
-                            rowIndex % 4 === 0
-                            && <PlaceholderThumbnail
+                <div
+                    data-pdf-index={pdfIndex}
+                    className={
+                        `p-4 gap-1 w-full overflow-hidden border-text-lighter opacity-100
+                     ${open ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
+                     flex flex-row flex-wrap row-${pdfIndex} relative`
+                    }>
+                    {/* thumbnails of current PDF */}
+                    {pages.map((pageIndex: number, rowIndex: number) => {
+                        return <div
+                            className={`flex flex-row w-[130px] ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
+                            key={`thumbnail-${pdfIndex}-${pageIndex}`}
+                        >
+                            {
+                                /* first placeholder thumbnail in row */
+                                rowIndex % 4 === 0
+                                && <PlaceholderThumbnail
+                                    pdfIndex={pdfIndex}
+                                    pageIndex={pageIndex - 0.5}
+                                    rowIndex={rowIndex - 0.5}
+                                    margin='mr-2'
+                                />
+                            }
+                            <Thumbnail
+                                index={rowIndex}
+                                rowIndex={rowIndex}
+                                pages={pages}
+                                pageIndex={pageIndex}
                                 pdfIndex={pdfIndex}
-                                pageIndex={pageIndex - 0.5}
-                                rowIndex={rowIndex - 0.5}
-                                margin='mr-2'
+                                rotation={rotations?.[rowIndex]}
+                                handleDeletePage={handleDeletePage}
+                                handleRotatePage={handleRotatePage}
+                                handleMovePage={handleMovePage}
+                                handleDeleteDocument={handleDeleteDocument}
                             />
-                        }
-                        <Thumbnail
-                            index={rowIndex}
-                            rowIndex={rowIndex}
-                            pages={pages}
-                            pageIndex={pageIndex}
-                            pdfIndex={pdfIndex}
-                            rotation={rotations?.[rowIndex]}
-                            handleDeletePage={handleDeletePage}
-                            handleRotatePage={handleRotatePage}
-                            handleMovePage={handleMovePage}
-                            handleDeleteDocument={handleDeleteDocument}
-                        />
-                        <PlaceholderThumbnail
-                            pdfIndex={pdfIndex}
-                            pageIndex={pageIndex + 0.5}
-                            rowIndex={rowIndex + 0.5}
-                            margin='ml-2'
-                        />
-                    </div>
-                }
-                )}
+                            <PlaceholderThumbnail
+                                pdfIndex={pdfIndex}
+                                pageIndex={pageIndex + 0.5}
+                                rowIndex={rowIndex + 0.5}
+                                margin='ml-2'
+                            />
+                        </div>
+                    }
+                    )}
+                </div>
             </Document>
         </Row>
 

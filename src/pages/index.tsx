@@ -62,7 +62,7 @@ const Home: NextPage = () => {
 
         setStateChanged((oldValue: number) => oldValue + 1);
     }, []);
-    const handleSplitDocument = async ({ pdfIndex, pageIndex }: any) => {
+    const handleSplitDocument = async ({ pdfIndex, pageIndex, skipScrollIntoView }: any) => {
         const pages = await get('pages');
         const rowIndex = pages[pdfIndex].findIndex((value: any) => value === pageIndex);
 
@@ -92,7 +92,8 @@ const Home: NextPage = () => {
         timer = setTimeout(() => setCurrent({
             pdfIndex: pdfIndex + 1,
             pageIndex: pageIndex,
-        }), 50);
+            ...(typeof skipScrollIntoView !== 'undefined') && { skipScrollIntoView },
+        }), 250);
     }
     const handleDeleteDocument = async (inputPdfIndex: number) => {
         const confirmed = confirm('Dit document verwijderen? Bewerkingen zijn niet meer terug te halen.');
@@ -148,7 +149,7 @@ const Home: NextPage = () => {
         pdfDoc.insertPage(pageIndex);
         const newPdf = await pdfDoc.saveAsBase64({ dataUri: true });
         setPdfs([newPdf]);
-*/
+    */
         setPages((oldValue: any) => {
             let updatedArray = oldValue;
             updatedArray[pdfIndex].splice(index, 1);
@@ -409,7 +410,7 @@ const Home: NextPage = () => {
                 onDragEnd={persistFileHandlerPanelSizes}
                 cursor="col-resize"
             >
-                {/* PDF row */}
+                {/* PDF rows */}
                 <section className={`flex flex-col text-stone-900 items-start gap-y-8 w-full pb-40`}>
                     {pages.map((_: any, pdfIndex: number) =>
                         <PdfRow

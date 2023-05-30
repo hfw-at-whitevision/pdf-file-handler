@@ -7,26 +7,37 @@ const ContextMenu = ({ handleDeletePage, handleRotateDocument, handleRotatePage,
     const [isOpen, setIsOpen] = useState(false);
     const [top, setTop] = useState(0);
     const [left, setLeft] = useState(0);
-    const allowedClicks = ['thumbnail', 'row']
+    const [clickedType, setClickedType] = useState('');
+    const allowedClicks = ['thumbnail', 'row', 'pdf']
 
     const [pdfIndex, setPdfIndex] = useState(0);
     const [pageIndex, setPageIndex] = useState(0);
 
     const handleRightClick = (e: any) => {
         const clickedElementId = e.target.getAttribute('id');
-        if (!clickedElementId || !allowedClicks.some(v => clickedElementId?.includes(v))) return;
+        const clickedElementClasses = e.target.getAttribute('class');
+        if (
+            !clickedElementId
+            && !allowedClicks.some(v => clickedElementId?.includes(v))
+            && !allowedClicks.some(v => clickedElementClasses?.includes(v))
+        ) return;
+
+        if (clickedElementId?.includes('thumbnail')) setClickedType('thumbnail');
+        else if (clickedElementClasses?.includes('row')) setClickedType('row');
 
         e.preventDefault();
 
         const clickedPdfIndex = parseInt(e.target.getAttribute('data-pdf-index'));
         const clickedPageIndex = parseInt(e.target.getAttribute('data-page-index'));
 
+        console.log(`pdfIndex: ${clickedPdfIndex} \n pageIndex: ${clickedPageIndex} \n clickedType: ${clickedType}`)
+
         setPdfIndex(clickedPdfIndex);
         setPageIndex(clickedPageIndex);
 
-        setIsOpen(true);
         setTop(e.clientY);
         setLeft(e.clientX);
+        setIsOpen(true);
     };
 
     const handleLeftClick = async (e: any) => {
@@ -41,7 +52,7 @@ const ContextMenu = ({ handleDeletePage, handleRotateDocument, handleRotatePage,
         switch (clickedContextMenuItem) {
             case 'split':
                 console.log(`Splitting pdf-${clickedPdfIndex} from pageIndex ${clickedPageIndex}`);
-                await handleSplitDocument({ pdfIndex: clickedPdfIndex, pageIndex: clickedPageIndex });
+                await handleSplitDocument({ pdfIndex: clickedPdfIndex, pageIndex: clickedPageIndex, skipScrollIntoView: false });
                 break;
             case 'delete':
                 console.log(`Deleting pdf-${clickedPdfIndex}-${clickedPageIndex}`);
@@ -91,7 +102,10 @@ const ContextMenu = ({ handleDeletePage, handleRotateDocument, handleRotatePage,
                     key={`context-menu-item-${i}`}
                     data-pdf-index={pdfIndex}
                     data-page-index={pageIndex}
-                    className="flex items-center gap-4 text-text-dark text-base font-normal py-4 px-6 hover:bg-body-bg-dark cursor-pointer"
+                    className={
+                        `flex items-center gap-4 text-text-dark text-base font-normal py-4 px-6 hover:bg-body-bg-dark cursor-pointer
+                        ${!item.for.includes(clickedType) ? 'disabled' : ''}`
+                    }
                 >
                     {
                         item?.icon
@@ -112,19 +126,19 @@ const contextMenuItems = [
         icon: BsLayoutSplit,
         title: 'Splits document vanaf deze pagina',
         action: 'split',
-        for: ['thumbnail', 'row'],
+        for: ['thumbnail'],
     },
     {
         icon: GrRotateRight,
         title: 'Roteer pagina',
         action: 'rotate',
-        for: ['thumbnail', 'row'],
+        for: ['thumbnail'],
     },
     {
         icon: BsTrash,
         title: 'Verwijder pagina',
         action: 'delete',
-        for: ['thumbnail', 'row'],
+        for: ['thumbnail'],
     },
     {
         icon: GrRotateRight,
