@@ -11,7 +11,7 @@ import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom, useSetAtom } from "jotai";
-import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom } from "@/components/store/atoms";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, openedRowsAtom } from "@/components/store/atoms";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
@@ -26,6 +26,7 @@ import DragDropzone from "@/components/layout/DragDropzone";
 import ThumbnailsSizeInput from "@/components/layout/ThumbnailsSizeInput";
 
 const Home: NextPage = () => {
+    let timer: any = null;
     const [pdfFilenames, setPdfFilenames]: [Array<string>, any] = useAtom(pdfFilenamesAtom);
     const [pdfs]: any = useAtom(pdfsAtom);
     const setPdfs: any = useSetAtom(pdfsAtom);
@@ -36,8 +37,8 @@ const Home: NextPage = () => {
     const [rotations, setRotations]: any = useAtom(rotationsAtom);
     const [pages, setPages]: any = useAtom(pagesAtom);
     const [, setStateChanged] = useAtom(stateChangedAtom);
+    const [openedRows, setOpenedRows]: any = useAtom(openedRowsAtom);
     const [newRowCounter, setNewRowCounter] = useState(1);
-    let timer: any = null;
 
     const findRowIndex = ({ pdfIndex, pageIndex, inputPages = pages }: any) => {
         if (typeof inputPages?.[pdfIndex]?.[pageIndex] === 'undefined') return;
@@ -88,6 +89,11 @@ const Home: NextPage = () => {
         setPdfFilenames((oldValue: any) => duplicateState(oldValue));
         setRotations((oldValue: any) => duplicateState(oldValue));
         setPages((oldValue: any) => duplicateState(oldValue));
+        setOpenedRows((oldValues: any) => {
+            let updatedValues = oldValues.slice();
+            updatedValues.splice(pdfIndex + 1, 0, true);
+            return updatedValues;
+        })
         setStateChanged((oldState: number) => oldState + 1);
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => setCurrent({
@@ -127,6 +133,11 @@ const Home: NextPage = () => {
             let updatedValue = oldValue;
             updatedValue.splice(inputPdfIndex, 1);
             return updatedValue;
+        });
+        setOpenedRows((oldValues: any) => {
+            let updatedValues = oldValues.slice();
+            updatedValues = updatedValues.filter((value: number) => value === inputPdfIndex);
+            return updatedValues;
         });
         timer = setTimeout(() => setCurrent({
             pdfIndex: (inputPdfIndex > 0) ? inputPdfIndex - 1 : 0,
@@ -316,8 +327,7 @@ const Home: NextPage = () => {
             const roundedSizes = sizes.map((size: number) => Math.round(size));
             return sizes;
         }
-        else
-            return undefined;
+        else return undefined;
     };
 
     return (
@@ -348,6 +358,7 @@ const Home: NextPage = () => {
                 rotations={rotations}
                 pages={pages}
                 pdfFilenames={pdfFilenames}
+                openedRows={openedRows}
             />
 
             <header className={`fixed top-0 left-0 right-0 h-[100px] flex flex-row w-full bg-white shadow-sm border-body-bg-dark z-50 px-8 py-4 items-center gap-16`}>
@@ -411,6 +422,8 @@ const Home: NextPage = () => {
                             handleDeletePage={handleDeletePage}
                             handleRotateDocument={handleRotateDocument}
                             handleDeleteDocument={handleDeleteDocument}
+                            opened={openedRows[pdfIndex]}
+                            setOpenedRows={setOpenedRows}
                             inputPdf={pdfs[0]}
                         />
                     ).reverse()}

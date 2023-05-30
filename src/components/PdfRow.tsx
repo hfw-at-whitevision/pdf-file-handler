@@ -5,15 +5,14 @@ import PlaceholderRow from "./layout/PlaceholderRow";
 import PlaceholderThumbnail from "./layout/PlaceholderThumbnail";
 import Row from "./layout/Row";
 import Button from "./primitives/Button";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import React from "react";
 import { Document } from "react-pdf";
 import { useDrop, useDrag } from "react-dnd";
 import { thumbnailsSizeAtom } from "./store/atoms";
 import { useAtom } from "jotai";
 
-const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
-    const [open, setOpen] = useState(true);
+const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const isLoading = false;
     const [thumbnailsWidth]: any = useAtom(thumbnailsSizeAtom);
 
@@ -32,23 +31,37 @@ const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage
         })
     });
 
+    const toggleClosed = () => {
+        setOpenedRows((oldValues: any) => {
+            const updatedValues = oldValues.slice();
+            updatedValues.splice(0, 1, !opened);
+            return updatedValues;
+        });
+    }
+
     drag(drop(ref));
 
     return <>
-
         <PlaceholderRow pdfIndex={pdfIndex + 0.5} />
 
         <div ref={ref} className={`flex w-full row-${pdfIndex}`}>
             <Row pdfIndex={pdfIndex} className={`group/pdfRow flex flex-col w-full row-${pdfIndex}`}>
-                <div data-pdf-index={pdfIndex} className={`flex items-center justify-between p-4`}>
+                <div
+                    data-pdf-index={pdfIndex}
+                    className={`flex items-center justify-between p-4`}
+                >
                     <BiChevronDown
                         className={`
-                            cursor-pointer text-lg hidden
-                            ${open ? 'rotate-180' : ''}
+                            cursor-pointer text-[64px]
+                            ${opened ? 'rotate-180' : ''}
                         `}
-                        onClick={() => setOpen(oldValue => !oldValue)}
+                        onClick={toggleClosed}
                     />
-                    <span data-pdf-index={pdfIndex} className="text-xs mr-auto relative w-full text-text-dark">
+                    <span
+                        data-pdf-index={pdfIndex}
+                        className="text-xs ml-2 mr-auto relative w-full text-text-dark"
+                        onClick={toggleClosed}
+                    >
                         <h3 className={`mr-2 inline break-all row-${pdfIndex}`}>{filename}</h3>
                         ({pages.length} {pages.length > 1 ? ' pagina\'s' : ' pagina'})
                     </span>
@@ -62,19 +75,19 @@ const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage
                         }
                     >
                         <Button
-                            className='group overflow-hidden'
-                            title={<><BsCheck2Circle /><span className="group-hover:flex hidden text-xs">naar administratie</span></>}
+                            className='overflow-hidden'
+                            title={<><BsCheck2Circle /><span className="group-hover:flex text-xs">naar administratie</span></>}
                             onClick={async () => await handleSaveDocument(pdfIndex)}
                             padding='large'
                         />
                         <Button
-                            className='group overflow-hidden'
+                            className='overflow-hidden'
                             title={<><BiRotateRight className="rotate-[180deg]" /><span className="group-hover:flex hidden text-xs">roteer alle pagina's</span></>}
                             onClick={() => handleRotateDocument({ pdfIndex })}
                             disabled={isLoading}
                         />
                         <Button
-                            className='group overflow-hidden'
+                            className='overflow-hidden'
                             title={<><BsTrash /><span className="group-hover:flex hidden text-xs">verwijder document</span></>}
                             onClick={() => handleDeleteDocument(pdfIndex)}
                             disabled={isLoading}
@@ -91,13 +104,13 @@ const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage
                         data-pdf-index={pdfIndex}
                         className={
                             `p-4 gap-1 w-full overflow-hidden border-text-lighter opacity-100
-                     ${open ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
+                     ${opened ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
                      flex flex-row flex-wrap row-${pdfIndex} relative`
                         }>
                         {/* thumbnails of current PDF */}
                         {pages.map((pageIndex: number, rowIndex: number) => {
                             return <div
-                                className={`flex flex-row ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
+                                className={`flex flex-row ${opened ? 'opacity-100' : 'opacity-0 hidden'}`}
                                 style={{ width: parseFloat(thumbnailsWidth) }}
                                 key={`thumbnail-${pdfIndex}-${pageIndex}`}
                             >

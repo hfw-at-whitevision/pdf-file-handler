@@ -22,3 +22,5 @@ export const isDraggingFilesAtom = atom(false);
 export const userIsDraggingAtom = atom(false);
 
 export const thumbnailsSizeAtom = atom(process.env.NEXT_PUBLIC_DEFAULT_THUMBNAIL_WIDTH);
+
+export const openedRowsAtom = atom([]);

@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { useAtom, useSetAtom } from "jotai";
-import { isDraggingFilesAtom, isLoadingAtom, loadingMessageAtom, pagesAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, totalPagesAtom } from "../store/atoms";
+import { isDraggingFilesAtom, isLoadingAtom, loadingMessageAtom, openedRowsAtom, pagesAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, totalPagesAtom } from "../store/atoms";
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
 import { get } from "idb-keyval";
@@ -13,6 +13,7 @@ const Drop = ({ noClick = false }) => {
   const setTotalPages: any = useSetAtom(totalPagesAtom)
   const setPdfFileNames: any = useSetAtom(pdfFilenamesAtom)
   const [, setStateChanged]: any = useAtom(stateChangedAtom)
+  const setOpenedRows: any = useSetAtom(openedRowsAtom)
   const setRotations: any = useSetAtom(rotationsAtom)
   const setPages: any = useSetAtom(pagesAtom)
   const setIsDraggingFiles = useSetAtom(isDraggingFilesAtom)
@@ -143,6 +144,7 @@ const Drop = ({ noClick = false }) => {
       }
       setRotations((oldValues: any) => [...oldValues, pdfRotations]);
       setPages((oldValues: any) => [...oldValues, pdfPages]);
+      setOpenedRows((oldValues: any) => [...oldValues, true]);
       setPdfs([mergedPdf]);
     }
     setStateChanged((oldValue: number) => oldValue + 1);
