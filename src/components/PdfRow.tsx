@@ -9,10 +9,13 @@ import { useRef, useState } from "react";
 import React from "react";
 import { Document } from "react-pdf";
 import { useDrop, useDrag } from "react-dnd";
+import { thumbnailsSizeAtom } from "./store/atoms";
+import { useAtom } from "jotai";
 
 const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const [open, setOpen] = useState(true);
     const isLoading = false;
+    const [thumbnailsWidth]: any = useAtom(thumbnailsSizeAtom);
 
     if (!pages?.length) return null;
 
@@ -94,7 +97,8 @@ const PdfRow = ({ filename, inputPdf, pages, pdfIndex, rotations, handleMovePage
                         {/* thumbnails of current PDF */}
                         {pages.map((pageIndex: number, rowIndex: number) => {
                             return <div
-                                className={`flex flex-row w-[130px] ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
+                                className={`flex flex-row ${open ? 'opacity-100' : 'opacity-0 hidden'}`}
+                                style={{ width: parseFloat(thumbnailsWidth) }}
                                 key={`thumbnail-${pdfIndex}-${pageIndex}`}
                             >
                                 {

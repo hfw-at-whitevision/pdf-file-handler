@@ -24,4 +24,9 @@ export const administrationTiles = [
         code: 104,
         displayName: 'Administratie 5',
     },
+    {
+        id: 5,
+        code: 105,
+        displayName: 'Administratie 6',
+    },
 ]

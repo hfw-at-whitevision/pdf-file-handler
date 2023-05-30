@@ -19,6 +19,7 @@ const Thumbnail = (
         handleRotatePage,
         handleMovePage,
         index,
+        width
     }: any
 ) => {
     const setCurrent: any = useSetAtom(currentAtom);
@@ -134,7 +135,7 @@ const Thumbnail = (
                 renderAnnotationLayer={false}
                 renderTextLayer={false}
                 renderMode="canvas"
-                width={100}
+                width={width}
                 loading={<Loading />}
                 canvasBackground='white'
                 rotate={rotation}

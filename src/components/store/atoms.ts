@@ -20,3 +20,5 @@ export const loadingMessageAtom = atom(null);
 
 export const isDraggingFilesAtom = atom(false);
 export const userIsDraggingAtom = atom(false);
+
+export const thumbnailsSizeAtom = atom(process.env.NEXT_PUBLIC_DEFAULT_THUMBNAIL_WIDTH);

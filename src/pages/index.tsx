@@ -23,6 +23,7 @@ import LocalStateHandler from "@/components/layout/LocalStateHandler";
 import CurrentHandler from "@/components/layout/CurrentHandler";
 import { Document } from "react-pdf";
 import DragDropzone from "@/components/layout/DragDropzone";
+import ThumbnailsSizeInput from "@/components/layout/ThumbnailsSizeInput";
 
 const Home: NextPage = () => {
     const [pdfFilenames, setPdfFilenames]: [Array<string>, any] = useAtom(pdfFilenamesAtom);
@@ -383,12 +384,7 @@ const Home: NextPage = () => {
                     />
                 </div>
 
-                <div className="w-[200px] ml-auto text-right">
-                    <label htmlFor="default-range" className="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
-                        Thumbnails grootte
-                    </label>
-                    <input id="default-range" type="range" value="50" step={1} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" />
-                </div>
+                <ThumbnailsSizeInput />
             </header>
 
             <Split
