@@ -279,26 +279,16 @@ const Home: NextPage = () => {
 
     const handleSaveDocument = useCallback(async (pdfIndex: number = 0) => {
         setIsLoading(true);
-        const pdfDoc = await PDFDocument.load(pdfs[pdfIndex], { ignoreEncryption: true, parseSpeed: 1500 });
-        const base64 = await pdfDoc.saveAsBase64({ dataUri: true });
-        /*
-                const res = await fetch("https://devweb.docbaseweb.nl/api/files/uploadtodocbase", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        administrationCode: "1",
-                        pdfBase64: base64,
-                        fileName: pdfFilenames[pdfIndex],
-                        creationDate: new Date().toISOString(),
-                        pageCount: totalPages[pdfIndex],
-                    })
-                });
-        */
+        const pages = await get('pages');
+        const pdfs = await get('pdfs');
+        const completePdfDoc = await PDFDocument.load(pdfs[0], { ignoreEncryption: true, parseSpeed: 1500 });
+        const pdfDoc = await PDFDocument.create();
+        const copiedPages = await pdfDoc.copyPages(completePdfDoc, pages[pdfIndex]);
+        copiedPages.forEach((page) => pdfDoc.addPage(page));
+        const base64 = await pdfDoc.saveAsBase64({ dataUri: false });
         setIsLoading(false);
         return base64;
-    }, []);
+    }, [pages]);
 
     const handleSaveAllDocuments = async () => {
         setIsLoading(true);
@@ -446,7 +436,7 @@ const Home: NextPage = () => {
                 </section>
 
                 {/* administration tiles */}
-                <AdministrationTiles />
+                <AdministrationTiles handleSaveDocument={handleSaveDocument} />
             </Split>
 
             <ScrollDropTarget position='bottom' />

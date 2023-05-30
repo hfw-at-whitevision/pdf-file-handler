@@ -1,4 +1,4 @@
-export function blobToURL(blob) {
+export function blobToURL(blob: any) {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.readAsDataURL(blob);
@@ -9,7 +9,7 @@ export function blobToURL(blob) {
   });
 }
 
-export async function fileToBlob(file, handleUpdate) {
+export async function fileToBlob(file: any, handleUpdate: any) {
   const { content, size } = file;
   let chunks = [];
   let i = 0;

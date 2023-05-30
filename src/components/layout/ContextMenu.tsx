@@ -124,7 +124,7 @@ export default ContextMenu;
 const contextMenuItems = [
     {
         icon: BsLayoutSplit,
-        title: 'Splits document vanaf deze pagina',
+        title: 'Split document vanaf deze pagina',
         action: 'split',
         for: ['thumbnail'],
     },
