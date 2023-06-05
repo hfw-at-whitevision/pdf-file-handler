@@ -24,6 +24,7 @@ import CurrentHandler from "@/components/layout/CurrentHandler";
 import { Document } from "react-pdf";
 import DragDropzone from "@/components/layout/DragDropzone";
 import ThumbnailsSizeInput from "@/components/layout/ThumbnailsSizeInput";
+import Header from "@/components/layout/Header";
 
 const Home: NextPage = () => {
     let timer: any = null;
@@ -315,7 +316,7 @@ const Home: NextPage = () => {
     // react-split
     // ********************************************************
     const [splitSizes, setSplitSizes] = useAtom(splitSizesAtom);
-    const [minSizes, setMinSizes] = useState([470, 480, 150]);
+    const [minSizes] = useState([470, 480, 150]);
     const persistFileHandlerPanelSizes = useCallback((newSplitSizes: Array<number>) => {
         if (!newSplitSizes) return;
         const roundedSizes = newSplitSizes.map((size: number) => Math.round(size));
@@ -345,7 +346,7 @@ const Home: NextPage = () => {
         console.log(`Updated thumbnailsPerRow: ${newThumbnailsPerRow}`);
 
         setThumbnailsPerRow(newThumbnailsPerRow);
-    }, [splitSizes])
+    }, [splitSizes, pdfRowsRef?.current?.getBoundingClientRect()?.width, thumbnailWidth])
 
     return (
         <>
@@ -378,42 +379,10 @@ const Home: NextPage = () => {
                 openedRows={openedRows}
             />
 
-            <header className={`fixed top-0 left-0 right-0 h-[100px] flex flex-row w-full bg-white shadow-sm border-body-bg-dark z-50 px-8 py-4 items-center gap-16`}>
-                <div>
-                    <img src="./whitevision.png" width={100} className="flex justify-center gap-2 text-lg" />
-                    <h3 className="font-black mt-2 tracking-widest uppercase text-[9px] text-stone-700">
-                        File Handler {process.env.NEXT_PUBLIC_BUILD_VERSION ?? ''}
-                    </h3>
-                </div>
-
-                <div className={`grid gap-4 grid-cols-3 w-[600px]`}>
-                    <ButtonXl
-                        className={
-                            `flex w-full flex-col gap-4 rounded-md text-stone-600 text-sm cursor-pointer bg-stone-100
-                            ring-2 ring-dashed hover:ring-amber/40 p-4 ring-offset-4 ring-amber-300/50 relative`}
-                        icon={<BsUpload className="text-base" />}
-                        title="Upload"
-                    >
-                        <Drop />
-                    </ButtonXl>
-                    <ButtonXl
-                        title={"Opslaan"}
-                        icon={<BsSave className="text-base" />}
-                        description="Download als PDF."
-                        onClick={handleSaveAllDocuments}
-                        className={!pdfs?.length ? 'disabled' : ''}
-                    />
-                    <ButtonXl
-                        title={"Reset"}
-                        icon={<BsArrowRepeat className="text-base" />}
-                        description="Begin opnieuw."
-                        onClick={handleReset}
-                        className={!pdfs?.length ? 'disabled' : ''}
-                    />
-                </div>
-
-                <ThumbnailsSizeInput />
-            </header>
+            <Header
+                handleSaveAllDocuments={handleSaveAllDocuments}
+                handleReset={handleReset}
+            />
 
             <Split
                 sizes={getPersistedFileHandlerPanelSizes()}

@@ -13,7 +13,7 @@ export default function ThumbnailsSizeInput() {
         setMultiplier(newMultiplier);
     }
     return <>
-        <div className="w-[200px] ml-auto text-right">
+        <div className="w-full">
             <label htmlFor="thumbnailsSizeInput" className="block mb-2 text-xs font-medium text-gray-900 dark:text-white">
                 Thumbnails grootte ({multiplier}x)
             </label>
