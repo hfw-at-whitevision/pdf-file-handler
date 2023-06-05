@@ -131,7 +131,7 @@ const Thumbnail = (
             <Page
                 className={
                     `w-full cursor-pointer relative rounded-md overflow-hidden
-              pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
+                    pdf-${pdfIndex}-${pageIndex} object-contain pdf-thumbnail flex items-center justify-center`
                 }
                 pageIndex={pageIndex}
                 renderAnnotationLayer={false}

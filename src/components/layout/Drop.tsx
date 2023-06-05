@@ -33,7 +33,6 @@ const Drop = ({ noClick = false }) => {
         var pdfA: any = await PDFDocument.load(updatedPdf[0], { ignoreEncryption: true, parseSpeed: 1500 });
         var pageIndices = await pdfA.getPageIndices();
         lastPageIndex = pageIndices[pageIndices.length - 1];
-        alert('lastPageIndex: ' + lastPageIndex)
       }
 
       // check file size
@@ -120,7 +119,6 @@ const Drop = ({ noClick = false }) => {
       let mergedPdf = newPdf;
 
       if (updatedPdf?.length) {
-        alert('yes')
         // merge PDFs if there is an existing PDF
         const mergedPdfDoc = await PDFDocument.create();
         const copiedPagesA = await mergedPdfDoc.copyPages(pdfA, pdfA.getPageIndices());
@@ -129,7 +127,6 @@ const Drop = ({ noClick = false }) => {
         copiedPagesB.forEach((page) => mergedPdfDoc.addPage(page));
         mergedPdf = await mergedPdfDoc.saveAsBase64({ dataUri: true });
       }
-      else alert('no')
 
       const pdfBTotalPages = pdfB?.getPageCount();
       setPdfFilenames((oldValues: any) => [...oldValues, files[i]['name']]);

@@ -25,6 +25,7 @@ import { Document } from "react-pdf";
 import DragDropzone from "@/components/layout/DragDropzone";
 import ThumbnailsSizeInput from "@/components/layout/ThumbnailsSizeInput";
 import Header from "@/components/layout/Header";
+import InsetDragDropzone from "@/components/layout/InsetDragDropzone";
 
 const Home: NextPage = () => {
     let timer: any = null;
@@ -146,6 +147,10 @@ const Home: NextPage = () => {
             pdfIndex: (inputPdfIndex > 0) ? inputPdfIndex - 1 : 0,
             pageIndex: 0,
         }), 400);
+
+        // clear [pdfs] if this is the last document
+        const pages = await get('pages');
+        if (pages.length === 1) setPdfs([]);
 
         setIsLoading(false);
         setStateChanged((oldValue: number) => oldValue + 1);
@@ -332,7 +337,6 @@ const Home: NextPage = () => {
     const pdfRowsRef: any = useRef(null);
     const [thumbnailWidth]: any = useAtom(thumbnailsWidthAtom);
     const setThumbnailsPerRow = useSetAtom(thumbnailsPerRowAtom);
-    const windowWidth = process.browser ? window.innerWidth : null;
 
     const calculateThumbnailsWidth = () => {
         const pdfRowsWidth = pdfRowsRef.current.getBoundingClientRect().width;
@@ -429,23 +433,15 @@ const Home: NextPage = () => {
                 </section>
 
                 {/* PDF preview */}
-                <section className="pdf-preview-container">
-                    {pdfs?.length
-                        ? <Document
-                            file={pdfs[0]}
-                            loading={<Loading />}
-                        >
-                            <LegacyPdfPreview
-                                rotation={rotations[current.pdfIndex]?.[pages[current.pdfIndex].findIndex((value: any) => value === current.pageIndex)]}
-                            />
-                        </Document>
-                        : <DragDropzone className="h-[calc(100vh-164px)]" />
-                    }
-                </section>
+                <LegacyPdfPreview
+                    rotation={rotations[current.pdfIndex]?.[pages[current.pdfIndex].findIndex((value: any) => value === current.pageIndex)]}
+                />
 
                 {/* administration tiles */}
                 <AdministrationTiles handleSaveDocument={handleSaveDocument} />
             </Split>
+
+            <InsetDragDropzone />
 
             <ScrollDropTarget position='bottom' />
 

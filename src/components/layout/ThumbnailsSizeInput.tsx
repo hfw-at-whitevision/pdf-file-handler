@@ -1,4 +1,4 @@
-import { useAtom, useSetAtom } from "jotai";
+import { useSetAtom } from "jotai";
 import { thumbnailsWidthAtom } from "../store/atoms";
 import { useState } from "react";
 

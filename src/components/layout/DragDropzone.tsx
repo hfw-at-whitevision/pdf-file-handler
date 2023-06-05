@@ -8,9 +8,9 @@ export default function DragDropzone({ className = null, noClick = false }: any)
     return (
         <div className={`flex items-center justify-center ${className && className}`}>
             <div className={
-                `${isDraggingFiles ? 'border-8 bg-amber-100/50' : 'border-0'}
+                `${isDraggingFiles ? 'border-8 bg-amber-100/90' : 'border-0'}
                 ${noClick ? 'cursor-default' : 'cursor-pointer'}
-                px-16 py-32 w-full h-full border-dashed rounded-3xl flex flex-col items-center justify-center duration-500 relative
+                px-16 py-32 w-full h-full border-dashed rounded-3xl flex flex-col items-center justify-center duration-300 relative
                 border-amber-300 overflow-hidden`
             }>
 
