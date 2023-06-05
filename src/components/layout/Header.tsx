@@ -40,6 +40,14 @@ export default function Header({ handleSaveAllDocuments, handleReset }: any) {
             <ThumbnailsSizeInput />
         </div>
     ];
+    const helpMenu = [
+        <ButtonXl>
+            Handleiding
+        </ButtonXl>,
+        <ButtonXl>
+            Sneltoetsen
+        </ButtonXl>
+    ];
     const menus = [
         {
             label: "Bestand",
@@ -48,8 +56,12 @@ export default function Header({ handleSaveAllDocuments, handleReset }: any) {
         {
             label: "Weergave",
             menu: viewMenu,
+        },
+        {
+            label: "Help",
+            menu: helpMenu,
         }
-    ]
+    ];
 
     return <>
         <header className={`fixed top-0 left-0 right-0 h-[100px] flex flex-row w-full bg-white shadow-sm border-body-bg-dark z-50 px-8 py-4 items-center gap-16`}>
