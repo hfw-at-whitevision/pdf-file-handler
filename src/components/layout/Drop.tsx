@@ -4,7 +4,6 @@ import { useAtom, useSetAtom } from "jotai";
 import { isDraggingFilesAtom, isLoadingAtom, loadingMessageAtom, openedRowsAtom, pagesAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom } from "../store/atoms";
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
-import { get } from "idb-keyval";
 
 const Drop = ({ noClick = false }) => {
   const setIsLoading: any = useSetAtom(isLoadingAtom)
@@ -22,7 +21,7 @@ const Drop = ({ noClick = false }) => {
     setIsLoading(true);
 
     let lastPageIndex: any = 0;
-    let updatedPdf: any = '';
+    let updatedPdf: any = pdfs;
 
     for (let i = 0; i < files.length; i++) {
       setLoadingMessage(`Document ${i + 1} van ${files.length} wordt geladen...`);
@@ -121,6 +120,7 @@ const Drop = ({ noClick = false }) => {
       let mergedPdf = newPdf;
 
       if (updatedPdf?.length) {
+        alert('yes')
         // merge PDFs if there is an existing PDF
         const mergedPdfDoc = await PDFDocument.create();
         const copiedPagesA = await mergedPdfDoc.copyPages(pdfA, pdfA.getPageIndices());
@@ -129,6 +129,7 @@ const Drop = ({ noClick = false }) => {
         copiedPagesB.forEach((page) => mergedPdfDoc.addPage(page));
         mergedPdf = await mergedPdfDoc.saveAsBase64({ dataUri: true });
       }
+      else alert('no')
 
       const pdfBTotalPages = pdfB?.getPageCount();
       setPdfFilenames((oldValues: any) => [...oldValues, files[i]['name']]);
