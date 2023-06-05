@@ -11,7 +11,7 @@ import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom, useSetAtom } from "jotai";
-import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, openedRowsAtom, thumbnailsWidthAtom, thumbnailsPerRowAtom } from "@/components/store/atoms";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, openedRowsAtom, thumbnailsWidthAtom, thumbnailsPerRowAtom, splitSizesAtom } from "@/components/store/atoms";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
@@ -314,17 +314,17 @@ const Home: NextPage = () => {
     // ********************************************************
     // react-split
     // ********************************************************
-    const [sizes, setSizes]: [any, any] = useState([35, 40, 25]);
+    const [splitSizes, setSplitSizes] = useAtom(splitSizesAtom);
     const [minSizes, setMinSizes] = useState([470, 480, 150]);
-    const persistFileHandlerPanelSizes = useCallback((sizes: number[]) => {
-        if (!sizes) return;
-        const roundedSizes = sizes.map((size: number) => Math.round(size));
-        setSizes(sizes);
-    }, [sizes]);
+    const persistFileHandlerPanelSizes = useCallback((newSplitSizes: Array<number>) => {
+        if (!newSplitSizes) return;
+        const roundedSizes = newSplitSizes.map((size: number) => Math.round(size));
+        setSplitSizes(newSplitSizes);
+    }, [splitSizes]);
     const getPersistedFileHandlerPanelSizes = () => {
-        if (sizes) {
-            const roundedSizes = sizes.map((size: number) => Math.round(size));
-            return sizes;
+        if (splitSizes) {
+            const roundedSizes = splitSizes.map((size: number) => Math.round(size));
+            return splitSizes;
         }
         else return undefined;
     };
@@ -345,7 +345,7 @@ const Home: NextPage = () => {
         console.log(`Updated thumbnailsPerRow: ${newThumbnailsPerRow}`);
 
         setThumbnailsPerRow(newThumbnailsPerRow);
-    }, [sizes])
+    }, [splitSizes])
 
     return (
         <>
@@ -370,7 +370,7 @@ const Home: NextPage = () => {
             <ScrollDropTarget position='top' />
 
             <Debug
-                sizes={sizes}
+                splitSizes={splitSizes}
                 current={current}
                 rotations={rotations}
                 pages={pages}

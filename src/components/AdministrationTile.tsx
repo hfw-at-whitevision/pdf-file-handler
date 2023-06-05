@@ -40,7 +40,7 @@ export default function AdministrationTile({ tile, handleSaveDocument }: any) {
             className={
                 `w-full h-[150px] flex
                 flex-col rounded-md overflow-hidden p-4 text-sm
-                items-center justify-center
+                items-center justify-center text-center
                 ${isOver
                     ? 'bg-amber-300 shadow-2xl scale-125 z-40'
                     : 'bg-body-bg-light border-text-lighter'

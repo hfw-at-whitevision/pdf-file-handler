@@ -24,3 +24,4 @@ export const thumbnailsWidthAtom = atom(process.env.NEXT_PUBLIC_DEFAULT_THUMBNAI
 export const thumbnailsPerRowAtom = atom(4);
 
 export const openedRowsAtom = atom([]);
+export const splitSizesAtom = atom([35, 40, 25]);
