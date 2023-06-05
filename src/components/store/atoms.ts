@@ -2,7 +2,6 @@ import { atom } from "jotai";
 
 // PDFs
 export const pdfsAtom = atom([]);
-export const totalPagesAtom = atom([]);
 export const pdfFilenamesAtom = atom([]);
 export const stateChangedAtom = atom(0);
 export const rotationsAtom = atom([]);

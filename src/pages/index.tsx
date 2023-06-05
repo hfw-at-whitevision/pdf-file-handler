@@ -36,7 +36,7 @@ const Home: NextPage = () => {
     const [loadingMessage]: any = useAtom(loadingMessageAtom);
     const [rotations, setRotations]: any = useAtom(rotationsAtom);
     const [pages, setPages]: any = useAtom(pagesAtom);
-    const [, setStateChanged] = useAtom(stateChangedAtom);
+    const setStateChanged = useSetAtom(stateChangedAtom);
     const [openedRows, setOpenedRows]: any = useAtom(openedRowsAtom);
     const [newRowCounter, setNewRowCounter] = useState(1);
 

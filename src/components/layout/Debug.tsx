@@ -16,7 +16,7 @@ export default function Debug(props: any) {
         <br />
     </>))
 
-    return <pre className="z-[1000] fixed right-0 bg-brand-primary/10 backdrop-blur-lg max-w-[800px]">
+    return <pre className="z-[1000] fixed right-0 bottom-0 bg-brand-primary/10 backdrop-blur-lg max-w-[800px]">
         build: {process.env.NEXT_PUBLIC_BUILD_VERSION}
         <br />
         {data}

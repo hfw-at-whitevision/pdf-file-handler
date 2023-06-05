@@ -136,7 +136,7 @@ const Thumbnail = (
                 renderTextLayer={false}
                 renderMode="canvas"
                 width={width}
-                loading={<Loading />}
+                loading={<Loading loading={true} />}
                 canvasBackground='white'
                 rotate={rotation}
             />

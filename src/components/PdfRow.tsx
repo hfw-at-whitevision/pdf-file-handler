@@ -11,6 +11,7 @@ import { Document } from "react-pdf";
 import { useDrop, useDrag } from "react-dnd";
 import { thumbnailsSizeAtom } from "./store/atoms";
 import { useAtom } from "jotai";
+import Loading from "./layout/Loading";
 
 const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const isLoading = false;
@@ -97,7 +98,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, ro
 
                 <Document
                     file={inputPdf}
-                    loading={undefined}
+                    loading={<Loading loading={true} />}
                     renderMode='none'
                 >
                     <div
