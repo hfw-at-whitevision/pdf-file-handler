@@ -11,7 +11,7 @@ const Drop = ({ noClick = false }) => {
   const setLoadingMessage: any = useSetAtom(loadingMessageAtom)
   const [, setPdfs]: any = useAtom(pdfsAtom)
   const setTotalPages: any = useSetAtom(totalPagesAtom)
-  const setPdfFileNames: any = useSetAtom(pdfFilenamesAtom)
+  const setPdfFilenames: any = useSetAtom(pdfFilenamesAtom)
   const [, setStateChanged]: any = useAtom(stateChangedAtom)
   const setOpenedRows: any = useSetAtom(openedRowsAtom)
   const setRotations: any = useSetAtom(rotationsAtom)
@@ -82,7 +82,7 @@ const Drop = ({ noClick = false }) => {
           const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
           const pages = newPdfDoc.getPageCount();
           setTotalPages((oldTotalPages: any) => [...oldTotalPages, pages]);
-          setPdfFileNames((oldFileNames: any) => [...oldFileNames, filename]);
+          setPdfFilenames((oldValues: any) => [...oldValues, filename]);
 
           let pagesOfUploadedPdf: Array<number> = []
           for (let x = 0; x < pages; x++) {
@@ -110,15 +110,17 @@ const Drop = ({ noClick = false }) => {
 
       // PDF / JPG / PNG files: further process it
       const pdfs = await get('pdfs');
-      const pages = await get('pages');
-      const totalNumberOfPages = pages.reduce((prev: any, current: any) => current.length + prev, 0);
       const pdfB = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 });
       let mergedPdf = newPdf;
+      let lastPageIndex: any = 0;
 
       if (pdfs?.[0]?.length) {
         // merge PDFs if there is an existing PDF
         const mergedPdfDoc = await PDFDocument.create();
         const pdfA = await PDFDocument.load(pdfs[0], { ignoreEncryption: true, parseSpeed: 1500 });
+        const pageIndices = await pdfA.getPageIndices();
+        lastPageIndex = pageIndices[pageIndices.length - 1];
+
         const copiedPagesA = await mergedPdfDoc.copyPages(pdfA, pdfA.getPageIndices());
         copiedPagesA.forEach((page) => mergedPdfDoc.addPage(page));
         const copiedPagesB = await mergedPdfDoc.copyPages(pdfB, pdfB.getPageIndices());
@@ -128,7 +130,7 @@ const Drop = ({ noClick = false }) => {
 
       const pdfBTotalPages = pdfB?.getPageCount();
       setTotalPages((oldTotalPages: any) => [...oldTotalPages, pdfBTotalPages]);
-      setPdfFileNames((oldFileNames: any) => [...oldFileNames, files[i]['name']]);
+      setPdfFilenames((oldValues: any) => [...oldValues, files[i]['name']]);
 
       const getPageRotation = async (pageNumber: number) => {
         const page = await pdfB.getPage(pageNumber);
@@ -140,7 +142,7 @@ const Drop = ({ noClick = false }) => {
       for (let i = 0; i < pdfBTotalPages; i++) {
         const rotation = await getPageRotation(i);
         pdfRotations.push(rotation);
-        pdfPages.push(totalNumberOfPages + i);
+        pdfPages.push(lastPageIndex + 1 + i);
       }
       setRotations((oldValues: any) => [...oldValues, pdfRotations]);
       setPages((oldValues: any) => [...oldValues, pdfPages]);

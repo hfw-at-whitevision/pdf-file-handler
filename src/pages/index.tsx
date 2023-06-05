@@ -55,11 +55,13 @@ const Home: NextPage = () => {
         setRotations([]);
         setCurrent({ pdfIndex: 0, pageIndex: 0 });
         setPages([]);
+        setOpenedRows([]);
 
         await del('totalPages');
         await del('pdfFilenames');
         await del('pdfs');
         await del('rotations');
+        await del('openedRows');
         await del('pages');
 
         setStateChanged((oldValue: number) => oldValue + 1);
@@ -121,7 +123,7 @@ const Home: NextPage = () => {
                 const updatedPdf = await pdfDoc.saveAsBase64({ dataUri: true });
                 setPdfs([updatedPdf]);*/
 
-        setPdfFilenames((oldPdfFileNames: any) => oldPdfFileNames.filter((_: any, index: number) => index !== inputPdfIndex));
+        setPdfFilenames((oldValues: any) => oldValues.filter((_: any, index: number) => index !== inputPdfIndex));
         setPages((oldPages: any) => {
             if (oldPages?.length === 1) return [];
             let updatedPages = oldPages;
@@ -134,9 +136,9 @@ const Home: NextPage = () => {
             updatedValue.splice(inputPdfIndex, 1);
             return updatedValue;
         });
-        setOpenedRows((oldValues: any) => {
+        setOpenedRows((oldValues: Array<boolean>) => {
             let updatedValues = oldValues.slice();
-            updatedValues = updatedValues.filter((value: number) => value === inputPdfIndex);
+            updatedValues = updatedValues.filter((value: boolean, index: number) => index !== inputPdfIndex);
             return updatedValues;
         });
         timer = setTimeout(() => setCurrent({
@@ -422,7 +424,7 @@ const Home: NextPage = () => {
                             handleDeletePage={handleDeletePage}
                             handleRotateDocument={handleRotateDocument}
                             handleDeleteDocument={handleDeleteDocument}
-                            opened={openedRows[pdfIndex]}
+                            opened={openedRows?.[pdfIndex]}
                             setOpenedRows={setOpenedRows}
                             inputPdf={pdfs[0]}
                         />

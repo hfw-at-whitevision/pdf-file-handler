@@ -32,9 +32,9 @@ const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, ro
     });
 
     const toggleClosed = () => {
-        setOpenedRows((oldValues: any) => {
+        setOpenedRows((oldValues: Array<boolean>, index: number) => {
             const updatedValues = oldValues.slice();
-            updatedValues.splice(0, 1, !opened);
+            updatedValues.splice(pdfIndex, 1, !opened);
             return updatedValues;
         });
     }
@@ -59,7 +59,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, ro
                     />
                     <span
                         data-pdf-index={pdfIndex}
-                        className="text-xs ml-2 mr-auto relative w-full text-text-dark"
+                        className="text-xs ml-2 mr-auto relative w-full text-text-dark cursor-pointer py-4"
                         onClick={toggleClosed}
                     >
                         <h3 className={`mr-2 inline break-all row-${pdfIndex}`}>{filename}</h3>

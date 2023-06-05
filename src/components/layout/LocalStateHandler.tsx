@@ -1,7 +1,7 @@
 import { set, get } from "idb-keyval";
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { stateChangedAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, pagesAtom } from "../store/atoms";
+import { stateChangedAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, pagesAtom, openedRowsAtom } from "../store/atoms";
 
 const LocalStateHandler = () => {
     // state save
@@ -10,11 +10,13 @@ const LocalStateHandler = () => {
     const [rotations, setRotations] = useAtom(rotationsAtom);
     const [pages, setPages] = useAtom(pagesAtom);
     const [pdfs, setPdfs] = useAtom(pdfsAtom);
+    const [openedRows, setOpenedRows] = useAtom(openedRowsAtom);
     const saveState = async () => {
         await set('pdfFilenames', pdfFilenames);
         await set('pdfs', pdfs);
         await set('rotations', rotations);
         await set('pages', pages);
+        await set('openedRows', openedRows);
         console.log(`State saved.`)
     }
     useEffect(() => {
@@ -26,17 +28,16 @@ const LocalStateHandler = () => {
         const pdfs = await get('pdfs');
         if (!pdfs?.length) return;
 
-        get('pdfFilenames').then((pdfFilenames) => {
-            get('rotations').then((rotations) => {
-                get('pages').then((pages) => {
-                    setPdfFilenames(pdfFilenames);
-                    setPages(pages);
-                    setRotations(rotations);
-                    setPdfs(pdfs);
-                    console.log(`State fetched.`)
-                });
-            });
-        });
+        const pdfFilenames = await get('pdfFilenames');
+        const rotations = await get('rotations');
+        const pages = await get('pages');
+        const openedRows = await get('openedRows');
+        setPdfFilenames(pdfFilenames);
+        setPages(pages);
+        setRotations(rotations);
+        setPdfs(pdfs);
+        setOpenedRows(openedRows);
+        console.log(`State fetched.`)
     }
     useEffect(() => {
         fetchState();
