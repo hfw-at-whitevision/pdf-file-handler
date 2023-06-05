@@ -175,14 +175,11 @@ const Home: NextPage = () => {
             return updatedArray;
         });
         setStateChanged((oldState: number) => oldState + 1);
-        // if deleted page = current page, update current
-        if (current.pdfIndex === pdfIndex && current.pageIndex === pageIndex) {
-            timer = setTimeout(() => setCurrent({
-                pdfIndex,
-                pageIndex: nextPageIndex,
-                ...skipScrollIntoView && { skipScrollIntoView },
-            }), 400);
-        }
+        timer = setTimeout(() => setCurrent({
+            pdfIndex,
+            pageIndex: nextPageIndex,
+            ...skipScrollIntoView && { skipScrollIntoView },
+        }), 400);
     }, [current.pdfIndex, current.pageIndex, pages, pdfs, rotations]);
     const handleRotateDocument = useCallback(async ({ pdfIndex, skipScrollIntoView }: any) => {
         let updatedRotations = await get('rotations');
@@ -332,23 +329,21 @@ const Home: NextPage = () => {
         else return undefined;
     };
     const pdfRowsRef: any = useRef(null);
-    const [pdfRowsWidth, setPdfRowsWidth] = useState();
     const [thumbnailWidth]: any = useAtom(thumbnailsWidthAtom);
     const setThumbnailsPerRow = useSetAtom(thumbnailsPerRowAtom);
     useEffect(() => {
-        const newWidth = pdfRowsRef.current.getBoundingClientRect().width;
+        const pdfRowsWidth = pdfRowsRef.current.getBoundingClientRect().width;
         const bordersWidth = 2;
         const px = 32;
-        const thumbnailsContainerWidth = newWidth - bordersWidth - px;
+        const thumbnailsContainerWidth = pdfRowsWidth - bordersWidth - px;
         const thumbnailsContainerGap = 4;
         let newThumbnailsPerRow = Math.floor(thumbnailsContainerWidth / thumbnailWidth);
         const gapInBetween = (newThumbnailsPerRow - 1) * thumbnailsContainerGap;
         const checkWidth = (newThumbnailsPerRow * thumbnailWidth) + gapInBetween + bordersWidth + px;
-        if (checkWidth > newWidth) newThumbnailsPerRow = newThumbnailsPerRow - 1;
+        if (checkWidth > pdfRowsWidth) newThumbnailsPerRow = newThumbnailsPerRow - 1;
 
-        alert(`new tpr: ${newThumbnailsPerRow}`)
+        console.log(`Updated thumbnailsPerRow: ${newThumbnailsPerRow}`);
 
-        setPdfRowsWidth(newWidth);
         setThumbnailsPerRow(newThumbnailsPerRow);
     }, [sizes])
 
@@ -471,14 +466,14 @@ const Home: NextPage = () => {
             </Split>
 
             <ScrollDropTarget position='bottom' />
-            {/*
+
             <ContextMenu
                 handleDeletePage={handleDeletePage}
                 handleRotatePage={handleRotatePage}
                 handleSplitDocument={handleSplitDocument}
                 handleRotateDocument={handleRotateDocument}
                 handleDeleteDocument={handleDeleteDocument}
-                /> */}
+            />
         </>
     );
 };
