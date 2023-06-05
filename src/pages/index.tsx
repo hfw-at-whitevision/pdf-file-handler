@@ -332,7 +332,9 @@ const Home: NextPage = () => {
     const pdfRowsRef: any = useRef(null);
     const [thumbnailWidth]: any = useAtom(thumbnailsWidthAtom);
     const setThumbnailsPerRow = useSetAtom(thumbnailsPerRowAtom);
-    useEffect(() => {
+    const windowWidth = process.browser ? window.innerWidth : null;
+
+    const calculateThumbnailsWidth = () => {
         const pdfRowsWidth = pdfRowsRef.current.getBoundingClientRect().width;
         const bordersWidth = 2;
         const px = 32;
@@ -346,7 +348,18 @@ const Home: NextPage = () => {
         console.log(`Updated thumbnailsPerRow: ${newThumbnailsPerRow}`);
 
         setThumbnailsPerRow(newThumbnailsPerRow);
+    }
+
+    useEffect(() => {
+        calculateThumbnailsWidth();
     }, [splitSizes, pdfRowsRef?.current?.getBoundingClientRect()?.width, thumbnailWidth])
+    useEffect(() => {
+        window.addEventListener('resize', calculateThumbnailsWidth);
+
+        return () => {
+            window.removeEventListener('resize', calculateThumbnailsWidth);
+        }
+    }, [])
 
     return (
         <>
