@@ -2,7 +2,7 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import { get, del } from 'idb-keyval';
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Drop from "@/components/layout/Drop";
 import { PDFDocument } from "pdf-lib";
 import ButtonXl from "@/components/primitives/ButtonXl";
@@ -11,7 +11,7 @@ import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom, useSetAtom } from "jotai";
-import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, openedRowsAtom } from "@/components/store/atoms";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, openedRowsAtom, thumbnailsWidthAtom, thumbnailsPerRowAtom } from "@/components/store/atoms";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
@@ -331,6 +331,26 @@ const Home: NextPage = () => {
         }
         else return undefined;
     };
+    const pdfRowsRef: any = useRef(null);
+    const [pdfRowsWidth, setPdfRowsWidth] = useState();
+    const [thumbnailWidth]: any = useAtom(thumbnailsWidthAtom);
+    const setThumbnailsPerRow = useSetAtom(thumbnailsPerRowAtom);
+    useEffect(() => {
+        const newWidth = pdfRowsRef.current.getBoundingClientRect().width;
+        const bordersWidth = 2;
+        const px = 32;
+        const thumbnailsContainerWidth = newWidth - bordersWidth - px;
+        const thumbnailsContainerGap = 4;
+        let newThumbnailsPerRow = Math.floor(thumbnailsContainerWidth / thumbnailWidth);
+        const gapInBetween = (newThumbnailsPerRow - 1) * thumbnailsContainerGap;
+        const checkWidth = (newThumbnailsPerRow * thumbnailWidth) + gapInBetween + bordersWidth + px;
+        if (checkWidth > newWidth) newThumbnailsPerRow = newThumbnailsPerRow - 1;
+
+        alert(`new tpr: ${newThumbnailsPerRow}`)
+
+        setPdfRowsWidth(newWidth);
+        setThumbnailsPerRow(newThumbnailsPerRow);
+    }, [sizes])
 
     return (
         <>
@@ -410,7 +430,7 @@ const Home: NextPage = () => {
                 cursor="col-resize"
             >
                 {/* PDF rows */}
-                <section className={`flex flex-col text-stone-900 items-start gap-y-8 w-full pb-40`}>
+                <section ref={pdfRowsRef} className={`flex flex-col text-stone-900 items-start gap-y-8 w-full pb-40`}>
                     {pages.map((_: any, pdfIndex: number) =>
                         <PdfRow
                             key={`pdf-${pdfIndex}`}
@@ -451,14 +471,14 @@ const Home: NextPage = () => {
             </Split>
 
             <ScrollDropTarget position='bottom' />
-
+            {/*
             <ContextMenu
                 handleDeletePage={handleDeletePage}
                 handleRotatePage={handleRotatePage}
                 handleSplitDocument={handleSplitDocument}
                 handleRotateDocument={handleRotateDocument}
                 handleDeleteDocument={handleDeleteDocument}
-            />
+                /> */}
         </>
     );
 };

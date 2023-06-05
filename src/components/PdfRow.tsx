@@ -9,13 +9,13 @@ import { useRef } from "react";
 import React from "react";
 import { Document } from "react-pdf";
 import { useDrop, useDrag } from "react-dnd";
-import { thumbnailsSizeAtom } from "./store/atoms";
+import { thumbnailsWidthAtom } from "./store/atoms";
 import { useAtom } from "jotai";
 import Loading from "./layout/Loading";
 
 const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const isLoading = false;
-    const [thumbnailsWidth]: any = useAtom(thumbnailsSizeAtom);
+    const [thumbnailsWidth]: any = useAtom(thumbnailsWidthAtom);
 
     if (!pages?.length) return null;
 

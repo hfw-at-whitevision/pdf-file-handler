@@ -9,12 +9,12 @@ export default function Debug(props: any) {
     const pdfs = useAtom(pdfsAtom);
 
     const pdfsSize = pdfs?.length
-        ? Buffer.from(JSON.stringify(pdfs[0]))?.length / 1000
+        ? Buffer.from(JSON.stringify(pdfs[0]))?.length / 1024
         : 0
-    const data = Object.keys(props)?.map((propKey, i) => (<>
+    const data = Object.keys(props)?.map((propKey, i) => (<span key={`debug-${i}`}>
         {propKey}: {JSON.stringify(Object.values(props)?.[i])}
         <br />
-    </>))
+    </span>))
 
     return <pre className="z-[1000] fixed right-0 bottom-0 bg-brand-primary/10 backdrop-blur-lg max-w-[800px]">
         build: {process.env.NEXT_PUBLIC_BUILD_VERSION}

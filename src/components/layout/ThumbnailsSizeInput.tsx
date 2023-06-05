@@ -1,15 +1,15 @@
 import { useAtom, useSetAtom } from "jotai";
-import { thumbnailsSizeAtom } from "../store/atoms";
+import { thumbnailsWidthAtom } from "../store/atoms";
 import { useState } from "react";
 
 export default function ThumbnailsSizeInput() {
-    const setThumbnailsSize: any = useSetAtom(thumbnailsSizeAtom);
+    const setThumbnailsWidth: any = useSetAtom(thumbnailsWidthAtom);
     const [multiplier, setMultiplier] = useState(1.0);
     const handleChangeSize = (e: any) => {
         const defaultWidth: any = process.env.NEXT_PUBLIC_DEFAULT_THUMBNAIL_WIDTH;
         const newMultiplier = parseFloat(e.target.value);
         const width: number = newMultiplier * defaultWidth;
-        setThumbnailsSize(width);
+        setThumbnailsWidth(width);
         setMultiplier(newMultiplier);
     }
     return <>

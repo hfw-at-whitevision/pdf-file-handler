@@ -1,14 +1,14 @@
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { currentAtom, pagesAtom } from "../store/atoms";
+import { currentAtom, pagesAtom, thumbnailsPerRowAtom } from "../store/atoms";
 
-const thumbnailsPerRow = 4;
 const defaultSteps = 1;
 
 const KeyPressListener = ({ findRowIndex, findPageIndex, handleSplitDocument, handleDeleteDocument, handleDeletePage, handleRotateDocument, handleRotatePage }: any) => {
     const [current, setCurrent]: any = useAtom(currentAtom);
     const [pages]: any = useAtom(pagesAtom);
     const currentRowIndex = pages[current.pdfIndex]?.findIndex((value: any) => value === current.pageIndex);
+    const [thumbnailsPerRow] = useAtom(thumbnailsPerRowAtom);
 
     const getFirstPageIndex = (pdfIndex: number) => {
         return pages[pdfIndex][0];
