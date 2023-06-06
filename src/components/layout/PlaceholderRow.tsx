@@ -1,7 +1,7 @@
 import { useAtom } from "jotai";
 import { useDrop } from "react-dnd";
 import { BsPlus } from "react-icons/bs";
-import { userIsDraggingAtom, isLoadingAtom } from "../store/atoms";
+import { isDraggingInternallyAtom, isLoadingAtom } from "../store/atoms";
 
 export default function PlaceholderRow({ pdfIndex = 0 }) {
     const [{ canDrop, isOver }, drop] = useDrop({
@@ -13,7 +13,7 @@ export default function PlaceholderRow({ pdfIndex = 0 }) {
         }),
     });
 
-    const [isDragging] = useAtom(userIsDraggingAtom);
+    const [isDragging] = useAtom(isDraggingInternallyAtom);
     const [isLoading] = useAtom(isLoadingAtom);
 
     return <div

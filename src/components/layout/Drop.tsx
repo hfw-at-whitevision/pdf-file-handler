@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { useAtom, useSetAtom } from "jotai";
-import { isDraggingFilesAtom, isLoadingAtom, loadingMessageAtom, openedRowsAtom, pagesAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom } from "../store/atoms";
+import { isDraggingInternallyAtom, isLoadingAtom, loadingMessageAtom, openedRowsAtom, pagesAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom } from "../store/atoms";
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
 
@@ -14,7 +14,7 @@ const Drop = ({ noClick = false }: any) => {
   const setOpenedRows: any = useSetAtom(openedRowsAtom)
   const setRotations: any = useSetAtom(rotationsAtom)
   const setPages: any = useSetAtom(pagesAtom)
-  const setIsDraggingFiles = useSetAtom(isDraggingFilesAtom)
+  const setIsDraggingFiles = useSetAtom(isDraggingInternallyAtom)
 
   const handleDropzoneLoaded = async (files: any) => {
     if (!files || !files?.length) return;

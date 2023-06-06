@@ -5,17 +5,18 @@ import PlaceholderRow from "./layout/PlaceholderRow";
 import PlaceholderThumbnail from "./layout/PlaceholderThumbnail";
 import Row from "./layout/Row";
 import Button from "./primitives/Button";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import React from "react";
 import { Document } from "react-pdf";
 import { useDrop, useDrag } from "react-dnd";
-import { thumbnailsWidthAtom } from "./store/atoms";
-import { useAtom } from "jotai";
+import { isDraggingInternallyAtom, thumbnailsWidthAtom } from "./store/atoms";
+import { useAtom, useSetAtom } from "jotai";
 import Loading from "./layout/Loading";
 
 const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const isLoading = false;
     const [thumbnailsWidth]: any = useAtom(thumbnailsWidthAtom);
+    const setIsDraggingInternally = useSetAtom(isDraggingInternallyAtom);
 
     if (!pages?.length) return null;
 
@@ -39,6 +40,10 @@ const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, ro
             return updatedValues;
         });
     }
+
+    useEffect(() => {
+        setIsDraggingInternally(isDragging);
+    }, [isDragging]);
 
     drag(drop(ref));
 

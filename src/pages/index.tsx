@@ -370,18 +370,6 @@ const Home: NextPage = () => {
                 <title>PDF File Handler</title>
             </Head>
 
-            <CurrentHandler />
-            <LocalStateHandler />
-            <KeyPressListener
-                findRowIndex={findRowIndex}
-                findPageIndex={findPageIndex}
-                handleDeleteDocument={handleDeleteDocument}
-                handleDeletePage={handleDeletePage}
-                handleRotateDocument={handleRotateDocument}
-                handleRotatePage={handleRotatePage}
-                handleSplitDocument={handleSplitDocument}
-            />
-
             <Loading inset={true} loading={isLoading} message={loadingMessage} />
 
             <ScrollDropTarget position='top' />
@@ -442,12 +430,24 @@ const Home: NextPage = () => {
 
             <ScrollDropTarget position='bottom' />
 
+            <InsetDragDropzone />
             <ContextMenu
                 handleDeletePage={handleDeletePage}
                 handleRotatePage={handleRotatePage}
                 handleSplitDocument={handleSplitDocument}
                 handleRotateDocument={handleRotateDocument}
                 handleDeleteDocument={handleDeleteDocument}
+            />
+            <CurrentHandler />
+            <LocalStateHandler />
+            <KeyPressListener
+                findRowIndex={findRowIndex}
+                findPageIndex={findPageIndex}
+                handleDeleteDocument={handleDeleteDocument}
+                handleDeletePage={handleDeletePage}
+                handleRotateDocument={handleRotateDocument}
+                handleRotatePage={handleRotatePage}
+                handleSplitDocument={handleSplitDocument}
             />
         </>
     );

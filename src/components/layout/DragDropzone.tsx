@@ -1,20 +1,20 @@
 import { useAtom } from "jotai";
 import { BsUpload } from "react-icons/bs";
-import { isDraggingFilesAtom } from "../store/atoms";
+import { isDraggingInternallyAtom } from "../store/atoms";
 import Drop from "./Drop";
 
 export default function DragDropzone({ className = null, noClick = false }: any) {
-    const [isDraggingFiles] = useAtom(isDraggingFilesAtom)
+    const [isDraggingInternally] = useAtom(isDraggingInternallyAtom)
     return (
         <div className={`flex items-center justify-center ${className && className}`}>
             <div className={
-                `${isDraggingFiles ? 'border-8 bg-amber-100/90' : 'border-0'}
+                `${isDraggingInternally ? 'border-8 bg-amber-100/90' : 'border-0'}
                 ${noClick ? 'cursor-default' : 'cursor-pointer'}
                 px-16 py-32 w-full h-full border-dashed rounded-3xl flex flex-col items-center justify-center duration-300 relative
                 border-amber-300 overflow-hidden`
             }>
 
-                <section className={`flex flex-col items-center ${isDraggingFiles ? 'scale-125' : 'scale-100'}`}>
+                <section className={`flex flex-col items-center ${isDraggingInternally ? 'scale-125' : 'scale-100'}`}>
                     <BsUpload className="text-[48px] mb-8" />
                     <div>
                         <span className={`text-link font-bold inline ${noClick ? 'cursor-default' : 'cursor-pointer'}`}>

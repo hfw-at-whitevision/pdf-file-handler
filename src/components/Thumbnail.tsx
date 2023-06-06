@@ -3,7 +3,7 @@ import { useDrop, useDrag } from "react-dnd";
 import { Page } from "react-pdf";
 import React from "react";
 import { useAtom, useSetAtom } from "jotai";
-import { currentAtom, isRotatingAtom, thumbnailsWidthAtom, userIsDraggingAtom } from "./store/atoms";
+import { currentAtom, isRotatingAtom, thumbnailsWidthAtom, isDraggingInternallyAtom } from "./store/atoms";
 import { BsTrash } from "react-icons/bs";
 import { GrRotateRight } from "react-icons/gr";
 import Button from "./primitives/Button";
@@ -23,7 +23,7 @@ const Thumbnail = (
     }: any
 ) => {
     const setCurrent: any = useSetAtom(currentAtom);
-    const setUserIsDragging: any = useSetAtom(userIsDraggingAtom);
+    const setIsDraggingInternally: any = useSetAtom(isDraggingInternallyAtom);
     const [isRotating] = useAtom(isRotatingAtom);
     const [collected, drop] = useDrop({
         accept: "pdfThumbnail",
@@ -106,7 +106,8 @@ const Thumbnail = (
     });
 
     useEffect(() => {
-        setUserIsDragging(isDragging)
+        setIsDraggingInternally(isDragging)
+        console.log(`isDragging internally: ${isDragging}`)
     }, [isDragging])
 
     const [thumbnailsWidth]: any = useAtom(thumbnailsWidthAtom);
