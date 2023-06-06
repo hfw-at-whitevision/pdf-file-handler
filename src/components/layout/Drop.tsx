@@ -5,7 +5,7 @@ import { isDraggingFilesAtom, isLoadingAtom, loadingMessageAtom, openedRowsAtom,
 import { blobToURL } from "@/utils";
 import { PDFDocument } from "pdf-lib";
 
-const Drop = ({ noClick = false }) => {
+const Drop = ({ noClick = false }: any) => {
   const setIsLoading: any = useSetAtom(isLoadingAtom)
   const setLoadingMessage: any = useSetAtom(loadingMessageAtom)
   const [pdfs, setPdfs]: any = useAtom(pdfsAtom)

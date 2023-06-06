@@ -104,7 +104,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, ro
                     <div
                         data-pdf-index={pdfIndex}
                         className={
-                            `p-4 gap-1 w-full overflow-hidden border-text-lighter opacity-100
+                            `p-4 gap-1 w-full overflow-hidden border-text-light opacity-100
                      ${opened ? 'h-auto border-t' : 'h-0 py-0 opacity-0'}
                      flex flex-row flex-wrap row-${pdfIndex} relative`
                         }>
@@ -162,8 +162,9 @@ const skipRerender = (prevProps: any, nextProps: any) => {
         JSON.stringify(prevProps.pages) === JSON.stringify(nextProps.pages)
         &&
         JSON.stringify(prevProps.rotations) === JSON.stringify(nextProps.rotations)
+        &&
+        prevProps.opened === nextProps.opened
     ) return true;
     else return false;
 }
-//export default React.memo(PdfRow, skipRerender);
-export default PdfRow;
+export default React.memo(PdfRow, skipRerender);

@@ -128,6 +128,7 @@ const Thumbnail = (
             data-page-index={pageIndex}
             data-index={index}
         >
+            {/* thumbnail */}
             <Page
                 className={
                     `w-full cursor-pointer relative rounded-md overflow-hidden
@@ -150,7 +151,7 @@ const Thumbnail = (
                 className={
                     `absolute inset-0 z-10 flex justify-center items-end gap-1 opacity-0 pointer-events-none
                     group-hover:opacity-100 group-hover:pointer-events-auto
-                    cursor-move bg-black/20 backdrop-blur-sm duration-700`
+                    cursor-move bg-black/25 duration-700`
                 }
                 onClick={() => setCurrent({
                     pdfIndex: pdfIndex,
@@ -189,11 +190,12 @@ function skipRerender(prevProps: any, nextProps: any) {
         prevProps.rotation === nextProps.rotation
         &&
         prevProps.pageIndex === nextProps.pageIndex
+        &&
+        prevProps.width === nextProps.width
     ) return true;
     else return false;
 }
-//export default React.memo(Thumbnail, skipRerender);
-export default Thumbnail;
+export default React.memo(Thumbnail, skipRerender);
 
 export type dropResultType = {
     pdfIndex?: number,

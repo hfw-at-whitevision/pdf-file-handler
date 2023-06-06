@@ -3,10 +3,7 @@ import Head from "next/head";
 import { get, del } from 'idb-keyval';
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Drop from "@/components/layout/Drop";
 import { PDFDocument } from "pdf-lib";
-import ButtonXl from "@/components/primitives/ButtonXl";
-import { BsSave, BsArrowRepeat, BsUpload } from "react-icons/bs";
 import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
@@ -21,9 +18,6 @@ import React from "react";
 import KeyPressListener from "@/components/layout/KeyPressListener";
 import LocalStateHandler from "@/components/layout/LocalStateHandler";
 import CurrentHandler from "@/components/layout/CurrentHandler";
-import { Document } from "react-pdf";
-import DragDropzone from "@/components/layout/DragDropzone";
-import ThumbnailsSizeInput from "@/components/layout/ThumbnailsSizeInput";
 import Header from "@/components/layout/Header";
 import InsetDragDropzone from "@/components/layout/InsetDragDropzone";
 
@@ -251,6 +245,11 @@ const Home: NextPage = () => {
         if (toPlaceholderRow) {
             updatedPages.splice(toPdfIndex, 0, []);
             updatedRotations.splice(toPdfIndex, 0, []);
+            setOpenedRows((oldValue: Array<boolean>) => {
+                let updatedValue = oldValue.slice();
+                updatedValue.splice(toPdfIndex, 0, true);
+                return updatedValue;
+            });
             setPdfFilenames((oldValues: Array<string>) => {
                 let newValues = oldValues.slice();
                 newValues.splice(toPdfIndex, 0, `Nieuw document ${newRowCounter}.pdf`);
@@ -440,8 +439,6 @@ const Home: NextPage = () => {
                 {/* administration tiles */}
                 <AdministrationTiles handleSaveDocument={handleSaveDocument} />
             </Split>
-
-            <InsetDragDropzone />
 
             <ScrollDropTarget position='bottom' />
 
