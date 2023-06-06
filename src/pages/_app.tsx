@@ -4,7 +4,7 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { pdfjs } from "react-pdf";
 
 import "~/styles/globals.scss";
-//pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `./pdf.worker.js`;
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return <>
