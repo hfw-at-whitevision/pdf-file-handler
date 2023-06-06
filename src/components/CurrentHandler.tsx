@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { currentAtom } from "../store/atoms";
+import { currentAtom } from "./store/atoms";
 
 const CurrentHandler = () => {
     const [current]: any = useAtom(currentAtom);

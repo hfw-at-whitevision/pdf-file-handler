@@ -15,12 +15,13 @@ import ContextMenu from "@/components/layout/ContextMenu";
 import PdfRow from "@/components/PdfRow";
 import LegacyPdfPreview from "@/components/LegacyPdfPreview";
 import React from "react";
-import KeyPressListener from "@/components/layout/KeyPressListener";
-import LocalStateHandler from "@/components/layout/LocalStateHandler";
-import CurrentHandler from "@/components/layout/CurrentHandler";
+import KeyPressListener from "@/components/KeyPressListener";
+import LocalStateHandler from "@/components/LocalStateHandler";
+import CurrentHandler from "@/components/CurrentHandler";
 import Header from "@/components/layout/Header";
 import InsetDragDropzone from "@/components/layout/InsetDragDropzone";
 import AdministrationsModal from "@/components/primitives/AdministrationsModal";
+import ThumbnailsWidthHandler from "@/components/ThumbnailsWidthHandler";
 
 const Home: NextPage = () => {
     let timer: any = null;
@@ -347,35 +348,6 @@ const Home: NextPage = () => {
         else return undefined;
     };
     const pdfRowsRef: any = useRef(null);
-    const [thumbnailWidth]: any = useAtom(thumbnailsWidthAtom);
-    const setThumbnailsPerRow = useSetAtom(thumbnailsPerRowAtom);
-
-    const calculateThumbnailsWidth = () => {
-        const pdfRowsWidth = pdfRowsRef.current.getBoundingClientRect().width;
-        const bordersWidth = 2;
-        const px = 32;
-        const thumbnailsContainerWidth = pdfRowsWidth - bordersWidth - px;
-        const thumbnailsContainerGap = 4;
-        let newThumbnailsPerRow = Math.floor(thumbnailsContainerWidth / thumbnailWidth);
-        const gapInBetween = (newThumbnailsPerRow - 1) * thumbnailsContainerGap;
-        const checkWidth = (newThumbnailsPerRow * thumbnailWidth) + gapInBetween + bordersWidth + px;
-        if (checkWidth > pdfRowsWidth) newThumbnailsPerRow = newThumbnailsPerRow - 1;
-
-        console.log(`Updated thumbnailsPerRow: ${newThumbnailsPerRow}`);
-
-        setThumbnailsPerRow(newThumbnailsPerRow);
-    }
-
-    useEffect(() => {
-        calculateThumbnailsWidth();
-    }, [splitSizes, pdfRowsRef?.current?.getBoundingClientRect()?.width, thumbnailWidth])
-    useEffect(() => {
-        window.addEventListener('resize', calculateThumbnailsWidth);
-
-        return () => {
-            window.removeEventListener('resize', calculateThumbnailsWidth);
-        }
-    }, [])
 
     return (
         <>
@@ -468,6 +440,10 @@ const Home: NextPage = () => {
                 handleRotateDocument={handleRotateDocument}
                 handleRotatePage={handleRotatePage}
                 handleSplitDocument={handleSplitDocument}
+            />
+            <ThumbnailsWidthHandler
+                pdfRowsRef={pdfRowsRef}
+                splitSizes={splitSizes}
             />
         </>
     );

@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { currentAtom, pagesAtom, thumbnailsPerRowAtom } from "../store/atoms";
+import { currentAtom, pagesAtom, thumbnailsPerRowAtom } from "./store/atoms";
 
 const defaultSteps = 1;
 

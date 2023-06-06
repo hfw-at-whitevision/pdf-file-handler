@@ -1,7 +1,7 @@
 import { set, get } from "idb-keyval";
 import { useAtom } from "jotai";
 import { useEffect } from "react";
-import { stateChangedAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, pagesAtom, openedRowsAtom, splitSizesAtom } from "../store/atoms";
+import { stateChangedAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, pagesAtom, openedRowsAtom, splitSizesAtom } from "./store/atoms";
 
 const LocalStateHandler = () => {
     // state save
