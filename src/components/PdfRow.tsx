@@ -13,7 +13,7 @@ import { isDraggingInternallyAtom, thumbnailsWidthAtom } from "./store/atoms";
 import { useAtom, useSetAtom } from "jotai";
 import Loading from "./layout/Loading";
 
-const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
+const PdfRow = ({ filename, opened, setOpenedRows, handleOpenAdministrationModal, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const isLoading = false;
     const [thumbnailsWidth]: any = useAtom(thumbnailsWidthAtom);
     const setIsDraggingInternally = useSetAtom(isDraggingInternallyAtom);
@@ -83,7 +83,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, inputPdf, pages, pdfIndex, ro
                         <Button
                             className='overflow-hidden'
                             title={<><BsCheck2Circle /><span className="group-hover:flex text-xs">naar administratie</span></>}
-                            onClick={async () => await handleSaveDocument(pdfIndex)}
+                            onClick={() => handleOpenAdministrationModal(pdfIndex)}
                             padding='large'
                         />
                         <Button

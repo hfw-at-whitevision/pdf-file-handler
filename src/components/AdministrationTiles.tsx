@@ -2,7 +2,7 @@ import { administrationTiles } from "@/constants"
 import AdministrationTile from "./AdministrationTile"
 import { useEffect, useState } from "react";
 
-export default function AdministrationTiles({ handleSaveDocument }: any, props: any) {
+export default function AdministrationTiles({ handleSaveDocument, display = 'tiles' }: any, props: any) {
     const [tiles, setTiles]: any = useState([]);
     const fetchAdministrations = async () => {
         const apiUrl: any = process.env.NEXT_PUBLIC_ADMINISTRATIONS_URL;
@@ -20,6 +20,7 @@ export default function AdministrationTiles({ handleSaveDocument }: any, props: 
         if (!res.length) setTiles(administrationTiles);
         else setTiles(res);
     }
+    const [selectedAdministration, setSelectedAdministration] = useState();
 
     useEffect(() => {
         fetchAdministrations();
@@ -28,11 +29,31 @@ export default function AdministrationTiles({ handleSaveDocument }: any, props: 
     return <>
         <div {...props}>
             <div className={
-                `bg-body-bg-dark w-full rounded-lg p-4 gap-4 sticky top-[132px] border border-text-lighter
-                grid grid-cols-[repeat(auto-fill,_minmax(max(100px,_120px),_1fr))]`
+                `${display === 'tiles'
+                    ? 'bg-body-bg-dark grid-cols-[repeat(auto-fill,_minmax(max(100px,_120px),_1fr))] p-4 gap-4'
+                    : 'grid-cols-1'}
+                w-full rounded-lg sticky top-[132px] border border-text-lighter
+                grid `
             }>
-                {tiles?.map((tile: any, index: number) =>
-                    <AdministrationTile key={`administrationTile-${tile.code}`} tile={tile} handleSaveDocument={handleSaveDocument} />
+                {tiles?.map((tile: any, index: number) => {
+                    switch (display) {
+                        case "tiles":
+                            return <AdministrationTile key={`administrationTile-${tile.code}`} tile={tile} handleSaveDocument={handleSaveDocument} />
+                        case "list":
+                            return <div
+                                key={`administration-li-${tile.code}`}
+                                className={
+                                    `hover:bg-body-bg-dark p-4 cursor-pointer
+                                   ${selectedAdministration === tile.code
+                                        ? 'bg-amber-300'
+                                        : 'bg-white'}`
+                                }
+                                onClick={() => setSelectedAdministration(tile.code)}
+                            >
+                                <strong>{tile.code}</strong>: {tile.displayName}
+                            </div>
+                    }
+                }
                 )}
             </div>
         </div>

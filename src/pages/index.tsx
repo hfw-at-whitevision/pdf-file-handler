@@ -20,6 +20,7 @@ import LocalStateHandler from "@/components/layout/LocalStateHandler";
 import CurrentHandler from "@/components/layout/CurrentHandler";
 import Header from "@/components/layout/Header";
 import InsetDragDropzone from "@/components/layout/InsetDragDropzone";
+import AdministrationsModal from "@/components/primitives/AdministrationsModal";
 
 const Home: NextPage = () => {
     let timer: any = null;
@@ -35,6 +36,18 @@ const Home: NextPage = () => {
     const setStateChanged = useSetAtom(stateChangedAtom);
     const [openedRows, setOpenedRows]: any = useAtom(openedRowsAtom);
     const [newRowCounter, setNewRowCounter] = useState(1);
+    const [showAdministrationModal, setShowAdministrationModal] = useState(false);
+
+    const handleOpenAdministrationModal = (inputPdfIndex: number) => {
+        setCurrent({
+            pdfIndex: inputPdfIndex,
+            pageIndex: findPageIndex({
+                pdfIndex: inputPdfIndex,
+                index: 0,
+            })
+        })
+        setShowAdministrationModal(true);
+    }
 
     const findRowIndex = ({ pdfIndex, pageIndex, inputPages = pages }: any) => {
         if (typeof inputPages?.[pdfIndex]?.[pageIndex] === 'undefined') return;
@@ -414,6 +427,7 @@ const Home: NextPage = () => {
                             handleDeleteDocument={handleDeleteDocument}
                             opened={openedRows?.[pdfIndex]}
                             setOpenedRows={setOpenedRows}
+                            handleOpenAdministrationModal={handleOpenAdministrationModal}
                             inputPdf={pdfs[0]}
                         />
                     ).reverse()}
@@ -430,6 +444,12 @@ const Home: NextPage = () => {
 
             <ScrollDropTarget position='bottom' />
 
+            <AdministrationsModal
+                filename={pdfFilenames[current.pdfIndex]}
+                pdf={pdfs[0]}
+                showAdministrationModal={showAdministrationModal}
+                setShowAdministrationModal={setShowAdministrationModal}
+            />
             <InsetDragDropzone />
             <ContextMenu
                 handleDeletePage={handleDeletePage}

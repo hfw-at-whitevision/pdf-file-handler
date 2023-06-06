@@ -8,24 +8,36 @@ export default function Button({
   className = '',
   transparent = true,
   padding = 'normal',
+  children = null,
+  style = 'primary',
 }: any, props: any) {
   return (
     <div
       id={id}
       className={
         `flex flex-nowrap items-center justify-center p-8 gap-2
-        ${transparent ? 'bg-brand-secondary hover:bg-brand-secondary-light' : 'bg-amber-400 hover:bg-amber-600'}
-        text-white font-bold rounded-md cursor-pointer 
-        ${padding === 'large' ? 'py-3 px-3'
+        rounded-md cursor-pointer 
+        border-none ring-stone-400/30 hover:ring-stone-600/30
+
+        ${transparent && style !== 'secondary'
+          ? 'bg-brand-secondary hover:bg-brand-secondary-light'
+          : 'bg-amber-400 hover:bg-amber-600'}
+
+          ${style === 'secondary'
+          ? 'bg-white hover:bg-body-bg-dark text-text-dark'
+          : 'text-white'}
+        
+        ${padding === 'large' ? 'py-3 px-6'
           : padding === 'normal' ? 'py-2 px-4'
             : 'py-1 px-2'}
-         border-none ring-stone-400/30 hover:ring-stone-600/30
+         
          ${disabled ? 'disabled' : ''} ${className}`
       }
       onClick={onClick}
       {...props}
     >
       {title}
+      {children}
     </div>
   );
 }
