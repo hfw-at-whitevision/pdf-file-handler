@@ -108,7 +108,7 @@ const Thumbnail = (
     useEffect(() => {
         setIsDraggingInternally(isDragging)
         console.log(`isDragging internally: ${isDragging}`)
-    }, [isDragging])
+    }, [isDragging]);
 
     const [thumbnailsWidth]: any = useAtom(thumbnailsWidthAtom);
 

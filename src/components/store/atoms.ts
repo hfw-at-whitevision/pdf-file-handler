@@ -18,6 +18,7 @@ export const isLoadingAtom = atom(false);
 export const loadingMessageAtom = atom(null);
 
 export const isDraggingInternallyAtom = atom(false);
+export const isDraggingExternallyAtom = atom(false);
 
 export const thumbnailsWidthAtom = atom(process.env.NEXT_PUBLIC_DEFAULT_THUMBNAIL_WIDTH);
 export const thumbnailsPerRowAtom = atom(4);
