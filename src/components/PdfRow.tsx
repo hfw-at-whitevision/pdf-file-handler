@@ -167,4 +167,5 @@ const skipRerender = (prevProps: any, nextProps: any) => {
     ) return true;
     else return false;
 }
-export default React.memo(PdfRow, skipRerender);
+export default PdfRow;
+//export default React.memo(PdfRow, skipRerender);

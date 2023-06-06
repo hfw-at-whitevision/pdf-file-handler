@@ -195,7 +195,8 @@ function skipRerender(prevProps: any, nextProps: any) {
     ) return true;
     else return false;
 }
-export default React.memo(Thumbnail, skipRerender);
+//export default React.memo(Thumbnail, skipRerender);
+export default Thumbnail;
 
 export type dropResultType = {
     pdfIndex?: number,
