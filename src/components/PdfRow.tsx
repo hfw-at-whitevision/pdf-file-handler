@@ -12,6 +12,7 @@ import { useDrop, useDrag } from "react-dnd";
 import { isDraggingInternallyAtom, thumbnailsWidthAtom } from "./store/atoms";
 import { useAtom, useSetAtom } from "jotai";
 import Loading from "./layout/Loading";
+import { HiEllipsisVertical } from 'react-icons/hi2'
 
 const PdfRow = ({ filename, opened, setOpenedRows, handleOpenAdministrationModal, inputPdf, pages, pdfIndex, rotations, handleMovePage, handleRotatePage, handleDeletePage, handleSaveDocument, handleRotateDocument, handleDeleteDocument }: any) => {
     const isLoading = false;
@@ -58,7 +59,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, handleOpenAdministrationModal
                 >
                     <BiChevronDown
                         className={`
-                            cursor-pointer text-[64px]
+                            cursor-pointer text-[24px]
                             ${opened ? 'rotate-180' : ''}
                         `}
                         onClick={toggleClosed}
@@ -71,34 +72,40 @@ const PdfRow = ({ filename, opened, setOpenedRows, handleOpenAdministrationModal
                         <h3 className={`mr-2 inline break-all row-${pdfIndex}`}>{filename}</h3>
                         ({pages.length} {pages.length > 1 ? ' pagina\'s' : ' pagina'})
                     </span>
-                    <nav
-                        data-pdf-index={pdfIndex}
-                        className={
-                            `${isLoading ? "disabled" : ""} flex gap-1 justify-end ml-auto
-                            opacity-40
-                            group-hover/pdfRow:opacity-100
-                            flex-row min-w-[280px]`
-                        }
-                    >
-                        <Button
-                            className='overflow-hidden'
-                            title={<><BsCheck2Circle /><span className="group-hover:flex text-xs">naar administratie</span></>}
-                            onClick={() => handleOpenAdministrationModal(pdfIndex)}
-                            padding='large'
-                        />
-                        <Button
-                            className='overflow-hidden'
-                            title={<><BiRotateRight className="rotate-[180deg]" /><span className="group-hover:flex hidden text-xs">roteer alle pagina's</span></>}
-                            onClick={() => handleRotateDocument({ pdfIndex })}
-                            disabled={isLoading}
-                        />
-                        <Button
-                            className='overflow-hidden'
-                            title={<><BsTrash /><span className="group-hover:flex hidden text-xs">verwijder document</span></>}
-                            onClick={() => handleDeleteDocument(pdfIndex)}
-                            disabled={isLoading}
-                        />
-                    </nav>
+                    <div className="relative group cursor-pointer">
+                        <HiEllipsisVertical className="text-[24px]" />
+                        <nav
+                            data-pdf-index={pdfIndex}
+                            className={
+                                `opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto
+                                absolute right-0
+                            ${isLoading ? "disabled" : ""} flex flex-col justify-end z-10 gap-1
+                            bg-white border border-border-color-light shadow-lg
+                            w-[220px] p-1 rounded-lg text-sm`
+                            }
+                        >
+                            <Button
+                                className='overflow-hidden'
+                                title={<><BsCheck2Circle /><span className="group-hover:flex">naar administratie</span></>}
+                                onClick={() => handleOpenAdministrationModal(pdfIndex)}
+                                padding='large'
+                            />
+                            <Button
+                                className='overflow-hidden'
+                                title={<><BiRotateRight className="rotate-[180deg]" /><span className="group-hover:flex">roteer alle pagina's</span></>}
+                                onClick={() => handleRotateDocument({ pdfIndex })}
+                                disabled={isLoading}
+                                padding='large'
+                            />
+                            <Button
+                                className='overflow-hidden'
+                                title={<><BsTrash /><span className="group-hover:flex">verwijder document</span></>}
+                                onClick={() => handleDeleteDocument(pdfIndex)}
+                                disabled={isLoading}
+                                padding='large'
+                            />
+                        </nav>
+                    </div>
                 </div>
 
                 <Document
