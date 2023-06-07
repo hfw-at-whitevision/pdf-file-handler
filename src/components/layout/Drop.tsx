@@ -16,36 +16,61 @@ const Drop = ({ noClick = false }: any) => {
   const setPages: any = useSetAtom(pagesAtom)
   const setIsDraggingFiles = useSetAtom(isDraggingInternallyAtom)
 
+  const getPageRotation = async ({ pdf, pageNumber }: any) => {
+    const page = await pdf.getPage(pageNumber);
+    return await page.getRotation().angle;
+  }
+
   const handleDropzoneLoaded = async (files: any) => {
     if (!files || !files?.length) return;
     setIsLoading(true);
 
-    let lastPageIndex: any = 0;
+    let currentPageIndex: any = 0;
     let updatedPdf: any = pdfs;
 
+    if (updatedPdf?.length) {
+      var pdfA: any = await PDFDocument.load(updatedPdf[0], { ignoreEncryption: true, parseSpeed: 1500 });
+      var pageIndices = await pdfA.getPageIndices();
+      currentPageIndex = pageIndices[pageIndices.length - 1] + 1;
+    }
+
+    // looping through uploaded files
     for (let i = 0; i < files.length; i++) {
+      alert(`current currentPageIndex: ${currentPageIndex}`)
       setLoadingMessage(`Document ${i + 1} van ${files.length} wordt geladen...`);
-
+      const fileSize = files[i]['size'] / 1024 / 1024;
       let newPdf: any = await blobToURL(files[i]);
-
-      if (updatedPdf?.length) {
-        console.log(updatedPdf)
-        var pdfA: any = await PDFDocument.load(updatedPdf[0], { ignoreEncryption: true, parseSpeed: 1500 });
-        var pageIndices = await pdfA.getPageIndices();
-        lastPageIndex = pageIndices[pageIndices.length - 1];
-      }
+      let mergedPdf = '';
 
       // check file size
-      const fileSize = files[i]['size'] / 1024 / 1024;
       if (fileSize > 250) {
         alert(`${files[i]['name']} is groter dan 25MB. Gelieve het bestand te verkleinen.`)
         continue;
       }
+
       // skip the file if its not an image or pdf
       else if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
         alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
         continue;
       }
+
+      // JPG / PNG: convert to PDF
+      if (files[i]['type'] === 'image/jpeg' || files[i]['type'] === 'image/png') {
+        const pdfDoc = await PDFDocument.create()
+        const image = (files[i]['type'] === 'image/jpeg')
+          ? await pdfDoc.embedJpg(newPdf)
+          : await pdfDoc.embedPng(newPdf)
+        const page = pdfDoc.addPage([image.width, image.height])
+        const dims = image.scale(1)
+        page.drawImage(image, {
+          x: page.getWidth() / 2 - dims.width / 2,
+          y: page.getHeight() / 2 - dims.height / 2,
+          width: dims.width,
+          height: dims.height,
+        });
+        newPdf = await pdfDoc.saveAsBase64({ dataUri: true });
+      }
+
       // MSG / EML / TIFF files: send to Serge API
       else if (
         files[i]['type'] === 'application/vnd.ms-outlook'
@@ -97,29 +122,12 @@ const Drop = ({ noClick = false }: any) => {
         }
         continue;
       }
-      // JPG / PNG: convert to PDF
-      else if (files[i]['type'] === 'image/jpeg' || files[i]['type'] === 'image/png') {
-        const pdfDoc = await PDFDocument.create()
-        const image = (files[i]['type'] === 'image/jpeg')
-          ? await pdfDoc.embedJpg(newPdf)
-          : await pdfDoc.embedPng(newPdf)
-        const page = pdfDoc.addPage([image.width, image.height])
-        const dims = image.scale(1)
-        page.drawImage(image, {
-          x: page.getWidth() / 2 - dims.width / 2,
-          y: page.getHeight() / 2 - dims.height / 2,
-          width: dims.width,
-          height: dims.height,
-        });
-        newPdf = await pdfDoc.saveAsBase64({ dataUri: true })
-      }
 
       // PDF / JPG / PNG files: further process it
       const pdfB = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 });
-      let mergedPdf = newPdf;
 
+      // if there is an existing PDF, merge new PDF into existing PDF
       if (updatedPdf?.length) {
-        // merge PDFs if there is an existing PDF
         const mergedPdfDoc = await PDFDocument.create();
         const copiedPagesA = await mergedPdfDoc.copyPages(pdfA, pdfA.getPageIndices());
         copiedPagesA.forEach((page) => mergedPdfDoc.addPage(page));
@@ -127,36 +135,33 @@ const Drop = ({ noClick = false }: any) => {
         copiedPagesB.forEach((page) => mergedPdfDoc.addPage(page));
         mergedPdf = await mergedPdfDoc.saveAsBase64({ dataUri: true });
       }
+      else {
+        mergedPdf = newPdf;
+      }
 
-      const pdfBTotalPages = pdfB?.getPageCount();
+      const pdfBTotalPages = await pdfB?.getPageCount();
       setPdfFilenames((oldValues: any) => [...oldValues, files[i]['name']]);
 
-      const getPageRotation = async (pageNumber: number) => {
-        const page = await pdfB.getPage(pageNumber);
-        return await page.getRotation().angle;
-      }
       const pdfRotations: any = [];
       const pdfPages: any = [];
+
       // populate page rotations array + populate pages array
       for (let i = 0; i < pdfBTotalPages; i++) {
-        const rotation = await getPageRotation(i);
+        const rotation = await getPageRotation({ pdf: pdfB, pageNumber: i });
         pdfRotations.push(rotation);
-        pdfPages.push(
-          (lastPageIndex)
-            ? lastPageIndex + 1 + i
-            : lastPageIndex + i
-        );
+        pdfPages.push(currentPageIndex + i);
       }
-      lastPageIndex = lastPageIndex + pdfBTotalPages;
+      currentPageIndex = currentPageIndex + pdfBTotalPages;
+      alert(`new currentPageIndex: ${currentPageIndex}`)
       setRotations((oldValues: any) => [...oldValues, pdfRotations]);
       setPages((oldValues: any) => [...oldValues, pdfPages]);
       setOpenedRows((oldValues: any) => [...oldValues, true]);
       updatedPdf = [mergedPdf];
-    }
+    } // end looping through files
     setPdfs(updatedPdf);
     setStateChanged((oldValue: number) => oldValue + 1);
-    setLoadingMessage('')
-    setIsLoading(false)
+    setLoadingMessage('');
+    setIsLoading(false);
   }
 
   const { getRootProps, getInputProps, isDragAccept, isDragReject } = useDropzone({
