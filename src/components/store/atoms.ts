@@ -15,7 +15,7 @@ export const getCurrentAtom = atom(
 
 export const isRotatingAtom = atom(false);
 export const isLoadingAtom = atom(false);
-export const loadingMessageAtom = atom(null);
+export const loadingMessageAtom = atom('');
 
 export const isDraggingInternallyAtom = atom(false);
 export const isDraggingExternallyAtom = atom(false);

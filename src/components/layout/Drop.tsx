@@ -21,6 +21,51 @@ const Drop = ({ noClick = false }: any) => {
     return await page.getRotation().angle;
   }
 
+  const getMergedPdf = async (pdfA: any, pdfB: any) => {
+    pdfA = await PDFDocument.load(pdfA, { ignoreEncryption: true });
+    pdfB = await PDFDocument.load(pdfB, { ignoreEncryption: true });
+    const mergedPdfDoc = await PDFDocument.create();
+    const copiedPagesA = await mergedPdfDoc.copyPages(pdfA, pdfA.getPageIndices());
+    copiedPagesA.forEach((page) => mergedPdfDoc.addPage(page));
+    const copiedPagesB = await mergedPdfDoc.copyPages(pdfB, pdfB.getPageIndices());
+    copiedPagesB.forEach((page) => mergedPdfDoc.addPage(page));
+    const mergedPdf = await mergedPdfDoc.saveAsBase64({ dataUri: true });
+    return mergedPdf;
+  }
+
+  const finalStep = async ({ newPdf, updatedPdf, currentPageIndex, filename }) => {
+    let mergedPdf = null;
+
+    // PDF / JPG / PNG files: further process it
+    const pdfB = await PDFDocument.load(newPdf, { ignoreEncryption: true });
+
+    // if there is an existing PDF, merge new PDF into existing PDF
+    if (updatedPdf?.length) mergedPdf = await getMergedPdf(updatedPdf[0], newPdf);
+    else mergedPdf = newPdf;
+
+    // populate page rotations array + populate pages array
+    const pdfBTotalPages = await pdfB?.getPageCount();
+    const pdfRotations: any = [];
+    const pdfPages: any = [];
+    for (let i = 0; i < pdfBTotalPages; i++) {
+      const rotation = await getPageRotation({ pdf: pdfB, pageNumber: i });
+      pdfRotations.push(rotation);
+      pdfPages.push(currentPageIndex + i);
+    }
+    // set the start pageIndex for the next document if we are looping through multiple uploaded files
+    currentPageIndex = currentPageIndex + pdfBTotalPages;
+
+    setRotations((oldValues: any) => [...oldValues, pdfRotations]);
+    setPages((oldValues: any) => [...oldValues, pdfPages]);
+    setOpenedRows((oldValues: any) => [...oldValues, true]);
+    setPdfFilenames((oldValues: any) => [...oldValues, filename]);
+
+    return {
+      currentPageIndex,
+      mergedPdf,
+    }
+  }
+
   const handleDropzoneLoaded = async (files: any) => {
     if (!files || !files?.length) return;
     setIsLoading(true);
@@ -28,28 +73,28 @@ const Drop = ({ noClick = false }: any) => {
     let currentPageIndex: any = 0;
     let updatedPdf: any = pdfs;
 
-    if (updatedPdf?.length) {
-      var pdfA: any = await PDFDocument.load(updatedPdf[0], { ignoreEncryption: true, parseSpeed: 1500 });
+    // if there is an existing PDF, get the pageIndex to start from
+    if (pdfs?.length) {
+      var pdfA: any = await PDFDocument.load(pdfs[0], { ignoreEncryption: true });
       var pageIndices = await pdfA.getPageIndices();
       currentPageIndex = pageIndices[pageIndices.length - 1] + 1;
     }
 
     // looping through uploaded files
     for (let i = 0; i < files.length; i++) {
-      alert(`current currentPageIndex: ${currentPageIndex}`)
       setLoadingMessage(`Document ${i + 1} van ${files.length} wordt geladen...`);
       const fileSize = files[i]['size'] / 1024 / 1024;
       let newPdf: any = await blobToURL(files[i]);
-      let mergedPdf = '';
 
       // check file size
-      if (fileSize > 250) {
-        alert(`${files[i]['name']} is groter dan 25MB. Gelieve het bestand te verkleinen.`)
+      if (fileSize > 50) {
+        alert(`${files[i]['name']} is groter dan 50MB. Gelieve het bestand te verkleinen.`)
         continue;
       }
 
       // skip the file if its not an image or pdf
-      else if (files[i]['type'] !== 'application/pdf' && files[i]['type'] !== 'image/jpeg' && files[i]['type'] !== 'image/png') {
+      else if (!allowedFileExtensions.some(extension => files[i]['name'].toLowerCase().includes(extension))) {
+        console.log(files[i])
         alert(`${files[i]['name']} is overgeslagen. Het bestand is geen geldige PDF of afbeelding.`)
         continue;
       }
@@ -79,8 +124,7 @@ const Drop = ({ noClick = false }: any) => {
       ) {
         console.log(`MSG / EML file detected. Sending to Serge API.`)
         const convertedBase64Msg = newPdf.replace(`data:application/octet-stream;base64,`, '').replace(`data:image/tiff;base64,`, '')
-
-        const res = await fetch('/api/converttopdf', {
+        const returnedPdfs = await fetch('/api/converttopdf', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -91,72 +135,32 @@ const Drop = ({ noClick = false }: any) => {
           })
         })
           .then(res => res.json())
+          .then(res => res.pdfFiles)
           .catch(err => console.log(err));
-
-        const returnedPdfs = res?.pdfFiles
 
         // iterating over returned PDF's from API
         for (let i = 0; i < returnedPdfs?.length; i++) {
-          const filename = returnedPdfs[i].fileName;
-          let dataHeaders = '';
-          if (filename.endsWith('.pdf')) dataHeaders = 'data:application/pdf;base64,';
-          else if (filename.endsWith('.tif') || filename.endsWith('.tiff')) dataHeaders = 'data:image/tiff;base64,';
-          else if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) dataHeaders = 'data:image/jpeg;base64,';
-          else if (filename.endsWith('.png')) dataHeaders = 'data:image/png;base64,';
-          else continue;
-
           const newPdf = 'data:application/pdf;base64,' + returnedPdfs[i].pdfFileBase64;
-
-          setPdfs((oldPdfs: any) => {
-            const result = oldPdfs?.length ? oldPdfs.concat(newPdf) : [newPdf];
-            return result;
+          const { mergedPdf: newMergedPdf, currentPageIndex: newCurrentPageIndex } = await finalStep({
+            filename: returnedPdfs[i].fileName,
+            currentPageIndex,
+            newPdf,
+            updatedPdf,
           });
-          const newPdfDoc = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 })
-          const pages = newPdfDoc.getPageCount();
-          setPdfFilenames((oldValues: any) => [...oldValues, filename]);
-
-          let pagesOfUploadedPdf: Array<number> = []
-          for (let x = 0; x < pages; x++) {
-            pagesOfUploadedPdf.push(x)
-          }
+          updatedPdf = [newMergedPdf];
+          currentPageIndex = newCurrentPageIndex;
         }
         continue;
       }
 
-      // PDF / JPG / PNG files: further process it
-      const pdfB = await PDFDocument.load(newPdf, { ignoreEncryption: true, parseSpeed: 1500 });
-
-      // if there is an existing PDF, merge new PDF into existing PDF
-      if (updatedPdf?.length) {
-        const mergedPdfDoc = await PDFDocument.create();
-        const copiedPagesA = await mergedPdfDoc.copyPages(pdfA, pdfA.getPageIndices());
-        copiedPagesA.forEach((page) => mergedPdfDoc.addPage(page));
-        const copiedPagesB = await mergedPdfDoc.copyPages(pdfB, pdfB.getPageIndices());
-        copiedPagesB.forEach((page) => mergedPdfDoc.addPage(page));
-        mergedPdf = await mergedPdfDoc.saveAsBase64({ dataUri: true });
-      }
-      else {
-        mergedPdf = newPdf;
-      }
-
-      const pdfBTotalPages = await pdfB?.getPageCount();
-      setPdfFilenames((oldValues: any) => [...oldValues, files[i]['name']]);
-
-      const pdfRotations: any = [];
-      const pdfPages: any = [];
-
-      // populate page rotations array + populate pages array
-      for (let i = 0; i < pdfBTotalPages; i++) {
-        const rotation = await getPageRotation({ pdf: pdfB, pageNumber: i });
-        pdfRotations.push(rotation);
-        pdfPages.push(currentPageIndex + i);
-      }
-      currentPageIndex = currentPageIndex + pdfBTotalPages;
-      alert(`new currentPageIndex: ${currentPageIndex}`)
-      setRotations((oldValues: any) => [...oldValues, pdfRotations]);
-      setPages((oldValues: any) => [...oldValues, pdfPages]);
-      setOpenedRows((oldValues: any) => [...oldValues, true]);
-      updatedPdf = [mergedPdf];
+      const { mergedPdf: newMergedPdf, currentPageIndex: newCurrentPageIndex } = await finalStep({
+        filename: files[i]['name'],
+        currentPageIndex,
+        newPdf,
+        updatedPdf,
+      });
+      updatedPdf = [newMergedPdf];
+      currentPageIndex = newCurrentPageIndex;
     } // end looping through files
     setPdfs(updatedPdf);
     setStateChanged((oldValue: number) => oldValue + 1);
@@ -185,3 +189,20 @@ const Drop = ({ noClick = false }: any) => {
   )
 }
 export default Drop;
+
+const allowedFileTypes = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/tiff',
+];
+const allowedFileExtensions = [
+  '.pdf',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.tiff',
+  '.tif',
+  '.msg',
+  '.eml',
+]

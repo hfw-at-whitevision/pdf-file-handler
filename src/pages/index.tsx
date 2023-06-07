@@ -2,13 +2,13 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import { get, del } from 'idb-keyval';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import Loading from "@/components/layout/Loading";
 import Debug from "@/components/layout/Debug";
 import ScrollDropTarget from "@/components/layout/ScrollDropTarget";
 import { useAtom, useSetAtom } from "jotai";
-import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, openedRowsAtom, thumbnailsWidthAtom, thumbnailsPerRowAtom, splitSizesAtom } from "@/components/store/atoms";
+import { currentAtom, pagesAtom, isLoadingAtom, loadingMessageAtom, pdfFilenamesAtom, pdfsAtom, rotationsAtom, stateChangedAtom, openedRowsAtom, splitSizesAtom } from "@/components/store/atoms";
 import Split from 'react-split'
 import AdministrationTiles from "@/components/AdministrationTiles";
 import ContextMenu from "@/components/layout/ContextMenu";
@@ -337,14 +337,10 @@ const Home: NextPage = () => {
     const [minSizes] = useState([470, 480, 150]);
     const persistFileHandlerPanelSizes = useCallback((newSplitSizes: Array<number>) => {
         if (!newSplitSizes) return;
-        const roundedSizes = newSplitSizes.map((size: number) => Math.round(size));
         setSplitSizes(newSplitSizes);
     }, [splitSizes]);
     const getPersistedFileHandlerPanelSizes = () => {
-        if (splitSizes) {
-            const roundedSizes = splitSizes.map((size: number) => Math.round(size));
-            return splitSizes;
-        }
+        if (splitSizes) return splitSizes;
         else return undefined;
     };
     const pdfRowsRef: any = useRef(null);
