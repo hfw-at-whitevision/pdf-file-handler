@@ -20,7 +20,7 @@ import LocalStateHandler from "@/components/LocalStateHandler";
 import CurrentHandler from "@/components/CurrentHandler";
 import Header from "@/components/layout/Header";
 import InsetDragDropzone from "@/components/layout/InsetDragDropzone";
-import AdministrationsModal from "@/components/primitives/AdministrationsModal";
+import AdministrationsModal from "@/components/layout/AdministrationsModal";
 import ThumbnailsWidthHandler from "@/components/ThumbnailsWidthHandler";
 import PdfRowsBottomBar from "@/components/layout/PdfRowsBottomBar";
 
@@ -418,7 +418,7 @@ const Home: NextPage = () => {
                 />
 
                 {/* administration tiles */}
-                <AdministrationTiles handleSaveDocument={handleSaveDocument} />
+                <AdministrationTiles handleSaveDocument={handleSaveDocument} className='h-[calc(100vh-100px)] overflow-y-auto p-8' />
             </Split>
 
             <ScrollDropTarget position='bottom' />

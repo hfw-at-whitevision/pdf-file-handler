@@ -1,5 +1,5 @@
 import AdministrationTiles from "../AdministrationTiles";
-import Button from "./Button";
+import Button from "../primitives/Button";
 
 export default function AdministrationsModal({
     showAdministrationModal = false,
@@ -18,7 +18,7 @@ export default function AdministrationsModal({
             <div className="absolute inset-0" onClick={() => setShowAdministrationModal(false)} />
 
             {/* modal */}
-            <div className="bg-white p-8 rounded-lg w-[640px] z-[51]">
+            <div className="bg-white p-8 rounded-lg w-[640px] z-[51] h-auto">
                 <h3 className="font-bold mb-4">Stuur <span className="font-normal italic">"{filename}"</span> naar administratie:</h3>
 
                 <AdministrationTiles

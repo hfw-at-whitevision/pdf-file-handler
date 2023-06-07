@@ -2,7 +2,7 @@ import { administrationTiles } from "@/constants"
 import AdministrationTile from "./AdministrationTile"
 import { useEffect, useState } from "react";
 
-export default function AdministrationTiles({ handleSaveDocument, display = 'tiles' }: any, props: any) {
+export default function AdministrationTiles({ handleSaveDocument, display = 'tiles', className = '' }: any, props: any) {
     const [tiles, setTiles]: any = useState([]);
     const fetchAdministrations = async () => {
         const apiUrl: any = process.env.NEXT_PUBLIC_ADMINISTRATIONS_URL;
@@ -27,13 +27,12 @@ export default function AdministrationTiles({ handleSaveDocument, display = 'til
     }, [])
 
     return <>
-        <div {...props} className="h-[calc(100vh-100px)] overflow-y-auto p-8">
+        <div {...props} className={`${className}`}>
             <div className={
                 `${display === 'tiles'
                     ? 'bg-body-bg-dark grid-cols-[repeat(auto-fill,_minmax(max(100px,_120px),_1fr))] p-4 gap-4'
                     : 'grid-cols-1'}
-                w-full rounded-lg sticky top-0 border border-text-lighter
-                grid `
+                w-full rounded-lg sticky top-0 border border-text-lighter grid`
             }>
                 {tiles?.map((tile: any, index: number) => {
                     switch (display) {
