@@ -22,6 +22,7 @@ import Header from "@/components/layout/Header";
 import InsetDragDropzone from "@/components/layout/InsetDragDropzone";
 import AdministrationsModal from "@/components/primitives/AdministrationsModal";
 import ThumbnailsWidthHandler from "@/components/ThumbnailsWidthHandler";
+import PdfRowsBottomBar from "@/components/layout/PdfRowsBottomBar";
 
 const Home: NextPage = () => {
     let timer: any = null;
@@ -374,35 +375,41 @@ const Home: NextPage = () => {
                 minSize={minSizes}
                 gutterSize={8}
                 gutterAlign="center"
-                className="flex flex-row w-full h-full gap-4 p-8 pb-0 pt-[132px]"
+                className="flex flex-row w-full h-full pt-[100px]"
                 onDragEnd={persistFileHandlerPanelSizes}
                 cursor="col-resize"
             >
                 {/* PDF rows */}
                 <section
-                    id={`pdf-rows-section`}
                     ref={pdfRowsRef}
-                    className={`flex flex-col text-stone-900 items-start gap-y-8 w-full h-[calc(100vh-132px)] pb-40 overflow-y-auto`}
+                    className={`text-stone-900 w-full h-[calc(100vh-100px)] relative`}
                 >
-                    {pages.map((_: any, pdfIndex: number) =>
-                        <PdfRow
-                            key={`pdf-${pdfIndex}`}
-                            pdfIndex={pdfIndex}
-                            filename={pdfFilenames[pdfIndex]}
-                            pages={pages[pdfIndex]}
-                            rotations={rotations[pdfIndex]}
-                            handleMovePage={handleMovePage}
-                            handleSaveDocument={handleSaveDocument}
-                            handleRotatePage={handleRotatePage}
-                            handleDeletePage={handleDeletePage}
-                            handleRotateDocument={handleRotateDocument}
-                            handleDeleteDocument={handleDeleteDocument}
-                            opened={openedRows?.[pdfIndex]}
-                            setOpenedRows={setOpenedRows}
-                            handleOpenAdministrationModal={handleOpenAdministrationModal}
-                            inputPdf={pdfs[0]}
-                        />
-                    ).reverse()}
+                    <div
+                        id={`pdf-rows-section`}
+                        className="flex flex-col items-start gap-y-8 w-full h-[calc(100%-80px)] relative p-8 pb-32 overflow-y-auto"
+                    >
+                        {pages.map((_: any, pdfIndex: number) =>
+                            <PdfRow
+                                key={`pdf-${pdfIndex}`}
+                                pdfIndex={pdfIndex}
+                                filename={pdfFilenames[pdfIndex]}
+                                pages={pages[pdfIndex]}
+                                rotations={rotations[pdfIndex]}
+                                handleMovePage={handleMovePage}
+                                handleSaveDocument={handleSaveDocument}
+                                handleRotatePage={handleRotatePage}
+                                handleDeletePage={handleDeletePage}
+                                handleRotateDocument={handleRotateDocument}
+                                handleDeleteDocument={handleDeleteDocument}
+                                opened={openedRows?.[pdfIndex]}
+                                setOpenedRows={setOpenedRows}
+                                handleOpenAdministrationModal={handleOpenAdministrationModal}
+                                inputPdf={pdfs[0]}
+                            />
+                        ).reverse()}
+                    </div>
+
+                    <PdfRowsBottomBar pages={pages} />
                 </section>
 
                 {/* PDF preview */}

@@ -22,7 +22,6 @@ body {
 .gutter.gutter-horizontal {
     position: relative;
     cursor: col-resize;
-    margin: 0 20px;
 
     &::before {
         content: " ";
@@ -50,7 +49,7 @@ body {
 .pdf-preview-container {
 
     .react-pdf__Document {
-        @apply sticky top-[132px];
+        @apply sticky top-[100px];
     }
     .react-pdf__Page {
         background: none !important;

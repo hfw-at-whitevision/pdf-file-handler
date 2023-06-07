@@ -27,7 +27,7 @@ export default function AdministrationTiles({ handleSaveDocument, display = 'til
     }, [])
 
     return <>
-        <div {...props} className="h-[calc(100vh-132px)] overflow-y-auto">
+        <div {...props} className="h-[calc(100vh-100px)] overflow-y-auto p-8">
             <div className={
                 `${display === 'tiles'
                     ? 'bg-body-bg-dark grid-cols-[repeat(auto-fill,_minmax(max(100px,_120px),_1fr))] p-4 gap-4'

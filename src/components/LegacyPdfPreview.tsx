@@ -10,7 +10,7 @@ export default function LegacyPdfPreview({ rotation }: any) {
     const [pdfs] = useAtom(pdfsAtom);
 
     return <>
-        <section className="pdf-preview-container relative">
+        <section className="pdf-preview-container relative p-8">
             {pdfs?.length
                 ? <Document
                     file={pdfs[0]}

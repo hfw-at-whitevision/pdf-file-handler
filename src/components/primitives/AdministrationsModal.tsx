@@ -33,7 +33,7 @@ export default function AdministrationsModal({
                         Verstuur naar administratie
                     </Button>
                     <Button
-                        style="secondary"
+                        style="tertiary"
                         className="rounded-lg p-4"
                         onClick={() => setShowAdministrationModal(false)}
                         padding="large"
