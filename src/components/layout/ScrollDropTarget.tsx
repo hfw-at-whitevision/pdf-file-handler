@@ -11,8 +11,10 @@ export default function ScrollDropTarget({ position }: any) {
             ? -20
             : 20;
 
-    const scrollUp = () => {
-        window.scrollBy(0, scrollBy);
+    const scroll = () => {
+        const scrollElement = document.getElementById('pdf-rows-section');
+        if (!scrollElement) return;
+        scrollElement.scrollBy(0, scrollBy);
     };
 
     const scrollTopDropRef = useRef(null);
@@ -29,7 +31,7 @@ export default function ScrollDropTarget({ position }: any) {
     useEffect(() => {
         const intervalId = setInterval(() => {
             if (isOver) {
-                scrollUp();
+                scroll();
             } else {
                 clearInterval(intervalId);
             }
@@ -43,7 +45,7 @@ export default function ScrollDropTarget({ position }: any) {
     return <div
         ref={scrollTopDropRef}
         className={
-            `fixed left-0 right-0 h-[80px] z-[60]
+            `fixed left-0 right-0 h-[8vh] min-h-[80px] z-[60]
         ${position === 'top' ? 'top-0' : 'bottom-0'}
         ${isDraggingInternally ? 'pointer-events-auto' : 'pointer-events-none'}`
         }

@@ -27,12 +27,12 @@ export default function AdministrationTiles({ handleSaveDocument, display = 'til
     }, [])
 
     return <>
-        <div {...props}>
+        <div {...props} className="h-[calc(100vh-132px)] overflow-y-auto">
             <div className={
                 `${display === 'tiles'
                     ? 'bg-body-bg-dark grid-cols-[repeat(auto-fill,_minmax(max(100px,_120px),_1fr))] p-4 gap-4'
                     : 'grid-cols-1'}
-                w-full rounded-lg sticky top-[132px] border border-text-lighter
+                w-full rounded-lg sticky top-0 border border-text-lighter
                 grid `
             }>
                 {tiles?.map((tile: any, index: number) => {

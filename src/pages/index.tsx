@@ -379,7 +379,11 @@ const Home: NextPage = () => {
                 cursor="col-resize"
             >
                 {/* PDF rows */}
-                <section ref={pdfRowsRef} className={`flex flex-col text-stone-900 items-start gap-y-8 w-full pb-40`}>
+                <section
+                    id={`pdf-rows-section`}
+                    ref={pdfRowsRef}
+                    className={`flex flex-col text-stone-900 items-start gap-y-8 w-full h-[calc(100vh-132px)] pb-40 overflow-y-auto`}
+                >
                     {pages.map((_: any, pdfIndex: number) =>
                         <PdfRow
                             key={`pdf-${pdfIndex}`}
