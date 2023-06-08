@@ -319,7 +319,7 @@ const Home: NextPage = () => {
         const base64 = await pdfDoc.saveAsBase64({ dataUri: false });
         setIsLoading(false);
         return base64;
-    }, [pages]);
+    }, [pages, pdfs]);
 
     const handleSaveAllDocuments = async () => {
         setIsLoading(true);
@@ -426,6 +426,8 @@ const Home: NextPage = () => {
             <AdministrationsModal
                 filename={pdfFilenames[current.pdfIndex]}
                 pdf={pdfs[0]}
+                pdfIndex={current.pdfIndex}
+                handleSaveDocument={handleSaveDocument}
                 showAdministrationModal={showAdministrationModal}
                 setShowAdministrationModal={setShowAdministrationModal}
             />

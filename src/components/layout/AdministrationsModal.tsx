@@ -2,10 +2,17 @@ import AdministrationTiles from "../AdministrationTiles";
 import Button from "../primitives/Button";
 
 export default function AdministrationsModal({
+    pdfIndex,
     showAdministrationModal = false,
     setShowAdministrationModal,
+    handleSaveDocument,
     filename = '',
 }: any) {
+    const handleSendToAdministration = async () => {
+        const base64 = await handleSaveDocument(pdfIndex);
+        alert(base64);
+        setShowAdministrationModal(false);
+    }
     return <>
         {/* backdrop */}
         <div
@@ -29,6 +36,7 @@ export default function AdministrationsModal({
                     <Button
                         className="bg-brand-secondary rounded-lg text-white"
                         padding="large"
+                        onClick={() => handleSendToAdministration()}
                     >
                         Verstuur naar administratie
                     </Button>

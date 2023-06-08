@@ -27,15 +27,13 @@ export default function Button({
       break;
   }
   return (
-    <div
+    <button
       id={id}
       className={
         `flex flex-nowrap items-center justify-center p-8 gap-2
         rounded-md cursor-pointer 
         border-none ring-stone-400/30 hover:ring-stone-600/30 text-white
-
-        ${colors}
-        
+        ${colors}        
         ${padding === 'large' ? 'py-3 px-6'
           : padding === 'normal' ? 'py-2 px-4'
             : 'py-1 px-2'}
@@ -47,6 +45,6 @@ export default function Button({
     >
       {title}
       {children}
-    </div>
+    </button>
   );
 }
