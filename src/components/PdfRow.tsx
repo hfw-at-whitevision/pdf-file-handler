@@ -89,6 +89,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, handleOpenAdministrationModal
                                 title={<><BsCheck2Circle /><span className="group-hover:flex">naar administratie</span></>}
                                 onClick={() => handleOpenAdministrationModal(pdfIndex)}
                                 padding='large'
+                                style='tertiary'
                             />
                             <Button
                                 className='overflow-hidden'
@@ -96,6 +97,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, handleOpenAdministrationModal
                                 onClick={() => handleRotateDocument({ pdfIndex })}
                                 disabled={isLoading}
                                 padding='large'
+                                style='tertiary'
                             />
                             <Button
                                 className='overflow-hidden'
@@ -103,6 +105,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, handleOpenAdministrationModal
                                 onClick={() => handleDeleteDocument(pdfIndex)}
                                 disabled={isLoading}
                                 padding='large'
+                                style='tertiary'
                             />
                         </nav>
                     </div>

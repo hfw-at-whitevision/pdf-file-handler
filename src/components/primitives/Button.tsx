@@ -11,6 +11,21 @@ export default function Button({
   children = null,
   style = 'primary',
 }: any, props: any) {
+  let colors = '';
+  switch (style) {
+    case "primary":
+      colors = 'bg-brand-secondary hover:bg-brand-secondary-light';
+      break;
+    case "secondary":
+      colors = 'bg-amber-400 hover:bg-amber-500';
+      break;
+    case "tertiary":
+      colors = 'bg-white hover:bg-body-bg-dark !text-text-dark';
+      break;
+    default:
+      colors = 'bg-brand-secondary hover:bg-brand-secondary-light';
+      break;
+  }
   return (
     <div
       id={id}
@@ -19,17 +34,7 @@ export default function Button({
         rounded-md cursor-pointer 
         border-none ring-stone-400/30 hover:ring-stone-600/30 text-white
 
-        ${transparent && style === 'primary'
-          ? 'bg-brand-secondary hover:bg-brand-secondary-light'
-          : 'bg-amber-400 hover:bg-amber-600'}
-
-          ${style === 'secondary'
-          ? 'bg-amber-400 hover:bg-amber-500'
-          : null}
-
-          ${style === 'tertiary'
-          ? 'bg-white hover:bg-body-bg-dark !text-text-dark'
-          : null}
+        ${colors}
         
         ${padding === 'large' ? 'py-3 px-6'
           : padding === 'normal' ? 'py-2 px-4'
