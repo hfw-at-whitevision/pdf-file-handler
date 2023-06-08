@@ -73,7 +73,7 @@ const PdfRow = ({ filename, opened, setOpenedRows, handleOpenAdministrationModal
                         ({pages.length} {pages.length > 1 ? ' pagina\'s' : ' pagina'})
                     </span>
                     <div className="relative group cursor-pointer">
-                        <HiEllipsisVertical className="text-[24px]" />
+                        <HiEllipsisVertical className="text-[24px] w-[48px] -mr-[12px]" />
                         <nav
                             data-pdf-index={pdfIndex}
                             className={

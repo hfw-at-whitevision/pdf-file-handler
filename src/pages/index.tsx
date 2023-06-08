@@ -335,7 +335,7 @@ const Home: NextPage = () => {
     // react-split
     // ********************************************************
     const [splitSizes, setSplitSizes] = useAtom(splitSizesAtom);
-    const [minSizes] = useState([470, 480, 150]);
+    const [minSizes] = useState([470, 480, 220]);
     const persistFileHandlerPanelSizes = useCallback((newSplitSizes: Array<number>) => {
         if (!newSplitSizes) return;
         setSplitSizes(newSplitSizes);
@@ -381,10 +381,10 @@ const Home: NextPage = () => {
             >
                 {/* PDF rows */}
                 <section
-                    ref={pdfRowsRef}
                     className={`text-stone-900 w-full h-[calc(100vh-100px)] relative`}
                 >
                     <div
+                        ref={pdfRowsRef}
                         id={`pdf-rows-section`}
                         className="flex flex-col items-start gap-y-8 w-full h-[calc(100%-80px)] relative p-8 pb-32 overflow-y-auto"
                     >

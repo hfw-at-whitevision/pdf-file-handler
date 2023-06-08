@@ -9,12 +9,13 @@ export default function ThumbnailsWidthHandler({ pdfRowsRef, splitSizes }: any) 
     const calculateThumbnailsWidth = () => {
         const pdfRowsWidth = pdfRowsRef.current.getBoundingClientRect().width;
         const bordersWidth = 2;
-        const px = 32;
-        const thumbnailsContainerWidth = pdfRowsWidth - bordersWidth - px;
+        const pdfRowPadding = 32;
+        const sectionPadding = 64;
+        const thumbnailsContainerWidth = pdfRowsWidth - bordersWidth - pdfRowPadding - sectionPadding;
         const thumbnailsContainerGap = 4;
         let newThumbnailsPerRow = Math.floor(thumbnailsContainerWidth / thumbnailWidth);
         const gapInBetween = (newThumbnailsPerRow - 1) * thumbnailsContainerGap;
-        const checkWidth = (newThumbnailsPerRow * thumbnailWidth) + gapInBetween + bordersWidth + px;
+        const checkWidth = (newThumbnailsPerRow * thumbnailWidth) + gapInBetween + bordersWidth + pdfRowPadding;
         if (checkWidth > pdfRowsWidth) newThumbnailsPerRow = newThumbnailsPerRow - 1;
 
         console.log(`Updated thumbnailsPerRow: ${newThumbnailsPerRow}`);
