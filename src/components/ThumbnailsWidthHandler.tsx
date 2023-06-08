@@ -10,7 +10,7 @@ export default function ThumbnailsWidthHandler({ pdfRowsRef, splitSizes }: any) 
         const pdfRowsWidth = pdfRowsRef.current.getBoundingClientRect().width;
         const bordersWidth = 2;
         const pdfRowPadding = 32;
-        const sectionPadding = 64;
+        const sectionPadding = 128;
         const thumbnailsContainerWidth = pdfRowsWidth - bordersWidth - pdfRowPadding - sectionPadding;
         const thumbnailsContainerGap = 4;
         let newThumbnailsPerRow = Math.floor(thumbnailsContainerWidth / thumbnailWidth);
