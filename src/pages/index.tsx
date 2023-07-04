@@ -764,13 +764,13 @@ const HomePage = () => {
 
                                     <div
                                         className={
-                                            `grid grid-cols-4 gap-2 w-full`
+                                            `grid grid-cols-4 w-full gap-0`
                                         }
                                     >
                                         {/* thumbnails of current PDF */}
                                         {numberOfThumbnails[pdfIndex]?.map((item, pageIndex) =>
                                             <>
-                                                <div className="flex flex-row">
+                                                <div className="flex flex-row gap-0">
                                                     {
                                                         /* first placeholder thumbnail in row */
                                                         pageIndex % 4 === 0 &&

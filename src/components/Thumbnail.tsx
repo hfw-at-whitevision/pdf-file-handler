@@ -119,7 +119,7 @@ const Thumbnail = (
             ref={ref}
             className={
                 `relative group flex items-center justify-center rounded-md overflow-hidden
-                box-border border-4 w-full h-[160px]
+                w-full h-[160px]
           before:absolute before:inset-0 before:bg-black before:opacity-50 hover:before:bg-transparent
           ${(pageIndex === current?.pageIndex && pdfIndex === current?.pdfIndex)
                     ? "border-amber-300 before:z-10"

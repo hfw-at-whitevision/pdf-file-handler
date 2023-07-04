@@ -19,23 +19,6 @@ body {
     @apply pointer-events-none opacity-40;
 }
 
-*::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-}
-
-*::-webkit-scrollbar-track {
-    @apply bg-purple-200;
-}
-
-*::-webkit-scrollbar-thumb {
-    @apply bg-black border-purple-200;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-    @apply bg-purple-200;
-}
-
 pre {
     max-height: 500px;
     overflow-y: scroll;

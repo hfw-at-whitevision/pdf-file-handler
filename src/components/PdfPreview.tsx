@@ -1,4 +1,4 @@
-import { Viewer, ViewMode } from "@react-pdf-viewer/core";
+import {SetRenderRange, Viewer, ViewMode, VisiblePagesRange} from "@react-pdf-viewer/core";
 
 import { pageThumbnailPlugin } from "@/components/pageThumbnailPlugin";
 import { thumbnailPlugin } from "@react-pdf-viewer/thumbnail";
@@ -8,8 +8,16 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { useAtom } from "jotai";
 import { pdfsAtom } from "./atoms";
+import React from "react";
 
 export default function PdfPreview({ pdfIndex, pageIndex }) {
+    const setRenderRange: SetRenderRange = React.useCallback((visiblePagesRange: VisiblePagesRange) => {
+        return {
+            startPage: visiblePagesRange.startPage - 16,
+            endPage: visiblePagesRange.endPage + 16,
+        };
+    }, []);
+
     // react-pdf-viewer thumbnail component
     const thumbnailPluginInstance = thumbnailPlugin();
     const { Cover } = thumbnailPluginInstance;
@@ -26,6 +34,7 @@ export default function PdfPreview({ pdfIndex, pageIndex }) {
                 fileUrl={fileUrl}
                 viewMode={ViewMode.SinglePage}
                 plugins={[pageThumbnailPluginInstance, thumbnailPluginInstance]}
+                setRenderRage={setRenderRange}
             />
         </div>
     </>
